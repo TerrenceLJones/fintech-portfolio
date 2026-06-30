@@ -20,12 +20,28 @@ Double-entry ledger with derived balances, idempotent payment flows, multi-level
 
 ```
 fintech-portfolio/
-  apps/          # deployable applications (one or more per project)
-  libs/          # shared libraries — domain logic, UI, data-access, utilities
-  docs/          # project plans, ADRs, TDRs
+  apps/                  # deployable applications (one per project)
+    clearline-web/       # placeholder — frontend framework TBD (TDR-CLEARLINE-001)
+  libs/                  # shared libraries — domain logic, UI, data-access, utilities
+    design-tokens/       # shared Tailwind v4 theme/tokens
+    mock-backend/        # MSW v2 mock backend convention (services-first, handlers-second)
+    contracts/           # documented API contracts (no Pact — see TDR-PLATFORM-001)
+  specs/                 # opportunities, TDRs, user stories, implementation plans
+  infrastructure/        # IDRs, setup guides, env templates, CI/CD, verification checklists
 ```
 
 Built with **Nx + pnpm**. Module boundaries enforced via `@nx/enforce-module-boundaries` — domain libs are pure TypeScript, framework-agnostic, and fully unit-testable in isolation.
+
+Platform-level technology decisions (monorepo tool, TypeScript/Node versions, linting,
+mock-backend strategy, hosting, CI/CD) are recorded in
+[`specs/tdr/TDR-PLATFORM-001.yaml`](specs/tdr/TDR-PLATFORM-001.yaml).
+---
+
+## Project status
+
+Platform baseline bootstrap (DevOps Mode 1): monorepo tooling, workspace structure, and shared
+lib scaffolding are in place. `apps/clearline-web` is a placeholder until `TDR-CLEARLINE-001`
+selects the frontend framework — `pnpm nx run clearline-web:*` targets are not wired up yet.
 
 ---
 
@@ -34,8 +50,8 @@ Built with **Nx + pnpm**. Module boundaries enforced via `@nx/enforce-module-bou
 ```bash
 pnpm install
 
-# serve a specific app
-pnpm nx run clearline-web:serve
+# once an app has real targets:
+pnpm nx run clearline-web:dev
 
 # test everything
 pnpm nx run-many --target=test --all

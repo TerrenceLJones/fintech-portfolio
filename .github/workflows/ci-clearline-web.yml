@@ -1,0 +1,64 @@
+name: CI - clearline-web
+
+# Verification only — does NOT deploy. Vercel's GitHub integration handles deploys.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/clearline-web/**'
+      - 'libs/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'nx.json'
+      - 'tsconfig.base.json'
+  pull_request:
+    paths:
+      - 'apps/clearline-web/**'
+      - 'libs/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'nx.json'
+      - 'tsconfig.base.json'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-clearline-web-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history required for `nx affected`
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Derive base/head for nx affected
+        uses: nrwl/nx-set-shas@v4
+
+      - name: Lint affected
+        run: pnpm exec nx affected --target=lint --parallel=3
+
+      - name: Type-check affected
+        run: pnpm exec nx affected --target=type-check --parallel=3
+
+      - name: Test affected
+        run: pnpm exec nx affected --target=test --parallel=3
+
+      - name: Build affected
+        run: pnpm exec nx affected --target=build --parallel=3

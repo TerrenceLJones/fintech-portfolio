@@ -1,0 +1,43 @@
+{
+  "name": "@fintech-portfolio/clearline-web",
+  "version": "0.1.0",
+  "private": true,
+  "description": "B2B spend management / payments frontend demo. Web-only, no mobile companion.",
+  "scripts": {
+    "dev": "echo \"dev command set when TDR-CLEARLINE-001 (app baseline) selects the frontend framework\" && exit 1",
+    "build": "echo \"build command set when TDR-CLEARLINE-001 (app baseline) selects the frontend framework\" && exit 1",
+    "start": "echo \"start command set when TDR-CLEARLINE-001 (app baseline) selects the frontend framework\" && exit 1",
+    "test": "echo \"test command set when TDR-CLEARLINE-001 (app baseline) selects the frontend framework\" && exit 1",
+    "lint": "eslint .",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@fintech-portfolio/contracts": "workspace:*",
+    "@fintech-portfolio/design-tokens": "workspace:*",
+    "@fintech-portfolio/mock-backend": "workspace:*",
+    "@sentry/cli": "^3.6.0",
+    "vercel": "^54.18.6"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "keywords": [
+    "fintech-portfolio",
+    "clearline-web",
+    "typescript"
+  ],
+  "metadata": {
+    "app": "clearline-web",
+    "deployment_unit": "apps/clearline-web/",
+    "platform_baseline_tdr": "TDR-PLATFORM-001",
+    "app_baseline_tdr": "TDR-CLEARLINE-001 (not yet created)",
+    "status": "planned",
+    "technologies": {
+      "frontend_framework": "TBD - from TDR-CLEARLINE-001",
+      "api_style": "N/A - MSW v2 mock backend (see libs/mock-backend)"
+    },
+    "infrastructure": {
+      "hosting_frontend": "Vercel (Hobby, free tier) — see TDR-PLATFORM-001 infrastructure_providers.frontend_hosting"
+    }
+  }
+}

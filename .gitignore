@@ -30,3 +30,11 @@ yarn-error.log*
 # Misc
 *.tsbuildinfo
 .cache/
+
+# Monorepo (Nx + pnpm)
+.nx/cache
+.nx/workspace-data
+.nx/migrate-runs
+coverage/
+.pnpm-store/
+
