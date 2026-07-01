@@ -1,0 +1,33 @@
+{
+  "name": "@fintech-portfolio/ui",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Clearline design system React component library, styled with Tailwind CSS v4 against @fintech-portfolio/design-tokens' --cl-* tokens, with Radix (radix-ui) backing the interactive/accessible primitives.",
+  "main": "src/index.ts",
+  "scripts": {
+    "lint": "eslint .",
+    "type-check": "tsc --noEmit",
+    "test": "vitest run",
+    "build": "vite build",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build"
+  },
+  "peerDependencies": {
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "dependencies": {
+    "@fintech-portfolio/design-tokens": "workspace:*",
+    "@fintech-portfolio/icons": "workspace:*",
+    "radix-ui": "^1.6.1"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3"
+  },
+  "metadata": {
+    "package_type": "shared",
+    "app": "clearline-web",
+    "source_of_truth": "Built tier-by-tier (foundations -> atoms -> molecules -> organisms -> decorators); see specs/epics/clearline-web/EPIC-CW-000.yaml and specs/user-stories/clearline-web/US-CW-022..026.yaml for the traceability record."
+  }
+}

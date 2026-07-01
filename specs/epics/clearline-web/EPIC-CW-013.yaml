@@ -1,0 +1,28 @@
+epic_id: 'EPIC-CW-013'
+title: 'Budget Management'
+app: 'clearline-web'
+feature_area: 'core'
+status: 'APPROVED'
+approved_date: '2026-06-30'
+created_date: '2026-06-30'
+source_reference: 'clearline-user-stories-gherkin.md — Section 13: Budget Management'
+package_location: 'apps/clearline-web/'
+deployment_unit: 'apps/clearline-web/'
+tdr_reference: 'TDR-CW-WEB-001 (not yet created — app baseline TDR pending; inherits TDR-PLATFORM-001 in the interim)'
+depends_on_epics: ['EPIC-CW-003']
+extends_stories: []
+reuses_from: []
+has_ui: true
+ui_library: '@fintech-portfolio/ui'
+changes:
+  adds:
+    - story_id: 'US-CW-019'
+      story_path: '/specs/user-stories/clearline-web/US-CW-019.yaml'
+      title: 'Department Budget Management'
+  updates: []
+  deprecates: []
+  removes: []
+notes: >
+  Introduces department-level monthly budget setting, real-time budget gauge visualization with
+  accessible (icon+text) warning and critical states, threshold-crossing stakeholder notifications,
+  and monthly budget period rollover with historical access via a Budget History view.

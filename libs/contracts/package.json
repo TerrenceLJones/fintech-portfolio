@@ -1,0 +1,20 @@
+{
+  "name": "@fintech-portfolio/contracts",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Documented API contract types (GraphQL schema + generated operation types, per TDR-CW-WEB-001 > technology_decisions.api_style_and_graphql_client), implemented directly by the mock service layer. No consumer-driven contract testing tool (Pact rejected platform-wide, ADR-006) — see TDR-PLATFORM-001 > technology_decisions.shared_mock_backend_strategy.contract_testing.",
+  "main": "src/index.ts",
+  "scripts": {
+    "lint": "eslint .",
+    "type-check": "tsc --noEmit",
+    "build": "tsc"
+  },
+  "dependencies": {},
+  "devDependencies": {},
+  "metadata": {
+    "package_type": "shared",
+    "platform_baseline_tdr": "TDR-PLATFORM-001",
+    "scope": "API contract types only — request/response DTO shapes, status codes, error formats. No hand-written runtime logic (safely regenerable from a schema in principle); shared domain logic that operationalizes these shapes (e.g. Money's toMajorUnits conversion) lives in libs/util/money instead, so this package stays pure types.",
+    "graphql_codegen_convention": "Once a GraphQL schema exists (see TDR-CW-WEB-001 > mock_backend_architecture.schema_and_codegen), its GraphQL Code Generator output belongs in src/generated/ — committed to git, produced by a \"generate\" script, and kept separate from hand-written types like src/money.ts, so neither needs untangling from the other later. Not yet implemented: no schema exists yet."
+  }
+}

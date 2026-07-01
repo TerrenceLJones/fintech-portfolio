@@ -1,0 +1,28 @@
+{
+  "name": "@fintech-portfolio/design-tokens",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Shared Tailwind CSS v4 design tokens/theme (Clearline palette), distributed via CSS-first @theme configuration, plus a React ThemeProvider/useTheme hook for light/dark toggling.",
+  "main": "src/index.ts",
+  "scripts": {
+    "generate": "node scripts/generate-tokens.mjs",
+    "lint": "eslint .",
+    "type-check": "tsc --noEmit",
+    "test": "vitest run",
+    "build": "tsc"
+  },
+  "peerDependencies": {
+    "react": "^19.2.0"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "tailwindcss": "^4.3.1",
+    "@types/react": "^19.2.17"
+  },
+  "metadata": {
+    "package_type": "shared",
+    "platform_baseline_tdr": "TDR-PLATFORM-001",
+    "scope": "Shared theme/tokens layer (Tailwind v4 @theme CSS + typed token exports + ThemeProvider/useTheme). Populated with the Clearline-branded --cl-* palette now that a fully-specified design system exists as a finished artifact — see EPIC-CW-000 for the rationale amending TDR-PLATFORM-001's original 'defer until a second app exists' scope.",
+    "regenerate": "Edit tokens.source.json (a copy of clearline-tokens.json), then run `pnpm --filter @fintech-portfolio/design-tokens generate` to rebuild src/theme.css and src/tokens.ts."
+  }
+}

@@ -1,0 +1,28 @@
+epic_id: 'EPIC-CW-007'
+title: 'Batch Operations'
+app: 'clearline-web'
+feature_area: 'core'
+status: 'APPROVED'
+approved_date: '2026-06-30'
+created_date: '2026-06-30'
+source_reference: 'clearline-user-stories-gherkin.md — Section 7: Batch Operations'
+package_location: 'apps/clearline-web/'
+deployment_unit: 'apps/clearline-web/'
+tdr_reference: 'TDR-CW-WEB-001 (not yet created — app baseline TDR pending; inherits TDR-PLATFORM-001 in the interim)'
+depends_on_epics: ['EPIC-CW-006']
+extends_stories: []
+reuses_from: []
+has_ui: true
+ui_library: '@fintech-portfolio/ui'
+changes:
+  adds:
+    - story_id: 'US-CW-013'
+      story_path: '/specs/user-stories/clearline-web/US-CW-013.yaml'
+      title: 'Batch Approval & Bulk Actions'
+  updates: []
+  deprecates: []
+  removes: []
+notes: >
+  Introduces bulk approve/reject actions for the expense approval queue, including safe
+  partial-failure handling, idempotent per-item retries, and resilience to mid-batch network
+  interruptions.

@@ -1,0 +1,31 @@
+epic_id: 'EPIC-CW-002'
+title: 'Onboarding & KYB (Know Your Business)'
+app: 'clearline-web'
+feature_area: 'core'
+status: 'APPROVED'
+approved_date: '2026-06-30'
+created_date: '2026-06-30'
+source_reference: 'clearline-user-stories-gherkin.md — Section 2: Onboarding & KYB (Know Your Business)'
+package_location: 'apps/clearline-web/'
+deployment_unit: 'apps/clearline-web/'
+tdr_reference: 'TDR-CW-WEB-001 (not yet created — app baseline TDR pending; inherits TDR-PLATFORM-001 in the interim)'
+depends_on_epics: []
+extends_stories: []
+reuses_from: []
+has_ui: true
+ui_library: '@fintech-portfolio/ui'
+changes:
+  adds:
+    - story_id: 'US-CW-004'
+      story_path: '/specs/user-stories/clearline-web/US-CW-004.yaml'
+      title: 'Business Onboarding Flow'
+    - story_id: 'US-CW-005'
+      story_path: '/specs/user-stories/clearline-web/US-CW-005.yaml'
+      title: 'Identity Document Verification & Compliance Screening'
+  updates: []
+  deprecates: []
+  removes: []
+notes: >
+  Covers the end-to-end business onboarding and KYB verification experience for Clearline: a save-and-resume
+  multi-step wizard for business info, beneficial owner capture, and approval (US-CW-004), and the identity
+  document quality checks plus compliance/sanctions screening UX that support that flow (US-CW-005).

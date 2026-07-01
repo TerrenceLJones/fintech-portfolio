@@ -1,0 +1,70 @@
+epic_id: 'EPIC-CW-000'
+title: 'Design System Foundation'
+app: 'clearline-web'
+feature_area: 'core'
+status: 'APPROVED'
+approved_date: '2026-06-30'
+created_date: '2026-06-30'
+source_reference: 'Claude Design export — DESIGN-SYSTEM.md, COMPONENT-AUDIT.md, clearline-tokens.json, clearline-icons.json, and one .dc.html spec per component'
+package_location: 'libs/design-tokens/, libs/icons/, libs/ui/, libs/contracts/, libs/util/money/'
+deployment_unit: 'libs/design-tokens/, libs/icons/, libs/ui/, libs/contracts/, libs/util/money/'
+tdr_reference: 'TDR-PLATFORM-001 (shared_design_system_tooling), TDR-CW-WEB-001 (frontend_framework_and_build_tool, styling_and_component_base, testing_stack)'
+depends_on_epics: []
+extends_stories: []
+reuses_from: []
+has_ui: true
+ui_library: '@fintech-portfolio/ui'
+changes:
+  adds:
+    - story_id: 'US-CW-022'
+      story_path: '/specs/user-stories/clearline-web/US-CW-022.yaml'
+      title: 'Design tokens & icon registry'
+    - story_id: 'US-CW-023'
+      story_path: '/specs/user-stories/clearline-web/US-CW-023.yaml'
+      title: 'Component library — atoms & foundations'
+    - story_id: 'US-CW-024'
+      story_path: '/specs/user-stories/clearline-web/US-CW-024.yaml'
+      title: 'Component library — molecules'
+    - story_id: 'US-CW-025'
+      story_path: '/specs/user-stories/clearline-web/US-CW-025.yaml'
+      title: 'Component library — organisms & decorators'
+    - story_id: 'US-CW-026'
+      story_path: '/specs/user-stories/clearline-web/US-CW-026.yaml'
+      title: 'Storybook catalog & end-to-end acceptance check'
+    - story_id: 'US-CW-027'
+      story_path: '/specs/user-stories/clearline-web/US-CW-027.yaml'
+      title: 'Shared money utilities — minor-unit conversion & currency-aware formatting'
+  updates:
+    - story_id: 'US-CW-019'
+      story_path: '/specs/user-stories/clearline-web/US-CW-019.yaml'
+      title: 'Department Budget Management'
+      change: >
+        Corrected technical_notes' hardcoded "two decimal places" currency-precision assumption
+        to reference the shared toMajorUnits/formatMoney utilities (US-CW-027) instead, and added
+        US-CW-027 as a dependency.
+  deprecates: []
+  removes: []
+notes: >
+  Ports the already-complete, already-validated Clearline design system (a Claude Design
+  export: clearline-tokens.json, clearline-icons.json, DESIGN-SYSTEM.md, COMPONENT-AUDIT.md,
+  and one .dc.html spec per component) into a typed, tested React component library living in
+  libs/, ahead of and independent from apps/clearline-web itself (still a placeholder pending
+  TDR-CW-WEB-001 execution). Unblocks all 15 feature epics (EPIC-CW-001 through EPIC-CW-015),
+  each of which now points its `ui_library` field at `@fintech-portfolio/ui`.
+
+  Amends TDR-PLATFORM-001's `shared_design_system_tooling` decision, which deferred a shared
+  component-primitives library "until a second app exists to validate real reuse." That
+  rationale no longer holds now that a fully-specified, already-validated design system exists
+  as a finished artifact — populating the empty `libs/design-tokens` stub and adding
+  `libs/icons`/`libs/ui` costs little relative to unblocking 15 pending epics. Scope stays
+  intentionally Clearline-branded, not a generic cross-portfolio kit, consistent with the TDR's
+  own "revisit once a second app exists" framing.
+
+  Follow-up (US-CW-027): added a shared `Money` type (libs/contracts, shape only), a
+  `toMajorUnits` conversion (new libs/util/money — domain logic, not API shape, so it doesn't
+  belong in contracts), and a currency-aware `formatMoney` (libs/ui, display only) once a
+  currency-precision bug was spotted in US-CW-019's technical_notes — it assumed "two decimal
+  places" universally, which is wrong for 0-decimal currencies (JPY) and 3-decimal currencies
+  (BHD). US-CW-019 has been corrected to reference the shared utility instead. `libs/util/money`
+  is the first nested lib in this repo, matching the standalone Clearline plan's `libs/util/*`
+  grouping ahead of `libs/domain/*`/`libs/data-access/*`/`libs/feature/*` being introduced later.

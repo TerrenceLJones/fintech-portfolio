@@ -1,0 +1,107 @@
+# User Story Registry Record
+# User stories are the source of truth for what the application supports.
+# Epics declare changes to these records via their changes.adds/updates/deprecates/removes sections.
+
+# Identity
+id: 'US-CW-024'
+app: 'clearline-web'
+feature_area: 'core'
+title: 'Component library — molecules'
+
+# Lifecycle status
+status: 'IMPLEMENTED'
+story_points: 8
+dependencies: ['US-CW-023']
+
+# Provenance — immutable after creation
+created_by_epic: 'EPIC-CW-000'
+created_date: '2026-06-30'
+
+# Provenance history — append-only record of every epic that has touched this story
+history:
+  - epic_id: 'EPIC-CW-000'
+    action: 'created'
+    date: '2026-06-30'
+  - epic_id: 'EPIC-CW-000'
+    action: 'approved'
+    date: '2026-06-30'
+  - epic_id: 'EPIC-CW-000'
+    action: 'implemented'
+    date: '2026-06-30'
+
+# Status timestamps — set when status transitions occur
+approved_date: '2026-06-30'
+implementation_date: '2026-06-30'
+deprecated_date: null
+removed_date: null
+
+# User Story
+user_story:
+  persona: 'clearline-web engineer building any feature epic'
+  capability: 'the 8 Tier-2 molecules (VirtualCard, TransactionRow, Modal, ConfirmationDialog, Timeline, Stepper, NavItem, AIInsightCard), each composing the Tier-1 atoms/foundations already built'
+  business_value: 'recognizable product objects — a card, a confirmation dialog for an irreversible payment, an audit-trail timeline — are available pre-built with the exact focus-trap, keyboard, and countdown-gating behavior the design already specified, rather than each feature epic inventing its own dialog/focus-trap logic'
+  description: |
+    As a clearline-web engineer
+    I want Modal/ConfirmationDialog and the other 6 Tier-2 molecules available as typed React components built on Radix Dialog
+    So that every irreversible-action confirmation in the app gets the same focus-trapped, Escape-cancels, countdown-gated behavior for free, instead of each feature epic re-implementing dialog accessibility by hand
+
+# Acceptance Criteria
+acceptance_criteria:
+  - id: 'AC-01'
+    description: |
+      Given a Modal with `open={true}`
+      When it renders
+      Then it exposes `role="dialog"`, traps focus, and closes via Escape or the Cancel button — all inherited from Radix Dialog, not hand-rolled
+    status: 'active'
+  - id: 'AC-02'
+    description: |
+      Given a ConfirmationDialog with `countdown={3}`
+      When it opens
+      Then the confirm button is disabled and reads "Confirm in 3…", counting down each second until armed, and re-gates on every subsequent open transition even if previously armed
+    status: 'active'
+  - id: 'AC-03'
+    description: |
+      Given VirtualCard with `state="frozen"`
+      When it renders
+      Then it shows a "Frozen" label (icon + text) and hides the derived remaining-limit figure entirely, rather than showing a stale or misleading number
+    status: 'active'
+  - id: 'AC-04'
+    description: |
+      Given a Timeline with entries that include `diffFrom`/`diffTo`
+      When rendered
+      Then the before → after values are shown with an arrow between them, distinct from entries with no diff
+    status: 'active'
+  - id: 'AC-05'
+    description: |
+      Given AIInsightCard with `tone="anomaly"`
+      When rendered with `actionPrimary`/`actionSecondary`
+      Then both actions render and independently invoke their own callbacks
+    status: 'active'
+
+# Technical Notes
+technical_notes: |
+  Modal and ConfirmationDialog both wrap Radix `Dialog` (Root/Portal/Overlay/Content/Title/
+  Description/Close) instead of the hand-rolled `role="alertdialog"` + manual focus management
+  in the original `.dc.html` demos. ConfirmationDialog's countdown resets on each open transition
+  using React's "adjust state during render" pattern (comparing the current `open` prop to a
+  `prevOpen` state value) rather than a `useEffect` that calls `setState` synchronously in its
+  body — the latter is flagged as an anti-pattern by `eslint-plugin-react-hooks`'s
+  `set-state-in-effect` rule (part of its React-Compiler-aligned `recommended-latest` config).
+
+# Edge Cases
+edge_cases: |
+  - Modal renders nothing at all when `open={false}` (no hidden-but-present DOM)
+  - ConfirmationDialog with `countdown={0}` is immediately armed (no artificial wait)
+  - VirtualCard frozen state never renders a dollar figure that could be mistaken for current
+  - Timeline with a mix of diffed and non-diffed entries in the same list
+  - Stepper's done/current/todo visual states must be distinguishable without relying on a
+    number-vs-checkmark distinction alone at the current step boundary
+
+# Implementation Status
+
+✅ Implemented: 2026-06-30
+📁 Files created:
+  - libs/ui/src/molecules/{VirtualCard,TransactionRow,Modal,ConfirmationDialog,Timeline,Stepper,NavItem,AIInsightCard}.tsx
+  - a matching .test.tsx and .stories.tsx per component above
+🧪 Test coverage: 24 tests across 8 test files, all passing via `nx run ui:test`
+📖 Storybook story: one story file per component under Molecules/* in `nx run ui:storybook`

@@ -1,0 +1,26 @@
+{
+  "name": "@fintech-portfolio/icons",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Clearline design system icon registry — 45 named glyphs rendered by a single tree-shakeable <Icon name /> component. Generated from icons.source.json (a copy of clearline-icons.json).",
+  "main": "src/index.ts",
+  "scripts": {
+    "generate": "node scripts/generate-icons.mjs",
+    "lint": "eslint .",
+    "type-check": "tsc --noEmit",
+    "test": "vitest run",
+    "build": "vite build"
+  },
+  "peerDependencies": {
+    "react": "^19.2.0"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/react": "^19.2.17"
+  },
+  "metadata": {
+    "package_type": "shared",
+    "app": "clearline-web",
+    "regenerate": "Edit icons.source.json, then run `pnpm --filter @fintech-portfolio/icons generate` to rebuild src/icon-registry.ts."
+  }
+}

@@ -1,0 +1,108 @@
+# User Story Registry Record
+# User stories are the source of truth for what the application supports.
+# Epics declare changes to these records via their changes.adds/updates/deprecates/removes sections.
+
+# Identity
+id: 'US-CW-025'
+app: 'clearline-web'
+feature_area: 'core'
+title: 'Component library — organisms & decorators'
+
+# Lifecycle status
+status: 'IMPLEMENTED'
+story_points: 8
+dependencies: ['US-CW-024']
+
+# Provenance — immutable after creation
+created_by_epic: 'EPIC-CW-000'
+created_date: '2026-06-30'
+
+# Provenance history — append-only record of every epic that has touched this story
+history:
+  - epic_id: 'EPIC-CW-000'
+    action: 'created'
+    date: '2026-06-30'
+  - epic_id: 'EPIC-CW-000'
+    action: 'approved'
+    date: '2026-06-30'
+  - epic_id: 'EPIC-CW-000'
+    action: 'implemented'
+    date: '2026-06-30'
+
+# Status timestamps — set when status transitions occur
+approved_date: '2026-06-30'
+implementation_date: '2026-06-30'
+deprecated_date: null
+removed_date: null
+
+# User Story
+user_story:
+  persona: 'clearline-web engineer building any feature epic'
+  capability: 'the 4 Tier-3 organisms (DataTable, ApprovalActionBar, BulkActionResult, EmptyState) plus the 3 scaffolding decorators (AppShell, WindowFrame, PhoneFrame)'
+  business_value: 'the highest-effort, highest-payoff assemblies — a selectable/sortable data table, an approval bar that correctly disables itself with a stated reason, a partial-failure summary that never rolls back the successes — are built once, and a whole screen can be assembled with zero per-page token/theme boilerplate via AppShell'
+  description: |
+    As a clearline-web engineer
+    I want DataTable/ApprovalActionBar/BulkActionResult/EmptyState and the AppShell/WindowFrame/PhoneFrame decorators available as typed React components
+    So that I can assemble a full screen (selection, sorting, approval flows, partial-failure summaries) by composing already-built pieces instead of writing table selection/sort logic or approval-limit disabling logic from scratch in each feature epic
+
+# Acceptance Criteria
+acceptance_criteria:
+  - id: 'AC-01'
+    description: |
+      Given DataTable with multiple rows
+      When I click the header checkbox
+      Then all rows toggle selected/deselected together, and a selection action bar appears showing the count and Approve/Export actions
+    status: 'active'
+  - id: 'AC-02'
+    description: |
+      Given DataTable
+      When I click the "Vendor" column header
+      Then the rows re-sort by vendor name, toggling ascending/descending on repeated clicks
+    status: 'active'
+  - id: 'AC-03'
+    description: |
+      Given ApprovalActionBar with a `reason` prop set (e.g. separation-of-duties) and no explicit `canApprove`
+      When it renders
+      Then Approve is disabled and the reason is shown in text beneath the buttons — never silently missing
+    status: 'active'
+  - id: 'AC-04'
+    description: |
+      Given BulkActionResult with `total=10` and 2 `failures`
+      When it renders
+      Then it shows "8 of 10 approved" (the committed count excludes the failures) with each failure's specific reason listed, plus a "Retry failed (2)" action
+    status: 'active'
+  - id: 'AC-05'
+    description: |
+      Given `<AppShell>` wrapping any page content
+      When rendered
+      Then it owns theme state (via ThemeProvider), renders the sticky top bar with a Light/Dark toggle, and requires zero additional per-page token setup
+    status: 'active'
+
+# Technical Notes
+technical_notes: |
+  DataTable composes Checkbox (Tier 1) and StatusBadge (foundations) rather than reimplementing
+  either. AppShell wraps its children in `<ThemeProvider>` internally (from
+  @fintech-portfolio/design-tokens) so a consuming screen only ever writes `<AppShell
+  title="...">...</AppShell>` — matching the "zero per-page boilerplate" pattern demonstrated by
+  the `Clearline - 09 Spend Dashboard (Migrated).dc.html` reference. WindowFrame and PhoneFrame
+  are documented as dev/layout utilities (Storybook decorators for screen-scale previews), not
+  primary product exports — consistent with COMPONENT-AUDIT.md's "Scaffolding" tier.
+
+# Edge Cases
+edge_cases: |
+  - DataTable's "select all" checkbox shows an indeterminate state when some (not all) rows are selected
+  - ApprovalActionBar's Escalate action can be hidden independently of the approve/reject disabling
+  - BulkActionResult with zero failures still renders correctly (no failure rows, no crash)
+  - AppShell's theme toggle affects the whole subtree via `data-theme` on `document.documentElement`,
+    verified by asserting on `document.documentElement.getAttribute('data-theme')` in tests, not
+    just component-local state
+
+# Implementation Status
+
+✅ Implemented: 2026-06-30
+📁 Files created:
+  - libs/ui/src/organisms/{DataTable,ApprovalActionBar,BulkActionResult,EmptyState}.tsx
+  - libs/ui/src/decorators/{AppShell,WindowFrame,PhoneFrame}.tsx
+  - a matching .test.tsx and .stories.tsx per component above
+🧪 Test coverage: 19 tests across 7 test files, all passing via `nx run ui:test`
+📖 Storybook story: one story file per component under Organisms/* and Decorators/* in `nx run ui:storybook`

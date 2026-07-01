@@ -1,0 +1,28 @@
+epic_id: 'EPIC-CW-014'
+title: 'Accessibility (Cross-Cutting, WCAG 2.1 AA)'
+app: 'clearline-web'
+feature_area: 'core'
+status: 'APPROVED'
+approved_date: '2026-06-30'
+created_date: '2026-06-30'
+source_reference: 'clearline-user-stories-gherkin.md — Section 17: Accessibility (Cross-Cutting)'
+package_location: 'apps/clearline-web/'
+deployment_unit: 'apps/clearline-web/'
+tdr_reference: 'TDR-CW-WEB-001 (not yet created — app baseline TDR pending; inherits TDR-PLATFORM-001 in the interim)'
+depends_on_epics: []
+extends_stories: []
+reuses_from: []
+has_ui: true
+ui_library: '@fintech-portfolio/ui'
+changes:
+  adds:
+    - story_id: 'US-CW-020'
+      story_path: '/specs/user-stories/clearline-web/US-CW-020.yaml'
+      title: 'WCAG 2.1 AA Accessibility Compliance'
+  updates: []
+  deprecates: []
+  removes: []
+notes: >
+  Establishes cross-cutting WCAG 2.1 AA accessibility requirements for clearline-web, covering
+  non-color status indicators, keyboard navigation and focus management, screen reader support for
+  monetary values and form errors, and focus-trapped confirmation dialogs for irreversible actions.

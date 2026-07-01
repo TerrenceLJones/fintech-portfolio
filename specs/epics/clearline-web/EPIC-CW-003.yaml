@@ -1,0 +1,29 @@
+epic_id: 'EPIC-CW-003'
+title: 'Role-Based Access Control & Permissions'
+app: 'clearline-web'
+feature_area: 'core'
+status: 'APPROVED'
+approved_date: '2026-06-30'
+created_date: '2026-06-30'
+source_reference: 'clearline-user-stories-gherkin.md — Section 3: Role-Based Access Control & Permissions'
+package_location: 'apps/clearline-web/'
+deployment_unit: 'apps/clearline-web/'
+tdr_reference: 'TDR-CW-WEB-001 (not yet created — app baseline TDR pending; inherits TDR-PLATFORM-001 in the interim)'
+depends_on_epics: ['EPIC-CW-001']
+extends_stories: []
+reuses_from: []
+has_ui: true
+ui_library: '@fintech-portfolio/ui'
+changes:
+  adds:
+    - story_id: 'US-CW-006'
+      story_path: '/specs/user-stories/clearline-web/US-CW-006.yaml'
+      title: 'Role-Based Navigation & Approval Authority'
+  updates: []
+  deprecates: []
+  removes: []
+notes: >
+  Establishes role-based access control for clearline-web, covering role-scoped navigation
+  (Employee, Finance Manager, Controller), server-enforced authorization for direct URL access,
+  graceful handling of mid-session role changes, per-user approval limit enforcement with
+  escalation, and conflict-of-interest prevention for self-approval of expenses.

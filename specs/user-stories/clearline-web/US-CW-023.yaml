@@ -1,0 +1,121 @@
+# User Story Registry Record
+# User stories are the source of truth for what the application supports.
+# Epics declare changes to these records via their changes.adds/updates/deprecates/removes sections.
+
+# Identity
+id: 'US-CW-023'
+app: 'clearline-web'
+feature_area: 'core'
+title: 'Component library — atoms & foundations'
+
+# Lifecycle status
+status: 'IMPLEMENTED'
+story_points: 8
+dependencies: ['US-CW-022']
+
+# Provenance — immutable after creation
+created_by_epic: 'EPIC-CW-000'
+created_date: '2026-06-30'
+
+# Provenance history — append-only record of every epic that has touched this story
+history:
+  - epic_id: 'EPIC-CW-000'
+    action: 'created'
+    date: '2026-06-30'
+  - epic_id: 'EPIC-CW-000'
+    action: 'approved'
+    date: '2026-06-30'
+  - epic_id: 'EPIC-CW-000'
+    action: 'implemented'
+    date: '2026-06-30'
+
+# Status timestamps — set when status transitions occur
+approved_date: '2026-06-30'
+implementation_date: '2026-06-30'
+deprecated_date: null
+removed_date: null
+
+# User Story
+user_story:
+  persona: 'clearline-web engineer building any feature epic'
+  capability: 'the 3 foundational status/money/budget components and the 8 lowest-level atoms (Button, TextField, Alert, SegmentedControl, Avatar, Chip, ProgressBar, Checkbox), each typed, tested, and Storybook-documented'
+  business_value: 'the smallest, most-repeated visual elements (buttons, form fields, badges, checkboxes) are built once, correctly, with accessibility and money/status rules baked in, instead of being re-implemented slightly differently in each of the 15 feature epics'
+  description: |
+    As a clearline-web engineer
+    I want StatusBadge/MoneyDisplay/BudgetGauge and the 8 Tier-1 atoms available as typed React components
+    So that I never hand-roll a button, badge, or money value and risk missing an accessibility or formatting rule the design system already solved
+
+# Acceptance Criteria
+acceptance_criteria:
+  - id: 'AC-01'
+    description: |
+      Given any StatusBadge, regardless of its `status` prop
+      When it renders
+      Then it always shows an icon and a text label alongside its color — status is never conveyed by color alone
+    status: 'active'
+  - id: 'AC-02'
+    description: |
+      Given MoneyDisplay with `state="loading"`
+      When it renders
+      Then it shows a skeleton sized to the final glyphs, never a flash of "$0.00"
+    status: 'active'
+  - id: 'AC-03'
+    description: |
+      Given MoneyDisplay with `derived={true}`
+      When it renders
+      Then it shows a "DERIVED · READ-ONLY" chip instead of any editable-looking affordance
+    status: 'active'
+  - id: 'AC-04'
+    description: |
+      Given BudgetGauge at any used/total ratio
+      When it renders
+      Then the percentage and any overage amount are spelled out in text (e.g. "104% — $2,000.00 over"), with color reinforcing rather than carrying the message
+    status: 'active'
+  - id: 'AC-05'
+    description: |
+      Given Checkbox, which wraps Radix `Checkbox` rather than a hand-rolled implementation
+      When a user clicks it or activates it via keyboard (Space)
+      Then `onCheckedChange` fires and `aria-checked` reflects checked/indeterminate/unchecked correctly
+    status: 'active'
+  - id: 'AC-06'
+    description: |
+      Given Button with `loading={true}`
+      When rendered
+      Then the button is disabled, shows a spinning icon, and does not fire `onClick`
+    status: 'active'
+  - id: 'AC-07'
+    description: |
+      Given TextField with `state="error"` and an `error` message
+      When rendered
+      Then the input has `aria-invalid="true"` and `aria-describedby` pointing at a `role="alert"` element containing the error text
+    status: 'active'
+
+# Technical Notes
+technical_notes: |
+  Every atom/foundation is styled with Tailwind utility classes bound to the `--cl-*` tokens
+  (e.g. `bg-cl-accent`, `text-cl-neg`) — no inline style objects (a constraint only the original
+  single-file `.dc.html` demos had) and no CSS Modules. TextField and SegmentedControl are real
+  controlled/uncontrolled form elements (an actual `<input>`, real click/keyboard handling) rather
+  than the static visual mockups the `.dc.html` source used for demo purposes. Checkbox wraps
+  Radix `Checkbox` (`radix-ui` unified package, per TDR-CW-WEB-001) for focus/keyboard/ARIA
+  handling instead of reimplementing it by hand.
+
+# Edge Cases
+edge_cases: |
+  - StatusBadge for all 10 status keys (draft, pending-l1/l2, approved, paid, reconciled,
+    rejected, reversed, frozen, under-review) each render an icon + label
+  - MoneyDisplay credit/debit states show directional icons (up/down arrow) in addition to color
+  - BudgetGauge at exactly 80% (warning threshold boundary) and over 100% (critical + overage math)
+  - Button disabled vs. loading are visually and behaviorally distinct but both block onClick
+  - Checkbox indeterminate state is visually and semantically distinct from checked/unchecked
+  - SegmentedControl works both controlled (`value`/`onChange`) and uncontrolled (internal state)
+
+# Implementation Status
+
+✅ Implemented: 2026-06-30
+📁 Files created:
+  - libs/ui/src/foundations/{StatusBadge,MoneyDisplay,BudgetGauge}.tsx
+  - libs/ui/src/atoms/{Button,TextField,Alert,SegmentedControl,Avatar,Chip,ProgressBar,Checkbox}.tsx
+  - a matching .test.tsx and .stories.tsx per component above
+🧪 Test coverage: 37 tests across 11 test files, all passing via `nx run ui:test`
+📖 Storybook story: one story file per component under Foundations/* and Atoms/* in `nx run ui:storybook`

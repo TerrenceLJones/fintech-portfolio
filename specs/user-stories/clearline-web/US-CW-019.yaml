@@ -11,7 +11,7 @@ title: 'Department Budget Management'
 # Lifecycle status
 status: 'APPROVED'
 story_points: 5
-dependencies: ['US-CW-006']
+dependencies: ['US-CW-006', 'US-CW-027']
 
 # Provenance — immutable after creation
 created_by_epic: 'EPIC-CW-013'
@@ -25,6 +25,9 @@ history:
   - epic_id: 'EPIC-CW-013'
     action: 'approved'
     date: '2026-06-30'
+  - epic_id: 'EPIC-CW-000'
+    action: 'updated'
+    date: '2026-07-01'
 
 # Status timestamps — set when status transitions occur
 approved_date: '2026-06-30'
@@ -75,8 +78,11 @@ acceptance_criteria:
 
 # Technical Notes
 technical_notes: |
-  Budget amounts and spend totals must be stored and rendered with full currency precision (two decimal places)
-  to support exact percentage and overage calculations such as "104% of budget used — $2,000.00 over". Threshold
+  Budget amounts and spend totals must be stored as integer minor units and converted/rendered via the shared
+  `toMajorUnits`/`formatMoney` utilities (`@fintech-portfolio/money`/`@fintech-portfolio/ui`, US-CW-027) to
+  support exact percentage and overage calculations such as "104% of budget used — $2,000.00 over" — not a
+  hardcoded "two decimal places" assumption, which is wrong for a department ever budgeted in a 0-decimal
+  currency (e.g. JPY) or a 3-decimal currency (e.g. BHD). Threshold
   crossing (e.g. 80%) must trigger an asynchronous notification to department stakeholders, implying an event-driven
   or scheduled recalculation of spend-to-budget ratio rather than purely on-demand computation. Budget gauge states
   (normal/amber-warning/critical) must be accessible — encoded with icon and text, not color alone — per the
@@ -92,3 +98,6 @@ edge_cases: |
   - Accessibility: budget state must never rely on color alone, requiring icon and text pairing in all visual states
   - (inferred) Department budget changed mid-period after spend has already accrued — gauge must recalculate percentage against the new amount without losing prior spend history
   - (inferred) Department with no budget set — gauge display behavior when budget is $0.00 or undefined
+  - (inferred) Department budgeted in a non-USD currency — percentage math (used/total) stays currency-agnostic,
+    but any displayed overage amount must go through `toMajorUnits`/`formatMoney` for that department's currency,
+    not an assumed 2-decimal USD format

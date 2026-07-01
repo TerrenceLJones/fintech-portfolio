@@ -1,0 +1,28 @@
+epic_id: 'EPIC-CW-015'
+title: 'Audit Logging (Cross-Cutting)'
+app: 'clearline-web'
+feature_area: 'core'
+status: 'APPROVED'
+approved_date: '2026-06-30'
+created_date: '2026-06-30'
+source_reference: 'clearline-user-stories-gherkin.md — Section 18: Audit Logging (Cross-Cutting)'
+package_location: 'apps/clearline-web/'
+deployment_unit: 'apps/clearline-web/'
+tdr_reference: 'TDR-CW-WEB-001 (not yet created — app baseline TDR pending; inherits TDR-PLATFORM-001 in the interim)'
+depends_on_epics: ['EPIC-CW-004', 'EPIC-CW-006', 'EPIC-CW-008', 'EPIC-CW-003']
+extends_stories: []
+reuses_from: []
+has_ui: true
+ui_library: '@fintech-portfolio/ui'
+changes:
+  adds:
+    - story_id: 'US-CW-021'
+      story_path: '/specs/user-stories/clearline-web/US-CW-021.yaml'
+      title: 'Immutable Audit Logging for Financial Actions'
+  updates: []
+  deprecates: []
+  removes: []
+notes: >
+  Establishes a cross-cutting, immutable, append-only audit logging capability covering
+  payments, approval actions, card control changes, and role/permission changes, with
+  log access itself restricted to Controller and Admin roles and self-auditing.

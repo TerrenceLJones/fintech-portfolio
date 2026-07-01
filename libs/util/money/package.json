@@ -1,0 +1,22 @@
+{
+  "name": "@fintech-portfolio/money",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Pure, framework-agnostic money utilities (currency minor-unit conversion) shared by the mock backend and any UI/data-access consumer, so this logic is defined once rather than duplicated per consumer.",
+  "main": "src/index.ts",
+  "scripts": {
+    "lint": "eslint .",
+    "type-check": "tsc --noEmit",
+    "test": "vitest run",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@fintech-portfolio/contracts": "workspace:*"
+  },
+  "devDependencies": {},
+  "metadata": {
+    "package_type": "shared",
+    "platform_baseline_tdr": "TDR-PLATFORM-001",
+    "scope": "Domain logic, not API shape: @fintech-portfolio/contracts defines the Money type (what an amount looks like on the wire); this package defines toMajorUnits (how to correctly interpret it per currency). Kept separate so libs/contracts can stay pure types/DTOs — safely regenerable from a schema — with zero hand-written runtime logic."
+  }
+}

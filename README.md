@@ -23,7 +23,9 @@ fintech-portfolio/
   apps/                  # deployable applications (one per project)
     clearline-web/       # placeholder — frontend framework TBD (TDR-CW-WEB-001)
   libs/                  # shared libraries — domain logic, UI, data-access, utilities
-    design-tokens/       # shared Tailwind v4 theme/tokens
+    design-tokens/       # Clearline --cl-* design tokens (Tailwind v4 @theme) + ThemeProvider/useTheme
+    icons/               # @fintech-portfolio/icons — the 45-glyph Clearline icon registry + <Icon>
+    ui/                  # @fintech-portfolio/ui — the Clearline React component library + Storybook
     mock-backend/        # MSW v2 mock backend convention (services-first, handlers-second)
     contracts/           # documented API contracts (no Pact — see TDR-PLATFORM-001)
   specs/                 # opportunities, TDRs, user stories, implementation plans
@@ -35,6 +37,7 @@ Built with **Nx + pnpm**. Module boundaries enforced via `@nx/enforce-module-bou
 Platform-level technology decisions (monorepo tool, TypeScript/Node versions, linting,
 mock-backend strategy, hosting, CI/CD) are recorded in
 [`specs/tdr/TDR-PLATFORM-001.yaml`](specs/tdr/TDR-PLATFORM-001.yaml).
+
 ---
 
 ## Project status
@@ -42,6 +45,22 @@ mock-backend strategy, hosting, CI/CD) are recorded in
 Platform baseline bootstrap (DevOps Mode 1): monorepo tooling, workspace structure, and shared
 lib scaffolding are in place. `apps/clearline-web` is a placeholder until `TDR-CW-WEB-001`
 selects the frontend framework — `pnpm nx run clearline-web:*` targets are not wired up yet.
+
+The Clearline design system (`libs/design-tokens`, `libs/icons`, `libs/ui`) is built and fully
+tested/storied — see [EPIC-CW-000](specs/epics/clearline-web/EPIC-CW-000.yaml)/
+
+---
+
+## Node version
+
+This repo requires **Node 24** (`engines.node` in `package.json`). Use
+[mise](https://mise.jdx.dev) to get it automatically — `mise.toml` at the repo root pins Node
+24 and pnpm 9.15.1:
+
+```bash
+mise install       # once, per machine
+mise trust         # approve this repo's mise.toml
+```
 
 ---
 
@@ -53,8 +72,32 @@ pnpm install
 # once an app has real targets:
 pnpm nx run clearline-web:dev
 
+# Clearline design system — browse the component library
+pnpm nx run ui:storybook
+
 # test everything
 pnpm nx run-many --target=test --all
+```
+
+**Always run `lint`/`type-check`/`test`/`build` through Nx** (`pnpm nx run <project>:<target>`
+or `pnpm nx run-many --target=...`), not a bare `tsc`/`vitest` inside a `libs/*` folder.
+`libs/ui` and `libs/icons` consume `libs/design-tokens`/`libs/icons` via TypeScript project
+references, which requires those dependencies' declaration files to already be built —
+`nx.json`'s `type-check: { dependsOn: ["^build"] }` (and the same for `test`) is what makes
+that happen automatically. Running `tsc` directly, bypassing Nx, will fail with `TS6305` until
+you've built the dependencies yourself.
+
+### Regenerating tokens and icons
+
+`libs/design-tokens` and `libs/icons` are generated from JSON sources, kept as the single
+input for each package:
+
+```bash
+# after editing libs/design-tokens/tokens.source.json
+pnpm --filter @fintech-portfolio/design-tokens generate
+
+# after editing libs/icons/icons.source.json
+pnpm --filter @fintech-portfolio/icons generate
 ```
 
 ---

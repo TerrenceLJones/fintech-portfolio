@@ -1,0 +1,113 @@
+# User Story Registry Record
+# User stories are the source of truth for what the application supports.
+# Epics declare changes to these records via their changes.adds/updates/deprecates/removes sections.
+
+# Identity
+id: 'US-CW-022'
+app: 'clearline-web'
+feature_area: 'core'
+title: 'Design tokens & icon registry'
+
+# Lifecycle status
+status: 'IMPLEMENTED'
+story_points: 5
+dependencies: []
+
+# Provenance — immutable after creation
+created_by_epic: 'EPIC-CW-000'
+created_date: '2026-06-30'
+
+# Provenance history — append-only record of every epic that has touched this story
+history:
+  - epic_id: 'EPIC-CW-000'
+    action: 'created'
+    date: '2026-06-30'
+  - epic_id: 'EPIC-CW-000'
+    action: 'approved'
+    date: '2026-06-30'
+  - epic_id: 'EPIC-CW-000'
+    action: 'implemented'
+    date: '2026-06-30'
+
+# Status timestamps — set when status transitions occur
+approved_date: '2026-06-30'
+implementation_date: '2026-06-30'
+deprecated_date: null
+removed_date: null
+
+# User Story
+user_story:
+  persona: 'clearline-web engineer building any feature epic'
+  capability: 'a single, generated source of Clearline design tokens (colors, radii, type scale) and named icons, consumable as real Tailwind utilities and a typed <Icon> component'
+  business_value: 'every future screen and component renders from one visual source of truth instead of copy-pasted hex values and inline SVGs, and a token/icon change (e.g. a rebrand or a new glyph) is a one-line edit to a JSON file followed by a regenerate script, not a find-and-replace across the codebase'
+  description: |
+    As a clearline-web engineer
+    I want the Clearline `--cl-*` semantic tokens and 45 named icons generated from their JSON sources into a Tailwind v4 theme and a typed React <Icon> component
+    So that every component I build afterward consumes one visual source of truth, themes correctly in light/dark via a single ThemeProvider, and never hardcodes a hex value or a raw inline SVG
+
+# Acceptance Criteria
+acceptance_criteria:
+  - id: 'AC-01'
+    description: |
+      Given tokens.source.json (a copy of clearline-tokens.json) as the input
+      When I run `pnpm --filter @fintech-portfolio/design-tokens generate`
+      Then libs/design-tokens/src/theme.css is regenerated with `:root`/`[data-theme='dark']` `--cl-*` variables and a `@theme inline` block aliasing each as a Tailwind color token
+      And libs/design-tokens/src/tokens.ts is regenerated with a typed `semanticTokens`/`primitiveTokens` export and a `SemanticToken` union
+    status: 'active'
+  - id: 'AC-02'
+    description: |
+      Given a component imports `ThemeProvider`/`useTheme` from @fintech-portfolio/design-tokens
+      When `toggleTheme` or `setTheme('dark')` is called
+      Then `data-theme` is set on `document.documentElement` and persisted to localStorage
+      And every `--cl-*` token resolves to its dark-theme value across the whole tree
+    status: 'active'
+  - id: 'AC-03'
+    description: |
+      Given icons.source.json (a copy of clearline-icons.json) as the input
+      When I run `pnpm --filter @fintech-portfolio/icons generate`
+      Then libs/icons/src/icon-registry.ts is regenerated with all 45 icon definitions and an `IconName` union
+      And `<Icon name="..." />` only accepts a name from that union at compile time
+    status: 'active'
+  - id: 'AC-04'
+    description: |
+      Given a Tailwind-processed stylesheet imports libs/design-tokens' theme.css
+      When a component uses a utility class like `bg-cl-accent` or `text-cl-pos-weak`
+      Then the compiled CSS resolves it to `var(--cl-accent)` / `var(--cl-pos-weak)`, not a hardcoded hex value
+    status: 'active'
+  - id: 'AC-05'
+    description: |
+      Given `<Icon name="unknown-name" />` is never reachable (TypeScript rejects it at compile time)
+      When an icon name is nonetheless missing from the registry at runtime (defensive case)
+      Then the Icon component reserves the requested size as empty space rather than throwing
+    status: 'active'
+
+# Technical Notes
+technical_notes: |
+  Both packages are generated from a JSON file kept inside the package itself (tokens.source.json,
+  icons.source.json — each a verbatim copy of the Claude Design export), never hand-edited output.
+  design-tokens' generate script also runs Prettier programmatically (via `prettier.resolveConfig`)
+  on its own output so regenerated files always pass `format:check`. ThemeProvider mirrors the
+  `applyTheme()` mechanism every source `.dc.html` file used (toggling a `data-theme` attribute the
+  `--cl-*` variables key off of), but is now a real React context instead of imperative DOM writes.
+  Both libs are real Vite library-mode builds (`vite build`, `vite-plugin-dts`) — not just
+  TypeScript passthrough like the pre-existing mock-backend/contracts libs — since they're meant
+  to be genuinely reusable/publishable, unlike those lower-level packages.
+
+# Edge Cases
+edge_cases: |
+  - Regenerating tokens/icons must be idempotent and Prettier-clean without a manual format pass
+  - useTheme() throws when called outside a ThemeProvider (fails loudly, not silently)
+  - An icon name absent from the registry must not crash rendering (reserves layout space instead)
+  - Cross-package TypeScript project references (icons/design-tokens consumed as raw source by ui)
+    require `references` in tsconfig.json and running lint/type-check/test/build via Nx (which
+    resolves `dependsOn: ["^build"]` first) rather than invoking `tsc`/`vitest` directly — direct
+    invocation fails with TS6305 until dependencies have been built at least once.
+
+# Implementation Status
+
+✅ Implemented: 2026-06-30
+📁 Files created:
+  - libs/design-tokens/tokens.source.json, scripts/generate-tokens.mjs, src/theme.css, src/tokens.ts, src/theme-provider.tsx, src/index.ts, vitest.config.mts
+  - libs/icons/icons.source.json, scripts/generate-icons.mjs, src/icon-registry.ts, src/Icon.tsx, src/index.ts, vite.config.mts, vitest.config.mts
+🧪 Test coverage: 7 tests (4 ThemeProvider, 3 Icon), all passing via `nx run design-tokens:test` / `nx run icons:test`
+📖 Storybook story: N/A (tokens/icons have no story of their own; consumed by every other component's story)

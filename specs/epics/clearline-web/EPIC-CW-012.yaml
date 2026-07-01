@@ -1,0 +1,28 @@
+epic_id: 'EPIC-CW-012'
+title: 'AI Spend Insights (Streaming)'
+app: 'clearline-web'
+feature_area: 'analytics'
+status: 'APPROVED'
+approved_date: '2026-06-30'
+created_date: '2026-06-30'
+source_reference: 'clearline-user-stories-gherkin.md — Section 12: AI Spend Insights (Streaming)'
+package_location: 'apps/clearline-web/packages/analytics/'
+deployment_unit: 'apps/clearline-web/'
+tdr_reference: 'TDR-CW-WEB-001 (not yet created — app baseline TDR pending; inherits TDR-PLATFORM-001 in the interim)'
+depends_on_epics: ['EPIC-CW-009']
+extends_stories: []
+reuses_from: []
+has_ui: true
+ui_library: '@fintech-portfolio/ui'
+changes:
+  adds:
+    - story_id: 'US-CW-018'
+      story_path: '/specs/user-stories/clearline-web/US-CW-018.yaml'
+      title: 'Streaming AI Spend Insights'
+  updates: []
+  deprecates: []
+  removes: []
+notes: >
+  Introduces token-by-token streaming AI spend insights with cancellation, interrupted-stream
+  recovery, rate-limit handling, uncertainty caveats, and refusal handling, while ensuring the
+  underlying model API key is never exposed to the client.

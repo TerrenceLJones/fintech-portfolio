@@ -1,0 +1,34 @@
+epic_id: 'EPIC-CW-004'
+title: 'Vendor Payments & Transfers'
+app: 'clearline-web'
+feature_area: 'payments'
+status: 'APPROVED'
+approved_date: '2026-06-30'
+created_date: '2026-06-30'
+source_reference: 'clearline-user-stories-gherkin.md — Section 4: Vendor Payments & Transfers'
+package_location: 'apps/clearline-web/packages/payments/'
+deployment_unit: 'apps/clearline-web/'
+tdr_reference: 'TDR-CW-WEB-001 (not yet created — app baseline TDR pending; inherits TDR-PLATFORM-001 in the interim)'
+depends_on_epics: ['EPIC-CW-003']
+extends_stories: []
+reuses_from: []
+has_ui: true
+ui_library: '@fintech-portfolio/ui'
+changes:
+  adds:
+    - story_id: 'US-CW-007'
+      story_path: '/specs/user-stories/clearline-web/US-CW-007.yaml'
+      title: 'Vendor Payment Submission & Idempotency'
+    - story_id: 'US-CW-008'
+      story_path: '/specs/user-stories/clearline-web/US-CW-008.yaml'
+      title: 'Payment Validation, Limits & Recipient Checks'
+    - story_id: 'US-CW-009'
+      story_path: '/specs/user-stories/clearline-web/US-CW-009.yaml'
+      title: 'Payment Compliance Holds, Reversals & Status Handling'
+  updates: []
+  deprecates: []
+  removes: []
+notes: >
+  Covers the full vendor payment submission lifecycle from the "Vendor payment submission" Gherkin feature:
+  idempotent submission and retry handling, pre-submission validation against balance/limits/recipient checks,
+  and post-submission compliance holds, reversals, and unknown-status handling.

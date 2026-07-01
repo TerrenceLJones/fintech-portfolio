@@ -550,6 +550,72 @@ infrastructure_providers:
     cost_estimate_monthly_usd: 0
 
 # ---------------------------------------------------------------------------
+# Mock backend architecture (GraphQL addendum)
+# ---------------------------------------------------------------------------
+# Closes a gap this TDR itself flagged: technology_decisions.api_style_and_
+# graphql_client.mock_backend_gap_flag and validation.open_items_for_human_
+# review both referenced this section before it existed. Not a new researched
+# decision — it applies mock-backend-architecture.md's already-decided
+# services-first/handlers-second pattern (TDR-PLATFORM-001 ADR-006) to the
+# GraphQL client choice made above, and records where that pattern's existing
+# REST-only handler inventory needs one net-new file.
+mock_backend_architecture:
+  inherits_from: 'mock-backend-architecture.md (services-first, handlers-second) + TDR-PLATFORM-001.shared_mock_backend_strategy (ADR-006: no hosted backend, no Pact)'
+  handler_layer:
+    existing_pattern: >
+      mock-backend-architecture.md documents REST-shaped MSW v2 handlers only
+      (libs/mock-backend/handlers/{transfers,ledger,payments,websocket}.handlers.ts),
+      each a thin HTTP adapter in front of a real, stateful TypeScript service
+      (LedgerService, IdempotencyService, PaymentIntentService per its worked example).
+    gap_closed_by_this_section: >
+      This app's api_style_and_graphql_client decision (GraphQL + Apollo Client) means
+      the data-dense dashboard views are queried via GraphQL, not REST — a case the
+      addendum's handler inventory doesn't cover. Add
+      libs/mock-backend/handlers/dashboard.graphql.handlers.ts using MSW v2's
+      graphql.query/graphql.mutation link. It follows the identical services-first
+      pattern: the handler resolves a query/mutation by calling into the same
+      LedgerService/PaymentIntentService/ApprovalService instances the REST handlers
+      already use, never a second, parallel fake data source — one source of mock
+      state regardless of whether a given screen queries through Apollo or a
+      REST-style fetch.
+    apollo_cache_note: >
+      Apollo Client's normalized cache keys entities by __typename + id; MSW's
+      GraphQL mock resolvers must include __typename on every returned object (see
+      technology_decisions.api_style_and_graphql_client.implementation_note) or cache
+      normalization silently fails and the UI won't update after a mutation.
+    client_agnosticism_confirmed: >
+      MSW v2's GraphQL support is documented as client-agnostic (Apollo, Relay, and
+      urql equally supported per mswjs.io/docs/graphql/), so this handler file needs
+      no Apollo-specific MSW configuration beyond the __typename note above.
+  schema_and_codegen:
+    schema_location: 'libs/contracts (as SDL schema file(s), once authored)'
+    codegen_tool: >
+      GraphQL Code Generator, Apollo 4 "client preset" — see
+      technology_decisions.api_style_and_graphql_client.implementation_note; not the
+      older typescript-react-apollo generated-hooks preset, which Apollo Client 4.0
+      broke compatibility with.
+    generated_output_convention: >
+      Codegen output belongs in a dedicated libs/contracts/src/generated/ subfolder,
+      committed to git and produced by a package.json "generate" script — matching
+      the committed-generated-output convention already used by libs/design-tokens
+      and libs/icons (a generate script writes tracked files, reviewed like normal
+      code) — kept separate from hand-written contract types (e.g. Money in
+      libs/contracts/src/money.ts) so neither needs untangling from the other later.
+    status: >
+      Not yet implemented — no GraphQL schema exists yet. Schema authoring should
+      follow the domain libs (ledger, payments, approvals) it describes, per this
+      project's own build sequencing, rather than precede them and risk a schema
+      that doesn't match the real domain shapes once built.
+  websocket_layer:
+    note: >
+      Unaffected by the GraphQL decision — the card-transaction feed continues to use
+      MSW v2's ws.link WebSocket interception exactly as documented in
+      mock-backend-architecture.md's "WebSocket mocking for real-time feeds" section,
+      including its fault-injection hooks (injectSequenceGap, injectDisconnect,
+      injectStaleFeed). GraphQL subscriptions were not selected as this feed's
+      transport; WebSocket + ws.link stands.
+
+# ---------------------------------------------------------------------------
 # Cost analysis
 # ---------------------------------------------------------------------------
 cost_analysis:
@@ -610,7 +676,7 @@ validation:
     open_items_for_human_review:
       - "GraphQL client: Apollo Client was chosen over urql on ecosystem-recognition grounds, but direct confirmation of Ramp/Brex/Mercury's actual internal client choice was not found — see technology_decisions.api_style_and_graphql_client.human_review_flag."
       - "The project plan's claim that Stately/XState docs 'explicitly position payment-authorization flows... as canonical use cases' could not be verified from official sources — softened in this TDR; see technology_decisions.workflow_state_modeling.plan_claim_correction."
-      - "mock-backend-architecture.md's documented handler inventory is REST-only and doesn't yet include a GraphQL handler file for the dashboard queries implied by the api_style decision — flagged as an addendum gap to close, not a contradiction; see mock_backend_architecture.handler_layer."
+      - "mock-backend-architecture.md's documented handler inventory is REST-only and doesn't yet include a GraphQL handler file for the dashboard queries implied by the api_style decision. The concrete recommendation (a new dashboard.graphql.handlers.ts, services-first per the existing pattern) is now documented in mock_backend_architecture.handler_layer below — that closes the documentation gap this TDR previously left dangling (three 'see mock_backend_architecture below' references with no such section). The code itself is still unwritten, since no mock-backend handlers of any kind exist yet — not a contradiction, just not yet implemented."
       - 'Vite version pin (7.3.x, conservative) vs. Vite 8.x (newer, Rolldown-based) is a judgment call between stability margin and newer-tooling signal — either is technically valid.'
   no_contradiction_with_plan_caveats:
     status: confirmed

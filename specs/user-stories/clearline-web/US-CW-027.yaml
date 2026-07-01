@@ -1,0 +1,135 @@
+# User Story Registry Record
+# User stories are the source of truth for what the application supports.
+# Epics declare changes to these records via their changes.adds/updates/deprecates/removes sections.
+
+# Identity
+id: 'US-CW-027'
+app: 'clearline-web'
+feature_area: 'core'
+title: 'Shared money utilities — minor-unit conversion & currency-aware formatting'
+
+# Lifecycle status
+status: 'IMPLEMENTED'
+story_points: 2
+dependencies: ['US-CW-023']
+
+# Provenance — immutable after creation
+created_by_epic: 'EPIC-CW-000'
+created_date: '2026-07-01'
+
+# Provenance history — append-only record of every epic that has touched this story
+history:
+  - epic_id: 'EPIC-CW-000'
+    action: 'created'
+    date: '2026-07-01'
+  - epic_id: 'EPIC-CW-000'
+    action: 'approved'
+    date: '2026-07-01'
+  - epic_id: 'EPIC-CW-000'
+    action: 'implemented'
+    date: '2026-07-01'
+
+# Status timestamps — set when status transitions occur
+approved_date: '2026-07-01'
+implementation_date: '2026-07-01'
+deprecated_date: null
+removed_date: null
+
+# User Story
+user_story:
+  persona: 'clearline-web engineer integrating money into any feature epic'
+  capability: 'a shared `Money` type in `@fintech-portfolio/contracts`, a `toMajorUnits` conversion in the new `@fintech-portfolio/money` (libs/util/money), and a currency-aware `formatMoney` in `@fintech-portfolio/ui`'
+  business_value: 'minor-unit-to-major-unit conversion and currency display formatting are correct for any ISO 4217 currency and defined exactly once, instead of every feature epic hand-rolling the same math and risking a hardcoded "divide by 100" assumption that silently misconverts 0-decimal currencies (JPY) or 3-decimal currencies (BHD)'
+  description: |
+    As a clearline-web engineer
+    I want a Money type in contracts, a toMajorUnits conversion in a dedicated util lib, and a currency-aware formatMoney in ui
+    So that converting and displaying money is correct per-currency and never duplicated or drifted between the API-shape layer, the domain layer, and the UI layer
+
+# Acceptance Criteria
+acceptance_criteria:
+  - id: 'AC-01'
+    description: |
+      Given a `Money` value `{ amountMinorUnits, currency: 'USD' }`
+      When `toMajorUnits` is called
+      Then it divides by 100 (USD has 2 minor-unit decimal places)
+    status: 'active'
+  - id: 'AC-02'
+    description: |
+      Given a `Money` value with `currency: 'JPY'`
+      When `toMajorUnits` is called
+      Then it does not divide at all (JPY has 0 minor-unit decimal places)
+    status: 'active'
+  - id: 'AC-03'
+    description: |
+      Given a `Money` value with `currency: 'BHD'`
+      When `toMajorUnits` is called
+      Then it divides by 1000 (BHD has 3 minor-unit decimal places)
+    status: 'active'
+  - id: 'AC-04'
+    description: |
+      Given `formatMoney(amount)` called with no `currency` argument
+      When rendered
+      Then it defaults to USD and matches the exact prior output — no regression for existing
+      MoneyDisplay/BudgetGauge/DataTable/TransactionRow/VirtualCard callers
+    status: 'active'
+  - id: 'AC-05'
+    description: |
+      Given `formatMoney(amount, currency)` called with a non-USD currency
+      When rendered
+      Then `Intl.NumberFormat` determines the correct symbol and decimal places for that currency,
+      rather than the library assuming 2 decimal places universally
+    status: 'active'
+
+# Technical Notes
+technical_notes: |
+  Split across three packages by what each thing actually is, not just "money-related":
+  `@fintech-portfolio/contracts` holds only the `Money` interface — the wire *shape* (what an
+  amount looks like in a request/response), kept as a pure type with zero hand-written runtime
+  logic so the package stays safely regenerable from a schema, matching contracts' documented
+  scope of "request/response shapes, status codes, error formats" only. `@fintech-portfolio/money`
+  (`libs/util/money`) holds `toMajorUnits` — the actual conversion *logic* that operationalizes
+  that shape, which must produce identical results everywhere it's used (the mock backend's
+  ledger, any UI consumer) since there's no Pact-style contract test to catch drift between a
+  real backend and this frontend (ADR-006). It derives each currency's minor-unit exponent from
+  `Intl.NumberFormat(...).resolvedOptions().maximumFractionDigits` rather than a hand-maintained
+  ISO 4217 table. `@fintech-portfolio/ui`'s `formatMoney` takes neither of these as a runtime
+  dependency: it only ever receives an already-converted major-unit float plus a currency code,
+  and `Intl.NumberFormat`'s `style: 'currency'` handles correct symbol/decimal-place *display* on
+  its own — display formatting isn't part of the wire contract (two frontends could format the
+  same value differently and neither would be "wrong"), so it has no business living in either
+  contracts or the util lib. Threading a `currency` prop through the individual `libs/ui`
+  components (MoneyDisplay, BudgetGauge, DataTable, etc.) is deliberately out of scope here —
+  `formatMoney`'s `currency` parameter defaults to `'USD'`, so every existing caller keeps working
+  unchanged. That prop-threading is follow-up work for whenever a real multi-currency consumer
+  exists. `libs/util/money` is physically nested (not flat like the other libs) to match the
+  standalone Clearline plan's sketched `libs/util/*` grouping ahead of `libs/domain/*`,
+  `libs/data-access/*`, and `libs/feature/*` being introduced later.
+
+# Edge Cases
+edge_cases: |
+  - An unrecognized/invalid ISO 4217 currency code throws inside `toMajorUnits` (native
+    `Intl.NumberFormat` behavior, not specially caught or handled)
+  - Some currencies (e.g. BHD) render with a non-breaking space (U+00A0), not a regular space,
+    between the currency-code prefix and the amount — significant for any future exact-string
+    test assertions in `formatMoney`
+  - `formatMoney`'s sign-dropping behavior (`Math.abs`) is unchanged by this work; callers still
+    indicate credit/debit separately rather than relying on a `-` prefix
+  - `libs/contracts` has no test target at all after this change — a pure-types package has
+    nothing to unit test; `libs/util/money` is where the behavior-bearing tests live
+
+# Implementation Status
+
+✅ Implemented: 2026-07-01
+📁 Files created:
+  - libs/util/money/{package.json,tsconfig.json,vitest.config.mts}
+  - libs/util/money/src/{to-major-units.ts,to-major-units.test.ts,index.ts}
+  - libs/ui/src/lib/format-money.test.ts
+📁 Files modified:
+  - libs/contracts/src/money.ts (now a pure `Money` interface, no runtime logic)
+  - libs/contracts/package.json (removed the `test` script — nothing left to test)
+  - libs/ui/src/lib/format-money.ts (currency-aware via Intl.NumberFormat)
+  - tsconfig.base.json (added the `@fintech-portfolio/money` path)
+📁 Files removed:
+  - libs/contracts/src/money.test.ts, libs/contracts/vitest.config.mts (moved to libs/util/money)
+🧪 Test coverage: 3 tests in libs/util/money (to-major-units.test.ts), 4 tests in libs/ui
+  (format-money.test.ts) — 84 total ui tests passing, all via `nx run money:test` / `nx run ui:test`

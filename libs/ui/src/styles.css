@@ -1,0 +1,30 @@
+@import 'tailwindcss';
+@import '@fintech-portfolio/design-tokens/src/theme.css';
+
+/* Geist / Geist Mono must be loaded by the consuming app; this library only
+   declares the font-family tokens, not the @font-face/link tags. */
+body {
+  font-family: var(--font-cl-ui);
+}
+
+@keyframes cl-shimmer {
+  0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: 320px 0;
+  }
+}
+
+/* Loading skeleton for monetary values — sized to the final glyphs by the
+   component, never a flash of $0.00 (see MoneyDisplay's `state="loading"`). */
+.cl-skeleton {
+  background-image: linear-gradient(
+    90deg,
+    var(--cl-surface-2) 25%,
+    var(--cl-inset) 50%,
+    var(--cl-surface-2) 75%
+  );
+  background-size: 320px 100%;
+  animation: cl-shimmer 1.4s linear infinite;
+}

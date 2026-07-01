@@ -1,0 +1,29 @@
+epic_id: 'EPIC-CW-011'
+title: 'AI Invoice Coding & AP Automation'
+app: 'clearline-web'
+feature_area: 'core'
+status: 'APPROVED'
+approved_date: '2026-06-30'
+created_date: '2026-06-30'
+source_reference: 'clearline-user-stories-gherkin.md — Section 11: AI Invoice Coding & AP Automation'
+package_location: 'apps/clearline-web/'
+deployment_unit: 'apps/clearline-web/'
+tdr_reference: 'TDR-CW-WEB-001 (not yet created — app baseline TDR pending; inherits TDR-PLATFORM-001 in the interim)'
+depends_on_epics: ['EPIC-CW-003']
+extends_stories: []
+reuses_from: []
+has_ui: true
+ui_library: '@fintech-portfolio/ui'
+changes:
+  adds:
+    - story_id: 'US-CW-017'
+      story_path: '/specs/user-stories/clearline-web/US-CW-017.yaml'
+      title: 'AI-Assisted Invoice Coding & Three-Way Match'
+  updates: []
+  deprecates: []
+  removes: []
+notes: >
+  Introduces AI-assisted invoice extraction and GL coding with confidence-based review gating, automated
+  three-way matching against purchase orders and goods receipts with exception routing, and a manual-entry
+  fallback to ensure AP processing is never blocked by AI service outages, while keeping ledger posting
+  strictly gated on human approval.

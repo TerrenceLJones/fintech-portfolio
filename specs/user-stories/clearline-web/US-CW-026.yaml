@@ -1,0 +1,121 @@
+# User Story Registry Record
+# User stories are the source of truth for what the application supports.
+# Epics declare changes to these records via their changes.adds/updates/deprecates/removes sections.
+
+# Identity
+id: 'US-CW-026'
+app: 'clearline-web'
+feature_area: 'core'
+title: 'Storybook catalog & end-to-end acceptance check'
+
+# Lifecycle status
+status: 'IMPLEMENTED'
+story_points: 3
+dependencies: ['US-CW-025']
+
+# Provenance — immutable after creation
+created_by_epic: 'EPIC-CW-000'
+created_date: '2026-06-30'
+
+# Provenance history — append-only record of every epic that has touched this story
+history:
+  - epic_id: 'EPIC-CW-000'
+    action: 'created'
+    date: '2026-06-30'
+  - epic_id: 'EPIC-CW-000'
+    action: 'approved'
+    date: '2026-06-30'
+  - epic_id: 'EPIC-CW-000'
+    action: 'implemented'
+    date: '2026-06-30'
+
+# Status timestamps — set when status transitions occur
+approved_date: '2026-06-30'
+implementation_date: '2026-06-30'
+deprecated_date: null
+removed_date: null
+
+# User Story
+user_story:
+  persona: 'clearline-web engineer building any feature epic'
+  capability: 'a browsable Storybook catalog of all 26 components with a light/dark toggle and an a11y addon, plus one composed showcase story that assembles the library into a full screen matching the original migrated reference design'
+  business_value: 'the library is verifiable as a whole, not just as isolated units — a reviewer can visually confirm every component in both themes and check that composing them together reproduces the actual target screen, before any feature epic starts consuming the library'
+  description: |
+    As a clearline-web engineer
+    I want every component documented in Storybook with a light/dark toggle and an a11y addon, plus a composed story that reassembles the full "Spend Dashboard" screen from library components
+    So that I can visually verify the whole library at once and trust that composing these pieces reproduces the originally designed screen, instead of only trusting per-component unit tests
+
+# Acceptance Criteria
+acceptance_criteria:
+  - id: 'AC-01'
+    description: |
+      Given `nx run ui:storybook`
+      When it starts
+      Then every one of the 26 components (foundations, atoms, molecules, organisms, decorators)
+      has at least one story, organized into matching title groups (Foundations/*, Atoms/*,
+      Molecules/*, Organisms/*, Decorators/*)
+    status: 'active'
+  - id: 'AC-02'
+    description: |
+      Given any story
+      When the toolbar theme toggle is switched between light and dark
+      Then `withThemeByDataAttribute` sets `data-theme` on the preview root and every component
+      re-renders using the corresponding `--cl-*` token values with no unstyled flash
+    status: 'active'
+  - id: 'AC-03'
+    description: |
+      Given any story
+      When the addon-a11y panel runs
+      Then it reports against the rendered story with no additional per-story configuration
+      required
+    status: 'active'
+  - id: 'AC-04'
+    description: |
+      Given the `SpendDashboard` showcase story's `Loaded` variant
+      When compared side by side with `Clearline - 09 Spend Dashboard (Migrated).dc.html`
+      Then the composed layout (AppShell + BudgetGauge + DataTable + AIInsightCard, etc.) matches
+      the migrated reference using only already-built library components — no one-off markup
+    status: 'active'
+  - id: 'AC-05'
+    description: |
+      Given the `SpendDashboard` showcase story's `EmptyAndStale` variant
+      When rendered
+      Then it exercises the library's empty/stale-data states (EmptyState, MoneyDisplay loading
+      skeleton) in the same composed layout, rather than only the happy path
+    status: 'active'
+
+# Technical Notes
+technical_notes: |
+  `.storybook/main.ts` uses `@storybook/react-vite` with `addon-a11y`, `addon-docs`, and
+  `addon-themes`; `.storybook/preview.tsx` wires `withThemeByDataAttribute` (from
+  addon-themes) to toggle `data-theme` on the preview root for light/dark, matching the
+  same mechanism `AppShell`/`ThemeProvider` use at runtime — no separate Storybook-only
+  theming path. `src/showcase/SpendDashboard.stories.tsx` is the only story file that
+  composes across multiple tiers at once (foundations through organisms) and stands in for
+  a dedicated end-to-end/integration test, since no consuming app exists yet to host one.
+
+# Edge Cases
+edge_cases: |
+  - Decorator components (AppShell, WindowFrame, PhoneFrame) are documented as dev/layout
+    utilities in their own Decorators/* group, not mixed into Organisms/*, so the catalog
+    doesn't imply they're primary product exports
+  - The showcase story's `EmptyAndStale` variant is a distinct story, not a Storybook
+    control/knob on `Loaded`, so both states are independently reachable and linkable
+  - Storybook build (`nx run ui:build-storybook` equivalent via `storybook build`) succeeds
+    standalone with no running dev server, verifying the catalog is deployable as a static
+    artifact
+
+# Implementation Status
+
+✅ Implemented: 2026-06-30
+📁 Files created:
+  - libs/ui/.storybook/main.ts
+  - libs/ui/.storybook/preview.tsx
+  - libs/ui/src/showcase/SpendDashboard.stories.tsx
+  - README.md updates: Storybook run command, Node version section, "always use Nx"
+    warning, regenerate-tokens/regenerate-icons subsection
+🧪 Test coverage: none additional (this story is verified visually/manually, per the plan's
+  "Storybook — visually confirm" verification step, not via automated tests)
+📖 Storybook story: `Showcase/SpendDashboard` with `Loaded` and `EmptyAndStale` stories, plus
+  the full 26-component catalog across Foundations/*, Atoms/*, Molecules/*, Organisms/*, and
+  Decorators/*

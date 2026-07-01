@@ -1,0 +1,107 @@
+/*
+ * GENERATED FILE — do not edit by hand.
+ * Source: tokens.source.json (a copy of clearline-tokens.json).
+ * Regenerate with: pnpm --filter @fintech-portfolio/design-tokens generate
+ */
+
+:root {
+  --cl-bg: #f5f6f8;
+  --cl-surface: #ffffff;
+  --cl-surface-2: #f0f2f5;
+  --cl-inset: #f7f8fa;
+  --cl-border: #e4e7eb;
+  --cl-border-2: #d3d8df;
+  --cl-text: #161a20;
+  --cl-text-2: #586070;
+  --cl-text-3: #8b929e;
+  --cl-accent: #3b6cf6;
+  --cl-accent-2: #2f5ce0;
+  --cl-accent-weak: #ecf1fe;
+  --cl-accent-text: #2a55cc;
+  --cl-pos: #15805a;
+  --cl-pos-weak: #e4f3eb;
+  --cl-neg: #c0392b;
+  --cl-neg-weak: #fbeae8;
+  --cl-pending: #2a55cc;
+  --cl-pending-weak: #ecf1fe;
+  --cl-warn: #9a5b00;
+  --cl-warn-weak: #fbf0db;
+  --cl-crit: #b3231b;
+  --cl-crit-weak: #fce9e7;
+  --cl-paid: #0e6e8c;
+  --cl-paid-weak: #e3f3f7;
+  --cl-recon: #5a3ec8;
+  --cl-recon-weak: #efebfd;
+  --cl-focus: #3b6cf6;
+}
+
+[data-theme='dark'] {
+  --cl-bg: #0b0d11;
+  --cl-surface: #14171d;
+  --cl-surface-2: #1b1f27;
+  --cl-inset: #11141a;
+  --cl-border: #272c35;
+  --cl-border-2: #363c47;
+  --cl-text: #e8ebf0;
+  --cl-text-2: #a0a8b5;
+  --cl-text-3: #6c7480;
+  --cl-accent: #5b85f8;
+  --cl-accent-2: #7398fa;
+  --cl-accent-weak: #172240;
+  --cl-accent-text: #9fb8fb;
+  --cl-pos: #4ec78a;
+  --cl-pos-weak: #11271d;
+  --cl-neg: #f1746c;
+  --cl-neg-weak: #2a1411;
+  --cl-pending: #9fb8fb;
+  --cl-pending-weak: #172240;
+  --cl-warn: #e2ab43;
+  --cl-warn-weak: #291f0e;
+  --cl-crit: #f1746c;
+  --cl-crit-weak: #2a1411;
+  --cl-paid: #43b8d6;
+  --cl-paid-weak: #0c2730;
+  --cl-recon: #a48bf5;
+  --cl-recon-weak: #1d1640;
+  --cl-focus: #5b85f8;
+}
+
+@theme inline {
+  --color-cl-bg: var(--cl-bg);
+  --color-cl-surface: var(--cl-surface);
+  --color-cl-surface-2: var(--cl-surface-2);
+  --color-cl-inset: var(--cl-inset);
+  --color-cl-border: var(--cl-border);
+  --color-cl-border-2: var(--cl-border-2);
+  --color-cl-text: var(--cl-text);
+  --color-cl-text-2: var(--cl-text-2);
+  --color-cl-text-3: var(--cl-text-3);
+  --color-cl-accent: var(--cl-accent);
+  --color-cl-accent-2: var(--cl-accent-2);
+  --color-cl-accent-weak: var(--cl-accent-weak);
+  --color-cl-accent-text: var(--cl-accent-text);
+  --color-cl-pos: var(--cl-pos);
+  --color-cl-pos-weak: var(--cl-pos-weak);
+  --color-cl-neg: var(--cl-neg);
+  --color-cl-neg-weak: var(--cl-neg-weak);
+  --color-cl-pending: var(--cl-pending);
+  --color-cl-pending-weak: var(--cl-pending-weak);
+  --color-cl-warn: var(--cl-warn);
+  --color-cl-warn-weak: var(--cl-warn-weak);
+  --color-cl-crit: var(--cl-crit);
+  --color-cl-crit-weak: var(--cl-crit-weak);
+  --color-cl-paid: var(--cl-paid);
+  --color-cl-paid-weak: var(--cl-paid-weak);
+  --color-cl-recon: var(--cl-recon);
+  --color-cl-recon-weak: var(--cl-recon-weak);
+  --color-cl-focus: var(--cl-focus);
+  --radius-cl-sm: 5px;
+  --radius-cl-md: 7px;
+  --radius-cl-lg: 8px;
+  --radius-cl-xl: 11px;
+  --radius-cl-2xl: 12px;
+  --radius-cl-3xl: 14px;
+  --radius-cl-pill: 9999px;
+  --font-cl-ui: 'Geist', system-ui, sans-serif;
+  --font-cl-mono: 'Geist Mono', monospace;
+}
