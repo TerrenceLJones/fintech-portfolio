@@ -1,0 +1,37 @@
+import { Meta, Stories } from '@storybook/addon-docs/blocks';
+import * as AppShellStories from './AppShell.stories';
+
+<Meta of={AppShellStories} />
+
+# AppShell
+
+A layout-route component: mount it on a parent `<Route>` and nest page routes under it, so each
+page renders into its `<Outlet/>` with zero per-page chrome-wrapping. Renders the header (logo,
+role-scoped navigation, and the Light/Dark toggle) and the content area in one pass. Assumes a
+`<ThemeProvider>` ancestor mounted once at the app root, rather than owning one itself.
+
+## User story
+
+**US-CW-025 — Component library — organisms & decorators**
+
+As a clearline-web engineer, I want DataTable/ApprovalActionBar/BulkActionResult/EmptyState and
+the AppShell decorators available as typed React components, so that I
+can assemble a full screen (selection, sorting, approval flows, partial-failure summaries) by
+composing already-built pieces instead of writing table selection/sort logic or approval-limit
+disabling logic from scratch in each feature epic.
+
+## Acceptance criteria
+
+- AC-01 — AC-02 — DataTable's select-all toggle and vendor-column sort.
+- AC-03 — ApprovalActionBar disables Approve with a stated reason when `canApprove` is unset.
+- AC-04 — BulkActionResult excludes failures from the committed count and lists each reason.
+- **AC-05 — AppShell.** Given `<AppShell>` wrapping any page content, with a `<ThemeProvider>`
+  mounted once at the app root, when rendered, then it renders the sticky header with a Light/Dark
+  toggle backed by that shared theme state, and requires zero additional per-page token setup.
+
+### Edge case covered here
+
+The theme toggle affects the whole subtree via `data-theme` on `document.documentElement`, not
+just component-local state — verified against the document element itself, not a prop.
+
+<Stories />

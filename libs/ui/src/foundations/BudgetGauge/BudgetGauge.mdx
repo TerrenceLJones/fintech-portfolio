@@ -1,0 +1,34 @@
+import { Meta, Stories } from '@storybook/addon-docs/blocks';
+import * as BudgetGaugeStories from './BudgetGauge.stories';
+
+<Meta of={BudgetGaugeStories} />
+
+# BudgetGauge
+
+Shows used-vs-total spend against a label as a filled bar plus a text readout, banding color and
+icon by how close (or over) the ratio is.
+
+## User story
+
+**US-CW-023 — Component library — atoms & foundations**
+
+As a clearline-web engineer, I want StatusBadge/MoneyDisplay/BudgetGauge and the 8 Tier-1 atoms
+available as typed React components, so that I never hand-roll a button, badge, or money value
+and risk missing an accessibility or formatting rule the design system already solved.
+
+## Acceptance criteria
+
+- AC-01 — StatusBadge always shows an icon and text label alongside its color.
+- AC-02 — AC-03 — MoneyDisplay's loading skeleton and derived-value chip.
+- **AC-04 — BudgetGauge.** Given BudgetGauge at any used/total ratio, when it renders, then the
+  percentage and any overage amount are spelled out in text (e.g. "104% — $2,000.00 over"), with
+  color reinforcing rather than carrying the message.
+- AC-05 — AC-07 cover the remaining Tier-1 atoms (Checkbox, Button, TextField) in this same
+  story; see their own docs pages for the full text.
+
+### Edge cases covered here
+
+Exactly 80% (the warning-threshold boundary) and over 100% (critical band plus overage math) are
+both exercised as distinct stories.
+
+<Stories />

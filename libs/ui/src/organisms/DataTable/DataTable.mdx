@@ -1,0 +1,37 @@
+import { Meta, Stories } from '@storybook/addon-docs/blocks';
+import * as DataTableStories from './DataTable.stories';
+
+<Meta of={DataTableStories} />
+
+# DataTable
+
+A selectable, sortable table of ledger rows — composes Checkbox (Tier 1) and StatusBadge
+(foundations) rather than reimplementing either.
+
+## User story
+
+**US-CW-025 — Component library — organisms & decorators**
+
+As a clearline-web engineer, I want DataTable/ApprovalActionBar/BulkActionResult/EmptyState and
+the AppShell decorators available as typed React components, so that I
+can assemble a full screen (selection, sorting, approval flows, partial-failure summaries) by
+composing already-built pieces instead of writing table selection/sort logic or approval-limit
+disabling logic from scratch in each feature epic.
+
+## Acceptance criteria
+
+- **AC-01 — DataTable.** Given DataTable with multiple rows, when I click the header checkbox,
+  then all rows toggle selected/deselected together, and a selection action bar appears showing
+  the count and Approve/Export actions.
+- **AC-02 — DataTable.** Given DataTable, when I click the "Vendor" column header, then the rows
+  re-sort by vendor name, toggling ascending/descending on repeated clicks.
+- AC-03 — ApprovalActionBar disables Approve with a stated reason when `canApprove` is unset.
+- AC-04 — BulkActionResult excludes failures from the committed count and lists each reason.
+- AC-05 — AppShell owns theme state and requires zero additional per-page token setup.
+
+### Edge case covered here
+
+The "select all" header checkbox shows an indeterminate state when some (not all) rows are
+selected — not merely checked or unchecked.
+
+<Stories />

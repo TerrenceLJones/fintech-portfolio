@@ -1,0 +1,30 @@
+import { Meta, Stories } from '@storybook/addon-docs/blocks';
+import * as AIInsightCardStories from './AIInsightCard.stories';
+
+<Meta of={AIInsightCardStories} />
+
+# AIInsightCard
+
+Surfaces a model-generated insight (title, body, confidence) in `info`/`anomaly` tone, with up
+to two independent actions.
+
+## User story
+
+**US-CW-024 — Component library — molecules**
+
+As a clearline-web engineer, I want Modal/ConfirmationDialog and the other 6 Tier-2 molecules
+available as typed React components built on Radix Dialog, so that every irreversible-action
+confirmation in the app gets the same focus-trapped, Escape-cancels, countdown-gated behavior for
+free, instead of each feature epic re-implementing dialog accessibility by hand.
+
+## Acceptance criteria
+
+- AC-01 — Modal exposes `role="dialog"`, traps focus, and closes via Escape/Cancel.
+- AC-02 — ConfirmationDialog's `countdown` gates the confirm button and re-arms on every open.
+- AC-03 — VirtualCard hides the derived remaining-limit figure entirely when frozen.
+- AC-04 — Timeline shows before → after diffs with an arrow between them.
+- **AC-05 — AIInsightCard.** Given AIInsightCard with `tone="anomaly"`, when rendered with
+  `actionPrimary`/`actionSecondary`, then both actions render and independently invoke their own
+  callbacks.
+
+<Stories />

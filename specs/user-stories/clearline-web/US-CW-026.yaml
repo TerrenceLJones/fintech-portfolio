@@ -96,7 +96,7 @@ technical_notes: |
 
 # Edge Cases
 edge_cases: |
-  - Decorator components (AppShell, WindowFrame, PhoneFrame) are documented as dev/layout
+  - Decorator components (AppShell) are documented as dev/layout
     utilities in their own Decorators/* group, not mixed into Organisms/*, so the catalog
     doesn't imply they're primary product exports
   - The showcase story's `EmptyAndStale` variant is a distinct story, not a Storybook
@@ -112,10 +112,3 @@ edge_cases: |
   - libs/ui/.storybook/main.ts
   - libs/ui/.storybook/preview.tsx
   - libs/ui/src/showcase/SpendDashboard.stories.tsx
-  - README.md updates: Storybook run command, Node version section, "always use Nx"
-    warning, regenerate-tokens/regenerate-icons subsection
-🧪 Test coverage: none additional (this story is verified visually/manually, per the plan's
-  "Storybook — visually confirm" verification step, not via automated tests)
-📖 Storybook story: `Showcase/SpendDashboard` with `Loaded` and `EmptyAndStale` stories, plus
-  the full 26-component catalog across Foundations/*, Atoms/*, Molecules/*, Organisms/*, and
-  Decorators/*

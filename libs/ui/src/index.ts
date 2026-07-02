@@ -8,7 +8,7 @@ export { BudgetGauge } from './foundations/BudgetGauge';
 export type { BudgetGaugeProps } from './foundations/BudgetGauge';
 
 export { Button } from './atoms/Button';
-export type { ButtonProps, ButtonVariant, ButtonSize } from './atoms/Button';
+export type { ButtonProps, ButtonVariant, ButtonSize, ButtonTone } from './atoms/Button';
 export { TextField } from './atoms/TextField';
 export type { TextFieldProps, FieldState } from './atoms/TextField';
 export { Alert } from './atoms/Alert';
@@ -43,16 +43,13 @@ export type { AIInsightCardProps, InsightTone } from './molecules/AIInsightCard'
 
 export { EmptyState } from './organisms/EmptyState';
 export type { EmptyStateProps } from './organisms/EmptyState';
+export { NavigationShell } from './organisms/NavigationShell';
+export type { NavigationShellProps, NavigationShellItem } from './organisms/NavigationShell';
 export { ApprovalActionBar } from './organisms/ApprovalActionBar';
 export type { ApprovalActionBarProps } from './organisms/ApprovalActionBar';
 export { BulkActionResult } from './organisms/BulkActionResult';
 export type { BulkActionResultProps, BulkActionFailure } from './organisms/BulkActionResult';
 export { DataTable } from './organisms/DataTable';
 export type { DataTableProps, DataTableRow, Density } from './organisms/DataTable';
-
-export { AppShell } from './decorators/AppShell';
-export type { AppShellProps } from './decorators/AppShell';
-export { WindowFrame } from './decorators/WindowFrame';
-export type { WindowFrameProps, FrameSize } from './decorators/WindowFrame';
-export { PhoneFrame } from './decorators/PhoneFrame';
-export type { PhoneFrameProps } from './decorators/PhoneFrame';
+export { AppShell } from './organisms/AppShell';
+export type { AppShellProps } from './organisms/AppShell';

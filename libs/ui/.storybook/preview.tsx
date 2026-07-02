@@ -3,6 +3,7 @@ import { withThemeByDataAttribute } from '@storybook/addon-themes';
 import '../src/styles.css';
 
 const preview: Preview = {
+  tags: ['autodocs'],
   parameters: {
     controls: { expanded: true },
     a11y: { test: 'error' },
@@ -12,9 +13,12 @@ const preview: Preview = {
       themes: { light: 'light', dark: 'dark' },
       defaultTheme: 'light',
       attributeName: 'data-theme',
+      // Scoped below `<html>` so this toolbar toggle never fights AppShell's own
+      // ThemeProvider, which sets `data-theme` on `document.documentElement` for real.
+      parentSelector: '#theme-decorator-root',
     }),
     (Story) => (
-      <div className="bg-cl-bg text-cl-text min-h-24 p-6 font-sans">
+      <div id="theme-decorator-root" className="bg-cl-bg text-cl-text min-h-24 p-6 font-sans">
         <Story />
       </div>
     ),

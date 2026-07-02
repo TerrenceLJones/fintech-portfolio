@@ -1,0 +1,40 @@
+import { Meta, Stories } from '@storybook/addon-docs/blocks';
+import * as StatusBadgeStories from './StatusBadge.stories';
+
+<Meta of={StatusBadgeStories} />
+
+# StatusBadge
+
+Renders one of the 10 ledger-entry status keys (`draft`, `pending-l1`, `pending-l2`, `approved`,
+`paid`, `reconciled`, `rejected`, `reversed`, `frozen`, `under-review`) as an icon + text label
+pair, colored by tone. Status is a compliance-relevant signal, so it is never conveyed by color
+alone.
+
+## User story
+
+**US-CW-023 — Component library — atoms & foundations**
+
+As a clearline-web engineer, I want StatusBadge/MoneyDisplay/BudgetGauge and the 8 Tier-1 atoms
+available as typed React components, so that I never hand-roll a button, badge, or money value
+and risk missing an accessibility or formatting rule the design system already solved.
+
+## Acceptance criteria
+
+- **AC-01 — StatusBadge.** Given any StatusBadge, regardless of its `status` prop, when it
+  renders, then it always shows an icon and a text label alongside its color — status is never
+  conveyed by color alone.
+- AC-02 — MoneyDisplay `state="loading"` shows a skeleton sized to the final glyphs, never a
+  flash of "$0.00".
+- AC-03 — MoneyDisplay `derived={true}` shows a "DERIVED · READ-ONLY" chip instead of any
+  editable-looking affordance.
+- AC-04 — BudgetGauge spells out the percentage and any overage amount in text, with color only
+  reinforcing the message.
+- AC-05 — AC-07 cover the remaining Tier-1 atoms (Checkbox, Button, TextField) in this same
+  story; see their own docs pages for the full text.
+
+### Edge case covered here
+
+All 10 status keys (`draft`, `pending-l1`, `pending-l2`, `approved`, `paid`, `reconciled`,
+`rejected`, `reversed`, `frozen`, `under-review`) must each render a distinct icon + label pair.
+
+<Stories />

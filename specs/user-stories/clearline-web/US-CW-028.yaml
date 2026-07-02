@@ -1,0 +1,100 @@
+# User Story Registry Record
+# User stories are the source of truth for what the application supports.
+# Epics declare changes to these records via their changes.adds/updates/deprecates/removes sections.
+
+# Identity
+id: 'US-CW-028'
+app: 'clearline-web'
+feature_area: 'core'
+title: 'Role-Aware Navigation Shell'
+
+# Lifecycle status
+status: 'APPROVED'
+story_points: 5
+dependencies: ['US-CW-006', 'US-CW-025']
+
+# Provenance — immutable after creation
+created_by_epic: 'EPIC-CW-003'
+created_date: '2026-07-01'
+
+# Provenance history — append-only record of every epic that has touched this story
+history:
+  - epic_id: 'EPIC-CW-003'
+    action: 'created'
+    date: '2026-07-01'
+  - epic_id: 'EPIC-CW-003'
+    action: 'approved'
+    date: '2026-07-01'
+
+# Status timestamps — set when status transitions occur
+approved_date: '2026-07-01'
+implementation_date: null
+deprecated_date: null
+removed_date: null
+
+# User Story
+user_story:
+  persona: 'Finance team member (Employee, Finance Manager, or Controller) operating within Clearline'
+  capability: 'see a persistent navigation surface whose links reflect exactly the sections my role authorizes, rendered independently of any specific page layout or theming chrome'
+  business_value: 'US-CW-006 specifies which nav links each role may see, but no component renders them — this story gives that requirement an actual, reusable implementation, and stops role-scoped navigation from being conflated with theme/layout wrappers like AppShell'
+  description: |
+    As a Clearline user with an assigned role (Employee, Finance Manager, or Controller)
+    I want a navigation component that renders only the links my role authorizes and updates immediately if my role changes mid-session
+    So that US-CW-006's role-scoped navigation requirement has a real, composable UI implementation, decoupled from unrelated concerns like theme provisioning
+
+# Acceptance Criteria
+acceptance_criteria:
+  - id: 'AC-01'
+    description: |
+      Given I am logged in with the "Employee" role
+      When the navigation shell renders
+      Then it shows only "My Expenses" and "My Cards" (mirrors US-CW-006 AC-01)
+    status: 'active'
+  - id: 'AC-02'
+    description: |
+      Given I am logged in with the "Finance Manager" role
+      When the navigation shell renders
+      Then it shows "My Expenses," "Approvals," and "Reconciliation" (mirrors US-CW-006 AC-02)
+    status: 'active'
+  - id: 'AC-03'
+    description: |
+      Given I am logged in with the "Controller" role
+      When the navigation shell renders
+      Then it shows all Finance Manager links plus "Budget Management" and "Audit Log" (mirrors US-CW-006 AC-03)
+    status: 'active'
+  - id: 'AC-04'
+    description: |
+      Given a caller renders the navigation component
+      When it is passed a role-scoped list of nav items as props
+      Then it renders correctly without requiring AppShell, ThemeProvider, or any other layout/theme wrapper as an ancestor
+    status: 'active'
+  - id: 'AC-05'
+    description: |
+      Given a Finance Manager is downgraded to Employee mid-session (per US-CW-006 AC-05)
+      When the role change is reflected in app state
+      Then now-unauthorized links are removed from the navigation shell without a page reload or hard crash
+    status: 'active'
+  - id: 'AC-06'
+    description: |
+      Given the navigation shell is rendered in Storybook with a fixed role/item list and no live session
+      When a story loads
+      Then it renders correctly with no auth, routing, or ThemeProvider dependency
+    status: 'active'
+
+# Technical Notes
+technical_notes: |
+  This story covers the presentational navigation component only: given a role-scoped list of nav items, render
+  them as the persistent nav surface. It does not own the authorization decision — the role-to-nav-item mapping and
+  its redundant server-side enforcement remain US-CW-006's responsibility (technical_notes there already cover
+  per-request re-evaluation of role state). The component should live in libs/ui as an organism, accept its item
+  list via props (or a role/permission context read at the app layer, not inside the component), and must not import
+  or depend on ThemeProvider/AppShell — those are separate concerns (see AppShell's narrower contract in
+  US-CW-025 AC-05, which only covers theme state and the top bar, not role-aware nav content).
+
+# Edge Cases
+edge_cases: |
+  - Role resolves to zero authorized nav items — component must render an empty nav without crashing, even though
+    every defined role currently has at least one link per US-CW-006
+  - Navigation shell rendered before role/session data has loaded (loading state, not a crash or flash of all links)
+  - Mid-session role downgrade removes the currently active/focused nav item
+  - Navigation shell must render correctly with no AppShell or ThemeProvider ancestor, per AC-04

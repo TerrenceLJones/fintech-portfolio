@@ -1,0 +1,28 @@
+import { Meta, Stories } from '@storybook/addon-docs/blocks';
+import * as AvatarStories from './Avatar.stories';
+
+<Meta of={AvatarStories} />
+
+# Avatar
+
+A circular identity glyph — an image when `src` is provided, initials with a toned background
+otherwise (and on image-load failure).
+
+## User story
+
+**US-CW-023 — Component library — atoms & foundations**
+
+As a clearline-web engineer, I want StatusBadge/MoneyDisplay/BudgetGauge and the 8 Tier-1 atoms
+available as typed React components, so that I never hand-roll a button, badge, or money value
+and risk missing an accessibility or formatting rule the design system already solved. Avatar
+has no acceptance criterion of its own in this story; it is governed by the tier's shared
+constraints below.
+
+## Acceptance criteria (shared across this tier)
+
+- AC-01 — AC-04 — StatusBadge/MoneyDisplay/BudgetGauge, covered on their own docs pages.
+- AC-05 — Checkbox wraps Radix `Checkbox` for correct `onCheckedChange`/`aria-checked` behavior.
+- AC-06 — Button's `loading` state disables the button and blocks `onClick`.
+- AC-07 — TextField's `state="error"` sets `aria-invalid` and `aria-describedby`.
+
+<Stories />

@@ -19,7 +19,18 @@ changes:
     - story_id: 'US-CW-006'
       story_path: '/specs/user-stories/clearline-web/US-CW-006.yaml'
       title: 'Role-Based Navigation & Approval Authority'
-  updates: []
+    - story_id: 'US-CW-028'
+      story_path: '/specs/user-stories/clearline-web/US-CW-028.yaml'
+      title: 'Role-Aware Navigation Shell'
+  updates:
+    - story_id: 'US-CW-025'
+      story_path: '/specs/user-stories/clearline-web/US-CW-025.yaml'
+      title: 'Component library — organisms & decorators'
+      reason: >
+        AppShell previously created its own internal ThemeProvider, which would have meant each
+        AppShell instance had independent, unsynced theme state and no way to compose theme-dependent
+        chrome (like a role-aware nav) without going through AppShell. Corrected AC-05 so ThemeProvider
+        is mounted once at the app root and AppShell consumes it, unblocking US-CW-028.
   deprecates: []
   removes: []
 notes: >

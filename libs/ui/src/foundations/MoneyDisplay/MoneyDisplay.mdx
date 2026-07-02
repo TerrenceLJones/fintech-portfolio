@@ -1,0 +1,35 @@
+import { Meta, Stories } from '@storybook/addon-docs/blocks';
+import * as MoneyDisplayStories from './MoneyDisplay.stories';
+
+<Meta of={MoneyDisplayStories} />
+
+# MoneyDisplay
+
+Formats a currency amount for display, with loading/credit/debit states and an optional
+"derived" mode for values that are ledger projections rather than editable inputs.
+
+## User story
+
+**US-CW-023 — Component library — atoms & foundations**
+
+As a clearline-web engineer, I want StatusBadge/MoneyDisplay/BudgetGauge and the 8 Tier-1 atoms
+available as typed React components, so that I never hand-roll a button, badge, or money value
+and risk missing an accessibility or formatting rule the design system already solved.
+
+## Acceptance criteria
+
+- AC-01 — StatusBadge always shows an icon and text label alongside its color.
+- **AC-02 — MoneyDisplay.** Given MoneyDisplay with `state="loading"`, when it renders, then it
+  shows a skeleton sized to the final glyphs, never a flash of "$0.00".
+- **AC-03 — MoneyDisplay.** Given MoneyDisplay with `derived={true}`, when it renders, then it
+  shows a "DERIVED · READ-ONLY" chip instead of any editable-looking affordance.
+- AC-04 — BudgetGauge spells out the percentage and any overage amount in text.
+- AC-05 — AC-07 cover the remaining Tier-1 atoms (Checkbox, Button, TextField) in this same
+  story; see their own docs pages for the full text.
+
+### Edge case covered here
+
+Credit/debit states must show a directional icon (up/down arrow) in addition to color, so the
+direction of money movement is never conveyed by color alone.
+
+<Stories />

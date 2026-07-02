@@ -28,6 +28,9 @@ history:
   - epic_id: 'EPIC-CW-000'
     action: 'implemented'
     date: '2026-06-30'
+  - epic_id: 'EPIC-CW-003'
+    action: 'updated'
+    date: '2026-07-01'
 
 # Status timestamps — set when status transitions occur
 approved_date: '2026-06-30'
@@ -38,11 +41,11 @@ removed_date: null
 # User Story
 user_story:
   persona: 'clearline-web engineer building any feature epic'
-  capability: 'the 4 Tier-3 organisms (DataTable, ApprovalActionBar, BulkActionResult, EmptyState) plus the 3 scaffolding decorators (AppShell, WindowFrame, PhoneFrame)'
+  capability: 'the 4 Tier-3 organisms (DataTable, ApprovalActionBar, BulkActionResult, EmptyState) plus the 3 scaffolding decorators (AppShell)'
   business_value: 'the highest-effort, highest-payoff assemblies — a selectable/sortable data table, an approval bar that correctly disables itself with a stated reason, a partial-failure summary that never rolls back the successes — are built once, and a whole screen can be assembled with zero per-page token/theme boilerplate via AppShell'
   description: |
     As a clearline-web engineer
-    I want DataTable/ApprovalActionBar/BulkActionResult/EmptyState and the AppShell/WindowFrame/PhoneFrame decorators available as typed React components
+    I want DataTable/ApprovalActionBar/BulkActionResult/EmptyState and the AppShell decorators available as typed React components
     So that I can assemble a full screen (selection, sorting, approval flows, partial-failure summaries) by composing already-built pieces instead of writing table selection/sort logic or approval-limit disabling logic from scratch in each feature epic
 
 # Acceptance Criteria
@@ -73,20 +76,20 @@ acceptance_criteria:
     status: 'active'
   - id: 'AC-05'
     description: |
-      Given `<AppShell>` wrapping any page content
+      Given `<AppShell>` wrapping any page content, with a `<ThemeProvider>` mounted once at the app root
       When rendered
-      Then it owns theme state (via ThemeProvider), renders the sticky top bar with a Light/Dark toggle, and requires zero additional per-page token setup
+      Then it renders the sticky top bar with a Light/Dark toggle backed by that shared theme state, and requires zero additional per-page token setup
     status: 'active'
 
 # Technical Notes
 technical_notes: |
   DataTable composes Checkbox (Tier 1) and StatusBadge (foundations) rather than reimplementing
-  either. AppShell wraps its children in `<ThemeProvider>` internally (from
-  @fintech-portfolio/design-tokens) so a consuming screen only ever writes `<AppShell
-  title="...">...</AppShell>` — matching the "zero per-page boilerplate" pattern demonstrated by
-  the `Clearline - 09 Spend Dashboard (Migrated).dc.html` reference. WindowFrame and PhoneFrame
-  are documented as dev/layout utilities (Storybook decorators for screen-scale previews), not
-  primary product exports — consistent with COMPONENT-AUDIT.md's "Scaffolding" tier.
+  either. AppShell consumes theme state via `useTheme()` (from @fintech-portfolio/design-tokens)
+  rather than instantiating its own `<ThemeProvider>` — the app root mounts ThemeProvider once, so
+  theme state is shared app-wide and other theme-dependent chrome (e.g. US-CW-028's NavigationShell)
+  can compose alongside AppShell without going through it. A consuming screen still only ever writes
+  `<AppShell title="...">...</AppShell>`, matching the "zero per-page boilerplate" pattern demonstrated
+  by the `Clearline - 09 Spend Dashboard (Migrated).dc.html` reference.
 
 # Edge Cases
 edge_cases: |
@@ -96,13 +99,15 @@ edge_cases: |
   - AppShell's theme toggle affects the whole subtree via `data-theme` on `document.documentElement`,
     verified by asserting on `document.documentElement.getAttribute('data-theme')` in tests, not
     just component-local state
+  - AppShell renders nothing meaningful without a `<ThemeProvider>` ancestor (useTheme throws) —
+    call sites (and its own tests/stories) must supply one rather than relying on AppShell to create it
 
 # Implementation Status
 
 ✅ Implemented: 2026-06-30
 📁 Files created:
   - libs/ui/src/organisms/{DataTable,ApprovalActionBar,BulkActionResult,EmptyState}.tsx
-  - libs/ui/src/decorators/{AppShell,WindowFrame,PhoneFrame}.tsx
+  - libs/ui/src/decorators/{AppShell}.tsx
   - a matching .test.tsx and .stories.tsx per component above
 🧪 Test coverage: 19 tests across 7 test files, all passing via `nx run ui:test`
 📖 Storybook story: one story file per component under Organisms/* and Decorators/* in `nx run ui:storybook`

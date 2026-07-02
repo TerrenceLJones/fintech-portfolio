@@ -1,0 +1,30 @@
+import { Meta, Stories } from '@storybook/addon-docs/blocks';
+import * as TransactionRowStories from './TransactionRow.stories';
+
+<Meta of={TransactionRowStories} />
+
+# TransactionRow
+
+A single ledger-line row — merchant, category, time, and amount — with `default`/`live`/`dim`
+states for freshly-posted or superseded entries.
+
+## User story
+
+**US-CW-024 — Component library — molecules**
+
+As a clearline-web engineer, I want Modal/ConfirmationDialog and the other 6 Tier-2 molecules
+available as typed React components built on Radix Dialog, so that every irreversible-action
+confirmation in the app gets the same focus-trapped, Escape-cancels, countdown-gated behavior for
+free, instead of each feature epic re-implementing dialog accessibility by hand. TransactionRow
+has no acceptance criterion of its own in this story; it is governed by the tier's shared
+constraints below.
+
+## Acceptance criteria (shared across this tier)
+
+- AC-01 — Modal exposes `role="dialog"`, traps focus, and closes via Escape/Cancel.
+- AC-02 — ConfirmationDialog's `countdown` gates the confirm button and re-arms on every open.
+- AC-03 — VirtualCard hides the derived remaining-limit figure entirely when frozen.
+- AC-04 — Timeline shows before → after diffs with an arrow between them.
+- AC-05 — AIInsightCard's primary/secondary actions independently invoke their own callbacks.
+
+<Stories />

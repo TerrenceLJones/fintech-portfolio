@@ -1,0 +1,34 @@
+import { Meta, Stories } from '@storybook/addon-docs/blocks';
+import * as SegmentedControlStories from './SegmentedControl.stories';
+
+<Meta of={SegmentedControlStories} />
+
+# SegmentedControl
+
+A row of mutually-exclusive text options, usable either controlled (`value`/`onChange`) or
+uncontrolled (internal state) — a real interactive element, not the static mockup the original
+design demo used.
+
+## User story
+
+**US-CW-023 — Component library — atoms & foundations**
+
+As a clearline-web engineer, I want StatusBadge/MoneyDisplay/BudgetGauge and the 8 Tier-1 atoms
+available as typed React components, so that I never hand-roll a button, badge, or money value
+and risk missing an accessibility or formatting rule the design system already solved.
+SegmentedControl has no acceptance criterion of its own in this story; it is governed by the
+tier's shared constraints below.
+
+## Acceptance criteria (shared across this tier)
+
+- AC-01 — AC-04 — StatusBadge/MoneyDisplay/BudgetGauge, covered on their own docs pages.
+- AC-05 — Checkbox wraps Radix `Checkbox` for correct `onCheckedChange`/`aria-checked` behavior.
+- AC-06 — Button's `loading` state disables the button and blocks `onClick`.
+- AC-07 — TextField's `state="error"` sets `aria-invalid` and `aria-describedby`.
+
+### Edge case covered here
+
+Both the controlled (`value`/`onChange`) and uncontrolled (no `value`, internal state only)
+usage modes are exercised as separate stories.
+
+<Stories />

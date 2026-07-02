@@ -21,6 +21,20 @@ export default tseslint.config(
     },
   },
   {
+    files: ['**/*.{ts,tsx}'],
+    languageOptions: {
+      parserOptions: {
+        projectService: {
+          allowDefaultProject: ['libs/ui/.storybook/*.ts', 'libs/ui/.storybook/*.tsx'],
+        },
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+    rules: {
+      '@typescript-eslint/consistent-type-exports': 'error',
+    },
+  },
+  {
     files: ['**/*.{jsx,tsx}'],
     plugins: {
       'react-hooks': reactHooks,

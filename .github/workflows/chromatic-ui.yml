@@ -1,0 +1,59 @@
+name: Chromatic - ui
+
+# Publishes Storybook to Chromatic and runs visual regression tests.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'libs/ui/**'
+      - 'libs/design-tokens/**'
+      - 'libs/icons/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'nx.json'
+      - 'tsconfig.base.json'
+  pull_request:
+    paths:
+      - 'libs/ui/**'
+      - 'libs/design-tokens/**'
+      - 'libs/icons/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'nx.json'
+      - 'tsconfig.base.json'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: chromatic-ui-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  chromatic:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history required for Chromatic baseline comparison
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Publish to Chromatic
+        uses: chromaui/action@v18
+        with:
+          workingDir: libs/ui
+          projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          exitZeroOnChanges: true
