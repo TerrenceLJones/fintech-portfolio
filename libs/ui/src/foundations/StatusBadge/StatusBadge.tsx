@@ -1,4 +1,5 @@
 import { Icon, type IconName } from '@fintech-portfolio/icons';
+import { Text } from '../../atoms/Text';
 
 export type StatusKey =
   | 'draft'
@@ -55,10 +56,12 @@ export function StatusBadge({ status, label }: StatusBadgeProps) {
   const def = STATUS[status];
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs leading-none font-semibold whitespace-nowrap ${TONE_CLASSES[def.tone]}`}
+      className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 leading-none whitespace-nowrap ${TONE_CLASSES[def.tone]}`}
     >
       <Icon name={def.icon} size={12} />
-      {label ?? def.label}
+      <Text as="span" size="label" weight="semibold">
+        {label ?? def.label}
+      </Text>
     </span>
   );
 }

@@ -1,5 +1,6 @@
 import { Icon } from '@fintech-portfolio/icons';
 import { formatMoney } from '../../utils/formatMoney';
+import { Text } from '../../atoms/Text';
 
 export type MoneyState = 'loaded' | 'loading' | 'credit' | 'debit';
 
@@ -43,12 +44,16 @@ export function MoneyDisplay({
     <div className="flex flex-col items-start">
       {main}
       {derived ? (
-        <span className="text-cl-text-3 border-cl-border-2 mt-2 inline-flex items-center gap-1.5 rounded border px-1.5 py-0.5 font-mono text-[10.5px]">
+        <span className="text-cl-text-3 border-cl-border-2 mt-2 inline-flex items-center gap-1.5 rounded border px-1.5 py-0.5">
           <Icon name="lock" size={11} />
-          DERIVED &middot; READ-ONLY
+          <Text as="span" size="mono" tone="faint">
+            DERIVED &middot; READ-ONLY
+          </Text>
         </span>
       ) : label ? (
-        <div className="text-cl-text-3 mt-1.5 text-[11.5px]">{label}</div>
+        <Text as="div" size="label" weight="regular" tone="faint" className="mt-1.5">
+          {label}
+        </Text>
       ) : null}
     </div>
   );

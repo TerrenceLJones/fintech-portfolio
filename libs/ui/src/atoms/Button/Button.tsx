@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import type { ButtonHTMLAttributes, MouseEvent, ReactNode } from 'react';
 import { Icon, type IconName } from '@fintech-portfolio/icons';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
@@ -76,18 +76,31 @@ export function Button({
     look = VARIANT_CLASSES[variant];
   }
 
+  function handleClick(event: MouseEvent<HTMLButtonElement>) {
+    if (loading) {
+      // preventDefault (not just skipping the handler) also blocks the browser's default
+      // activation behavior for type="submit" buttons — including the synthetic click Enter-key
+      // implicit form submission dispatches at this button — so a busy submit button can't
+      // resubmit its form while it stays enabled/focusable for a11y.
+      event.preventDefault();
+      return;
+    }
+    onClick?.(event);
+  }
+
   return (
     <button
       type="button"
       disabled={isDisabled}
+      aria-disabled={loading || undefined}
       aria-busy={loading}
-      onClick={loading ? undefined : onClick}
+      onClick={handleClick}
       className={[
         'font-sans font-semibold leading-none rounded-lg',
         fullWidth ? 'flex w-full' : 'inline-flex',
         'items-center justify-center gap-1.5 whitespace-nowrap',
         !isDisabled && !loading && 'cursor-pointer',
-        loading && 'opacity-80',
+        loading && 'cursor-not-allowed opacity-80',
         SIZE_CLASSES[size],
         look,
         className,

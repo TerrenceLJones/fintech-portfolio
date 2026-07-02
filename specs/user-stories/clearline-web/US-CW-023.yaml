@@ -28,6 +28,9 @@ history:
   - epic_id: 'EPIC-CW-000'
     action: 'implemented'
     date: '2026-06-30'
+  - epic_id: 'EPIC-CW-000'
+    action: 'updated'
+    date: '2026-07-02'
 
 # Status timestamps — set when status transitions occur
 approved_date: '2026-06-30'
@@ -89,6 +92,14 @@ acceptance_criteria:
       When rendered
       Then the input has `aria-invalid="true"` and `aria-describedby` pointing at a `role="alert"` element containing the error text
     status: 'active'
+  - id: 'AC-08'
+    description: |
+      Given `Text` with a given `size` (`display`/`title`/`heading`/`body`/`label`/`mono`)
+      When it renders
+      Then font size, weight default, letter-spacing, and font family all come from
+      design-tokens' `typography.scale` for that step, and the semantic tag (`as`) can be set
+      independently of `size` — e.g. a document-outline `h3` visually sized as `body`
+    status: 'active'
 
 # Technical Notes
 technical_notes: |
@@ -100,6 +111,14 @@ technical_notes: |
   Radix `Checkbox` (`radix-ui` unified package, per TDR-CW-WEB-001) for focus/keyboard/ARIA
   handling instead of reimplementing it by hand.
 
+  AC-08 (`Text`, added 2026-07-02): consumes `libs/design-tokens`' `typography.scale`, which
+  shipped with this story's original implementation but had no consuming component until every
+  other atom/foundation/molecule/organism was retrofitted onto `Text` in the same pass. `tone` is
+  deliberately opt-in — an omitted `tone` applies no color class at all, rather than defaulting to
+  `'default'`, so components with their own dynamic per-instance color logic (StatusBadge,
+  MoneyDisplay's state-based coloring, ...) can apply color via `className` without fighting a
+  Text-applied class. `size` (visual scale) and `as` (semantic tag) are independent props.
+
 # Edge Cases
 edge_cases: |
   - StatusBadge for all 10 status keys (draft, pending-l1/l2, approved, paid, reconciled,
@@ -109,6 +128,9 @@ edge_cases: |
   - Button disabled vs. loading are visually and behaviorally distinct but both block onClick
   - Checkbox indeterminate state is visually and semantically distinct from checked/unchecked
   - SegmentedControl works both controlled (`value`/`onChange`) and uncontrolled (internal state)
+  - Text renders each of the six `typography.scale` steps at its token-defined font size
+  - Text's `size` and `as` are set independently (e.g. `size="body"` `as="h3"`) without one
+    overriding the other
 
 # Implementation Status
 
@@ -119,3 +141,9 @@ edge_cases: |
   - a matching .test.tsx and .stories.tsx per component above
 🧪 Test coverage: 37 tests across 11 test files, all passing via `nx run ui:test`
 📖 Storybook story: one story file per component under Foundations/* and Atoms/* in `nx run ui:storybook`
+
+🔄 Updated: 2026-07-02 (AC-08, EPIC-CW-000 follow-up)
+📁 Files added (AC-08): libs/ui/src/atoms/Text/{Text.tsx,Text.test.tsx,Text.stories.tsx,Text.mdx,index.ts}
+🧪 Test coverage (AC-08): +12 tests (Text.test.tsx), all passing
+📖 Storybook story (AC-08): Atoms/Text
+📝 AC-08 note: also retrofitted every other component in `libs/ui` (foundations/atoms/molecules/organisms) to consume `Text` instead of ad hoc text-size classes — tracked here since it's the direct consequence of AC-08, not a separate story of its own.

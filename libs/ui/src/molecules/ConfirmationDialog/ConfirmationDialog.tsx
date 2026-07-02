@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Dialog } from 'radix-ui';
 import { Icon } from '@fintech-portfolio/icons';
+import { Text } from '../../atoms/Text';
 
 export interface ConfirmationDialogProps {
   open: boolean;
@@ -51,19 +52,28 @@ export function ConfirmationDialog({
             <div className="bg-cl-warn-weak flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg">
               <Icon name="triangle-alert" size={17} className="text-cl-warn" />
             </div>
-            <Dialog.Title className="text-cl-text text-[15px] font-semibold">{title}</Dialog.Title>
+            <Dialog.Title asChild>
+              <Text as="h2" size="heading" tone="default">
+                {title}
+              </Text>
+            </Dialog.Title>
           </div>
           {body ? (
-            <Dialog.Description className="text-cl-text-2 mb-3.5 text-[12.5px] leading-relaxed">
-              {body}
+            <Dialog.Description asChild>
+              <Text as="p" size="label" weight="regular" tone="muted" className="mb-3.5">
+                {body}
+              </Text>
             </Dialog.Description>
           ) : null}
-          <div
+          <Text
+            as="div"
+            size="mono"
+            tone="critical"
             aria-live="polite"
-            className="text-cl-crit bg-cl-crit-weak font-mono mb-4 flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[11px]"
+            className="bg-cl-crit-weak mb-4 flex items-center gap-1.5 rounded-md px-2.5 py-1.5"
           >
             IRREVERSIBLE &middot; NO UNDO
-          </div>
+          </Text>
           <div className="flex gap-2.5">
             <Dialog.Close asChild>
               <button

@@ -1,5 +1,6 @@
 import { Icon } from '@fintech-portfolio/icons';
 import { Button } from '../../atoms/Button';
+import { Text } from '../../atoms/Text';
 
 export type InsightTone = 'info' | 'anomaly';
 
@@ -38,17 +39,28 @@ export function AIInsightCard({
     >
       <div className="mb-2.5 flex items-center gap-2">
         <Icon name="sparkles" size={16} className={fgClass} />
-        <span className="text-cl-text flex-1 text-[13.5px] font-semibold">{title}</span>
-        <span
-          className={`font-mono rounded border px-1.5 py-px text-[9.5px] font-semibold tracking-wide ${fgClass} border-current`}
+        <Text as="span" size="body" weight="semibold" tone="default" className="flex-1">
+          {title}
+        </Text>
+        <Text
+          as="span"
+          size="mono"
+          weight="semibold"
+          className={`rounded border px-1.5 py-px ${fgClass} border-current`}
         >
           AI
-        </span>
+        </Text>
       </div>
-      <div className="text-cl-text-2 mb-3 text-xs leading-relaxed">{body}</div>
-      <div className="mb-3.5 flex items-center justify-between text-[11px]">
-        <span className="text-cl-text-2">AI confidence</span>
-        <span className={`font-mono font-semibold ${fgClass}`}>{confidence}%</span>
+      <Text as="div" size="label" weight="regular" tone="muted" className="mb-3">
+        {body}
+      </Text>
+      <div className="mb-3.5 flex items-center justify-between">
+        <Text as="span" size="label" weight="regular" tone="muted">
+          AI confidence
+        </Text>
+        <Text as="span" size="mono" weight="semibold" className={fgClass}>
+          {confidence}%
+        </Text>
       </div>
       <div className="bg-cl-surface-2 mb-3.5 h-1.5 overflow-hidden rounded-full">
         <div className={`h-full rounded-full ${fillClass}`} style={{ width: `${confidence}%` }} />

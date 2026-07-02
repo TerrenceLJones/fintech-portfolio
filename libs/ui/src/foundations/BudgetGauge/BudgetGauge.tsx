@@ -1,5 +1,6 @@
 import { Icon, type IconName } from '@fintech-portfolio/icons';
 import { formatMoney } from '../../utils/formatMoney';
+import { Text } from '../../atoms/Text';
 
 export interface BudgetGaugeProps {
   label: string;
@@ -51,12 +52,14 @@ export function BudgetGauge({ label, used, total }: BudgetGaugeProps) {
   return (
     <div className="bg-cl-surface border-cl-border rounded-xl border p-5">
       <div className="mb-2.5 flex items-center justify-between">
-        <span className="text-cl-text text-[13px] font-semibold">{label}</span>
-        <span
-          className={`inline-flex items-center gap-1 text-[11px] font-semibold ${band.textClass}`}
-        >
+        <Text as="span" size="label" weight="semibold" tone="default">
+          {label}
+        </Text>
+        <span className={`inline-flex items-center gap-1 ${band.textClass}`}>
           <Icon name={band.icon} size={11} />
-          {band.status}
+          <Text as="span" size="label" weight="semibold">
+            {band.status}
+          </Text>
         </span>
       </div>
       <div className="bg-cl-surface-2 mb-2.5 h-[9px] overflow-hidden rounded-full">
@@ -65,13 +68,19 @@ export function BudgetGauge({ label, used, total }: BudgetGaugeProps) {
           style={{ width: `${Math.min(100, pctRaw)}%` }}
         />
       </div>
-      <div className="flex justify-between font-mono text-xs tabular-nums">
-        <span className={pctRaw >= 80 ? `font-semibold ${band.textClass}` : 'text-cl-text-2'}>
+      <div className="flex justify-between">
+        <Text
+          as="span"
+          size="mono"
+          weight={pctRaw >= 80 ? 'semibold' : undefined}
+          tone={pctRaw >= 80 ? undefined : 'muted'}
+          className={pctRaw >= 80 ? band.textClass : undefined}
+        >
           {footText}
-        </span>
-        <span className="text-cl-text-3">
+        </Text>
+        <Text as="span" size="mono" tone="faint">
           {formatMoney(used)} / {formatMoney(total)}
-        </span>
+        </Text>
       </div>
     </div>
   );

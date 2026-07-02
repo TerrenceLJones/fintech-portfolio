@@ -1,5 +1,6 @@
 import { Icon } from '@fintech-portfolio/icons';
 import { Button } from '../../atoms/Button';
+import { Text } from '../../atoms/Text';
 
 export interface BulkActionFailure {
   name: string;
@@ -28,10 +29,10 @@ export function BulkActionResult({
       <div className="bg-cl-warn-weak border-cl-warn/24 flex items-start gap-2.75 border-b px-4 py-4">
         <Icon name="triangle-alert" size={18} className="text-cl-warn mt-0.5 flex-shrink-0" />
         <div className="flex-1">
-          <div className="text-cl-text text-[13.5px] font-semibold">
+          <Text as="div" size="body" weight="semibold" tone="default">
             {succeededCount} of {total} approved. {failCount} couldn&rsquo;t be processed &mdash;
             review and retry.
-          </div>
+          </Text>
         </div>
         <Button variant="primary" size="sm" onClick={onRetry} className="flex-shrink-0">
           Retry failed ({failCount})
@@ -41,15 +42,23 @@ export function BulkActionResult({
         <div
           key={failure.name}
           className={[
-            'flex items-center justify-between px-4 py-3 text-xs',
+            'flex items-center justify-between px-4 py-3',
             i < failures.length - 1 ? 'border-cl-border border-b' : '',
           ].join(' ')}
         >
-          <span className="text-cl-neg flex items-center gap-1.5 font-semibold">
+          <Text
+            as="span"
+            size="label"
+            weight="semibold"
+            tone="negative"
+            className="flex items-center gap-1.5"
+          >
             <Icon name="x-circle" size={13} />
             {failure.name}
-          </span>
-          <span className="text-cl-text-2">{failure.reason}</span>
+          </Text>
+          <Text as="span" size="label" weight="regular" tone="muted">
+            {failure.reason}
+          </Text>
         </div>
       ))}
     </div>

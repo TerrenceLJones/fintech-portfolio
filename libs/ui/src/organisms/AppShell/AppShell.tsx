@@ -2,6 +2,7 @@ import { useTheme } from '@fintech-portfolio/design-tokens';
 import { Icon } from '@fintech-portfolio/icons';
 import { Outlet } from 'react-router';
 import { SegmentedControl } from '../../atoms/SegmentedControl';
+import { Text } from '../../atoms/Text';
 import { NavigationShell, type NavigationShellItem } from '../NavigationShell';
 
 export interface AppShellProps {
@@ -27,7 +28,9 @@ export function AppShell({ navItems, activeNavId, onNavigate, title, maxWidth = 
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-2.75">
             <Icon name="logo" size={22} className="text-cl-accent" />
-            <span className="text-[16px] font-semibold tracking-tight">Clearline</span>
+            <Text as="span" size="heading" className="tracking-tight">
+              Clearline
+            </Text>
           </div>
           <NavigationShell items={navItems} activeId={activeNavId} onNavigate={onNavigate} />
         </div>
@@ -38,7 +41,11 @@ export function AppShell({ navItems, activeNavId, onNavigate, title, maxWidth = 
         />
       </header>
       <div className="mx-auto px-8 pt-9 pb-24" style={{ maxWidth }}>
-        {title ? <h1 className="mb-6 text-xl font-semibold">{title}</h1> : null}
+        {title ? (
+          <Text as="h1" size="title" className="mb-6">
+            {title}
+          </Text>
+        ) : null}
         <Outlet />
       </div>
     </div>

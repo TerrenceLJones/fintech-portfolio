@@ -1,5 +1,6 @@
 import { Icon } from '@fintech-portfolio/icons';
 import { Button } from '../../atoms/Button';
+import { Text } from '../../atoms/Text';
 
 export interface ApprovalActionBarProps {
   canApprove?: boolean;
@@ -45,9 +46,11 @@ export function ApprovalActionBar({
         ) : null}
       </div>
       {!approvable && reason ? (
-        <div className="text-cl-warn bg-cl-warn-weak mt-3 flex items-start gap-2 rounded-lg px-2.75 py-2.25 text-xs leading-relaxed">
+        <div className="text-cl-warn bg-cl-warn-weak mt-3 flex items-start gap-2 rounded-lg px-2.75 py-2.25">
           <Icon name="triangle-alert" size={14} className="mt-0.5 flex-shrink-0" />
-          <span>{reason}</span>
+          <Text as="span" size="label" weight="regular">
+            {reason}
+          </Text>
         </div>
       ) : null}
     </div>

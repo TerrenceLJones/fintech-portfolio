@@ -1,4 +1,5 @@
 import { Icon, type IconName } from '@fintech-portfolio/icons';
+import { Text } from '../../atoms/Text';
 
 export interface NavItemProps {
   icon: IconName;
@@ -15,23 +16,33 @@ export function NavItem({ icon, label, active = false, badge, onClick }: NavItem
       onClick={onClick}
       aria-current={active ? 'page' : undefined}
       className={[
-        'focus-visible:ring-cl-focus flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-2.75 py-2 text-left font-sans text-[13px] outline-none focus-visible:ring-3',
-        active
-          ? 'bg-cl-accent-weak text-cl-accent-text font-semibold'
-          : 'text-cl-text-2 font-medium',
+        'focus-visible:ring-cl-focus flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-2.75 py-2 text-left outline-none focus-visible:ring-3',
+        active ? 'bg-cl-accent-weak' : '',
       ].join(' ')}
     >
       <Icon name={icon} size={16} />
-      <span className="flex-1 whitespace-nowrap">{label}</span>
+      <Text
+        as="span"
+        size="label"
+        weight={active ? 'semibold' : 'medium'}
+        className={['flex-1 whitespace-nowrap', active ? 'text-cl-accent-text' : 'text-cl-text-2'].join(
+          ' ',
+        )}
+      >
+        {label}
+      </Text>
       {badge ? (
-        <span
+        <Text
+          as="span"
+          size="mono"
+          weight="semibold"
           className={[
-            'font-mono rounded-full px-1.75 py-px text-[10.5px] font-semibold',
+            'rounded-full px-1.75 py-px',
             active ? 'bg-cl-accent text-white' : 'bg-cl-surface-2 text-cl-text-3',
           ].join(' ')}
         >
           {badge}
-        </span>
+        </Text>
       ) : null}
     </button>
   );

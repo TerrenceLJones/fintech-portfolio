@@ -1,6 +1,12 @@
 @import 'tailwindcss';
 @import '@fintech-portfolio/design-tokens/src/theme.css';
 
+/* Explicit @source: Tailwind's automatic content detection is anchored to the
+   consuming app's Vite root, so without this, classNames inside this library's
+   own components (foundations/atoms/molecules/organisms) are invisible to any
+   Tailwind build running from outside libs/ui — e.g. apps/clearline-web. */
+@source './';
+
 /* Geist / Geist Mono must be loaded by the consuming app; this library only
    declares the font-family tokens, not the @font-face/link tags. */
 body {

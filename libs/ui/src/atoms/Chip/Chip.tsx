@@ -1,4 +1,5 @@
 import { Icon, type IconName } from '@fintech-portfolio/icons';
+import { Text } from '../Text';
 
 export interface ChipProps {
   label: string;
@@ -12,14 +13,16 @@ export function Chip({ label, selected = false, removable = false, onRemove, ico
   return (
     <span
       className={[
-        'inline-flex items-center gap-1.5 rounded-md px-2.75 py-1.5 text-xs leading-none font-medium whitespace-nowrap',
+        'inline-flex items-center gap-1.5 rounded-md px-2.75 py-1.5 leading-none whitespace-nowrap',
         selected
           ? 'bg-cl-accent text-white'
           : 'bg-cl-surface text-cl-text-2 border-cl-border-2 border',
       ].join(' ')}
     >
       {selected ? <Icon name="check" size={11} /> : icon ? <Icon name={icon} size={11} /> : null}
-      <span>{label}</span>
+      <Text as="span" size="label">
+        {label}
+      </Text>
       {removable ? (
         <button
           type="button"

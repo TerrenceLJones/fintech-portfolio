@@ -1,4 +1,5 @@
-import { useId, type InputHTMLAttributes } from 'react';
+import { useId, type InputHTMLAttributes, type ReactNode } from 'react';
+import { Text } from '../Text';
 
 export type FieldState = 'default' | 'focus' | 'error' | 'disabled';
 
@@ -8,7 +9,7 @@ export interface TextFieldProps extends Omit<InputHTMLAttributes<HTMLInputElemen
   help?: string;
   error?: string;
   prefix?: string;
-  suffix?: string;
+  suffix?: ReactNode;
 }
 
 export function TextField({
@@ -46,12 +47,16 @@ export function TextField({
   return (
     <div className="w-full">
       {label ? (
-        <label htmlFor={inputId} className="text-cl-text-2 mb-1.5 block text-xs font-medium">
+        <Text as="label" size="label" tone="muted" htmlFor={inputId} className="mb-1.5 block">
           {label}
-        </label>
+        </Text>
       ) : null}
       <div className={boxClasses}>
-        {prefix ? <span className="text-cl-text-3 flex-shrink-0">{prefix}</span> : null}
+        {prefix ? (
+          <Text as="span" size="body" tone="faint" className="flex-shrink-0">
+            {prefix}
+          </Text>
+        ) : null}
         <input
           id={inputId}
           disabled={isDisabled}
@@ -63,17 +68,23 @@ export function TextField({
           {...rest}
         />
         {suffix ? (
-          <span className="text-cl-text-3 font-mono flex-shrink-0 text-[11px]">{suffix}</span>
+          typeof suffix === 'string' ? (
+            <Text as="span" size="mono" tone="faint" className="flex-shrink-0">
+              {suffix}
+            </Text>
+          ) : (
+            <span className="flex-shrink-0">{suffix}</span>
+          )
         ) : null}
       </div>
       {isError && error ? (
-        <div id={helpId} role="alert" className="text-cl-neg mt-1.5 text-xs font-medium">
+        <Text as="div" id={helpId} role="alert" size="label" tone="negative" className="mt-1.5">
           {error}
-        </div>
+        </Text>
       ) : help ? (
-        <div id={helpId} className="text-cl-text-3 mt-1.5 text-xs">
+        <Text as="div" id={helpId} size="label" weight="regular" tone="faint" className="mt-1.5">
           {help}
-        </div>
+        </Text>
       ) : null}
     </div>
   );

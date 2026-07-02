@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Icon } from '@fintech-portfolio/icons';
 import { Checkbox } from '../../atoms/Checkbox';
+import { Text } from '../../atoms/Text';
 import { StatusBadge, type StatusKey } from '../../foundations/StatusBadge';
 import { formatMoney } from '../../utils/formatMoney';
 
@@ -99,8 +100,12 @@ export function DataTable({
     <div className="border-cl-border bg-cl-surface overflow-hidden rounded-xl border font-sans">
       <div className="border-cl-border flex items-center justify-between border-b px-4 py-3">
         <div className="flex items-center gap-2.5">
-          <span className="text-cl-text text-[13px] font-semibold">Recent transactions</span>
-          <span className="text-cl-text-3 font-mono text-[11px]">{rows.length} rows</span>
+          <Text as="span" size="label" weight="semibold" tone="default">
+            Recent transactions
+          </Text>
+          <Text as="span" size="mono" tone="faint">
+            {rows.length} rows
+          </Text>
         </div>
         <div className="bg-cl-surface-2 border-cl-border flex items-center gap-1 rounded-md border p-0.75 text-[11.5px]">
           {(['comfortable', 'compact'] as const).map((d) => (
@@ -159,23 +164,29 @@ export function DataTable({
               onCheckedChange={() => toggleRow(row.id)}
               aria-label={`Select ${row.vendor}`}
             />
-            <div className="text-cl-text font-medium">{row.vendor}</div>
-            <div className="text-cl-text-2 font-mono text-xs">{row.date}</div>
-            <div className="text-cl-text font-mono pr-4.5 text-right font-semibold tabular-nums">
+            <Text as="div" size="label" weight="medium" tone="default">
+              {row.vendor}
+            </Text>
+            <Text as="div" size="mono" tone="muted">
+              {row.date}
+            </Text>
+            <Text as="div" size="mono" weight="semibold" tone="default" className="pr-4.5 text-right">
               {formatMoney(row.amount)}
-            </div>
+            </Text>
             <div>
               <StatusBadge status={row.status} />
             </div>
-            <div className="text-cl-text-2 font-mono text-[11.5px]">{row.account}</div>
+            <Text as="div" size="mono" tone="muted">
+              {row.account}
+            </Text>
           </div>
         );
       })}
       {selected.size > 0 ? (
         <div className="bg-cl-accent flex items-center justify-between px-4 py-2.5 text-xs text-white">
-          <span className="font-medium">
+          <Text as="span" size="label">
             {selected.size} row{selected.size === 1 ? '' : 's'} selected
-          </span>
+          </Text>
           <div className="flex gap-2">
             <button
               type="button"

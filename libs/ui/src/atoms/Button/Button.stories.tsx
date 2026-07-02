@@ -52,7 +52,11 @@ export const Loading: Story = {
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
     const button = canvas.getByRole('button', { name: 'Processing' });
+    // Stays enabled/focusable (unlike `disabled`) so keyboard/screen-reader users don't lose
+    // focus mid-action — aria-disabled + the guarded click handler below block the action instead.
+    await expect(button).not.toBeDisabled();
     await expect(button).toHaveAttribute('aria-busy', 'true');
+    await expect(button).toHaveAttribute('aria-disabled', 'true');
     await userEvent.click(button);
     await expect(args.onClick).not.toHaveBeenCalled();
   },

@@ -1,5 +1,6 @@
 import { Icon } from '@fintech-portfolio/icons';
 import { formatMoney } from '../../utils/formatMoney';
+import { Text } from '../../atoms/Text';
 
 export type CardState = 'active' | 'frozen';
 
@@ -24,17 +25,29 @@ export function VirtualCard({ holder, last4, remaining, exp, state = 'active' }:
       ].join(' ')}
     >
       {frozen ? (
-        <div className="bg-cl-text absolute top-4 right-4 inline-flex items-center gap-1.5 rounded-md px-2.25 py-0.75 text-xs font-semibold text-white">
+        <Text
+          as="div"
+          size="label"
+          weight="semibold"
+          className="bg-cl-text absolute top-4 right-4 inline-flex items-center gap-1.5 rounded-md px-2.25 py-0.75 text-white"
+        >
           <Icon name="snowflake" size={11} />
           Frozen
-        </div>
+        </Text>
       ) : null}
       <div className="mb-8 flex items-start justify-between">
         <div>
-          <div className={frozen ? 'text-cl-text-3 text-[11px]' : 'text-[11px] opacity-80'}>
+          <Text
+            as="div"
+            size="label"
+            weight="regular"
+            className={frozen ? 'text-cl-text-3' : 'opacity-80'}
+          >
             Clearline &middot; Virtual
-          </div>
-          <div className="mt-0.5 text-sm font-semibold">{holder}</div>
+          </Text>
+          <Text as="div" size="body" weight="semibold" className="mt-0.5">
+            {holder}
+          </Text>
         </div>
         {frozen ? null : <Icon name="logo" size={20} color="rgba(255,255,255,0.9)" />}
       </div>
@@ -44,11 +57,13 @@ export function VirtualCard({ holder, last4, remaining, exp, state = 'active' }:
         •••• •••• •••• {last4}
       </div>
       <div className="flex items-end justify-between">
-        <div className={`font-mono text-[11px] ${frozen ? 'text-cl-text-3' : 'opacity-85'}`}>
+        <Text as="div" size="mono" className={frozen ? 'text-cl-text-3' : 'opacity-85'}>
           EXP {exp}
-        </div>
+        </Text>
         {frozen ? (
-          <div className="text-cl-text-3 font-mono text-[11px]">Not authorizing</div>
+          <Text as="div" size="mono" tone="faint">
+            Not authorizing
+          </Text>
         ) : (
           <div className="text-right">
             <div className="inline-flex items-center gap-1 text-[10px] opacity-80">

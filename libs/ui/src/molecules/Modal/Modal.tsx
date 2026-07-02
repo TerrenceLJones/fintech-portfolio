@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Dialog } from 'radix-ui';
 import { Icon, type IconName } from '@fintech-portfolio/icons';
+import { Text } from '../../atoms/Text';
 
 export type ModalTone = 'accent' | 'negative' | 'warning';
 
@@ -47,11 +48,17 @@ export function Modal({
             >
               <Icon name={icon} size={17} className={t.fg} />
             </div>
-            <Dialog.Title className="text-cl-text text-[15px] font-semibold">{title}</Dialog.Title>
+            <Dialog.Title asChild>
+              <Text as="h2" size="heading" tone="default">
+                {title}
+              </Text>
+            </Dialog.Title>
           </div>
           {body ? (
-            <Dialog.Description className="text-cl-text-2 mb-4 text-[12.5px] leading-relaxed">
-              {body}
+            <Dialog.Description asChild>
+              <Text as="p" size="label" weight="regular" tone="muted" className="mb-4">
+                {body}
+              </Text>
             </Dialog.Description>
           ) : null}
           <div className="flex gap-2.5">

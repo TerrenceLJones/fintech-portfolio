@@ -1,4 +1,5 @@
 import { Icon } from '@fintech-portfolio/icons';
+import { Text } from '../../atoms/Text';
 
 export type TimelineTone = 'positive' | 'accent' | 'neutral' | 'warning' | 'negative';
 
@@ -42,18 +43,24 @@ export function Timeline({ entries }: TimelineProps) {
             <div
               className={`border-cl-surface absolute top-0.5 -left-[26px] h-2.75 w-2.75 rounded-full border-2 ${DOT_CLASSES[tone]}`}
             />
-            <div className="text-cl-text text-[12.5px]">
+            <Text as="div" size="label" weight="regular" tone="default">
               <strong className="font-semibold">{entry.actor}</strong>{' '}
               <span className="text-cl-text-2">{entry.action}</span>
-            </div>
+            </Text>
             {entry.diffFrom || entry.diffTo ? (
-              <div className="font-mono mt-1 flex items-center gap-1.5 text-[11px]">
-                <span className="text-cl-text-3 line-through">{entry.diffFrom}</span>
+              <div className="mt-1 flex items-center gap-1.5">
+                <Text as="span" size="mono" tone="faint" className="line-through">
+                  {entry.diffFrom}
+                </Text>
                 <Icon name="arrow-right" size={12} className="text-cl-text-3" />
-                <span className={DIFF_TO_CLASSES[tone]}>{entry.diffTo}</span>
+                <Text as="span" size="mono" className={DIFF_TO_CLASSES[tone]}>
+                  {entry.diffTo}
+                </Text>
               </div>
             ) : null}
-            <div className="text-cl-text-3 font-mono mt-0.5 text-[11px]">{entry.time}</div>
+            <Text as="div" size="mono" tone="faint" className="mt-0.5">
+              {entry.time}
+            </Text>
           </div>
         );
       })}

@@ -1,4 +1,5 @@
 import { formatMoney } from '../../utils/formatMoney';
+import { Text } from '../../atoms/Text';
 
 export type TransactionRowState = 'default' | 'live' | 'dim';
 
@@ -30,23 +31,28 @@ export function TransactionRow({
         dim ? 'opacity-70' : '',
       ].join(' ')}
     >
-      <div
+      <Text
+        as="div"
+        size="label"
+        weight="semibold"
         className={[
-          'flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg text-[11px] font-bold',
+          'flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg',
           live ? 'bg-cl-surface text-cl-text' : 'bg-cl-surface-2 text-cl-text-2',
         ].join(' ')}
       >
         {(initials ?? merchant.slice(0, 2)).slice(0, 2)}
-      </div>
+      </Text>
       <div className="min-w-0 flex-1">
-        <div className="text-cl-text truncate text-[12.5px] font-semibold">{merchant}</div>
-        <div className="text-cl-text-3 text-[10.5px]">
+        <Text as="div" size="label" weight="semibold" tone="default" className="truncate">
+          {merchant}
+        </Text>
+        <Text as="div" size="label" weight="regular" tone="faint">
           {category} &middot; {time}
-        </div>
+        </Text>
       </div>
-      <div className="text-cl-text font-mono flex-shrink-0 text-[13px] font-semibold tabular-nums">
+      <Text as="div" size="mono" weight="semibold" tone="default" className="flex-shrink-0">
         {formatMoney(amount)}
-      </div>
+      </Text>
     </div>
   );
 }

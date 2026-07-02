@@ -1,4 +1,5 @@
 import { Icon } from '@fintech-portfolio/icons';
+import { Text } from '../../atoms/Text';
 
 export interface StepperProps {
   steps: string[];
@@ -16,9 +17,12 @@ export function Stepper({ steps, current }: StepperProps) {
         return (
           <div key={label} className="contents">
             <div className="flex flex-shrink-0 flex-col items-center gap-1.5">
-              <span
+              <Text
+                as="span"
+                size="label"
+                weight="semibold"
                 className={[
-                  'flex h-6 w-6 items-center justify-center rounded-full box-border text-[11px] font-semibold',
+                  'flex h-6 w-6 items-center justify-center rounded-full box-border',
                   done
                     ? 'bg-cl-accent text-white'
                     : isCurrent
@@ -27,12 +31,16 @@ export function Stepper({ steps, current }: StepperProps) {
                 ].join(' ')}
               >
                 {done ? <Icon name="check" size={12} stroke={2.4} color="white" /> : i + 1}
-              </span>
-              <span
-                className={`text-[11px] whitespace-nowrap ${isCurrent ? 'text-cl-text font-semibold' : 'text-cl-text-3 font-medium'}`}
+              </Text>
+              <Text
+                as="span"
+                size="label"
+                weight={isCurrent ? 'semibold' : 'medium'}
+                tone={isCurrent ? 'default' : 'faint'}
+                className="whitespace-nowrap"
               >
                 {label}
-              </span>
+              </Text>
             </div>
             {i < steps.length - 1 ? (
               <span

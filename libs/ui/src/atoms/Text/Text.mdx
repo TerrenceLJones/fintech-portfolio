@@ -1,0 +1,40 @@
+import { Meta, Stories } from '@storybook/addon-docs/blocks';
+import * as TextStories from './Text.stories';
+
+<Meta of={TextStories} />
+
+# Text
+
+Typography primitive backed by design-tokens' `typography.scale` — the single source of truth
+for font size, weight, letter-spacing, and family across six steps: `display`, `title`,
+`heading`, `body`, `label`, `mono`. Every other component in this library is retrofitted onto it.
+
+## User story
+
+**US-CW-023 — Component library — atoms & foundations**
+
+As a clearline-web engineer, I want StatusBadge/MoneyDisplay/BudgetGauge and the 8 Tier-1 atoms
+available as typed React components, so that I never hand-roll a button, badge, or money value
+and risk missing an accessibility or formatting rule the design system already solved.
+
+## Acceptance criteria
+
+- AC-01 — AC-04 — StatusBadge/MoneyDisplay/BudgetGauge, covered on their own docs pages.
+- AC-05 — Checkbox wraps Radix `Checkbox` for correct `onCheckedChange`/`aria-checked` behavior.
+- AC-06 — Button's `loading` state disables the button and blocks `onClick`.
+- AC-07 — TextField's `state="error"` sets `aria-invalid` and `aria-describedby`.
+- **AC-08 — Text.** Given `Text` with a given `size` (`display`/`title`/`heading`/`body`/`label`/
+  `mono`), when it renders, then font size, weight default, letter-spacing, and font family all
+  come from design-tokens' `typography.scale` for that step, and the semantic tag (`as`) can be
+  set independently of `size` — e.g. a document-outline `h3` visually sized as `body`.
+
+### Edge case covered here
+
+`tone` is deliberately opt-in rather than defaulting to `'default'` — an omitted `tone` applies
+no color class at all, so components with their own dynamic per-instance color logic (StatusBadge,
+MoneyDisplay's state-based coloring, ...) can still apply color via `className` without fighting a
+Text-applied class. The first retrofit pass caught this the hard way: Alert's title initially left
+`tone` unset, silently inheriting color instead of asserting `--cl-text`, which would have broken
+in dark mode for any Alert rendered outside `AppShell`.
+
+<Stories />

@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Icon, type IconName } from '@fintech-portfolio/icons';
 import { Button, type ButtonTone } from '../Button';
+import { Text } from '../Text';
 
 export type AlertTone = 'info' | 'positive' | 'warning' | 'negative' | 'critical' | 'neutral';
 
@@ -68,9 +69,15 @@ export function Alert({ tone = 'info', title, message, action, onAction, icon }:
         <span className={`${def.fgClass} mt-0.5 flex-shrink-0`}>
           <Icon name={icon ?? def.icon} size={16} />
         </span>
-        <div className="text-[12.5px] leading-relaxed">
-          <div className="text-cl-text font-semibold">{title}</div>
-          {message ? <div className="text-cl-text-2">{message}</div> : null}
+        <div>
+          <Text size="label" weight="semibold" tone="default">
+            {title}
+          </Text>
+          {message ? (
+            <Text size="label" weight="regular" tone="muted">
+              {message}
+            </Text>
+          ) : null}
         </div>
       </div>
       {action ? (
