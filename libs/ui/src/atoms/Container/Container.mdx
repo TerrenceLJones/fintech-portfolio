@@ -1,0 +1,17 @@
+import { Meta, Stories } from '@storybook/addon-docs/blocks';
+import * as ContainerStories from './Container.stories';
+
+<Meta of={ContainerStories} />
+
+# Container
+
+A max-width/centering/padding primitive for page-level layouts. Not tied to a numbered user
+story — it's an internal extraction, pulled out of `AppShell`'s content column and
+`AuthLayout`'s form column so both layouts share one place that defines page widths instead of
+each hand-rolling its own `max-w-*`/`mx-auto`/padding classes.
+
+`width` accepts either of the two named tokens currently in use (`sm` = 384px, the AuthLayout
+form-column width; `lg` = 1200px, the AppShell default content width) or an exact pixel number
+for one-off cases.
+
+<Stories />

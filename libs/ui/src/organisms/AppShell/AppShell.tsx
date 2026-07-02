@@ -1,6 +1,7 @@
 import { useTheme } from '@fintech-portfolio/design-tokens';
 import { Icon } from '@fintech-portfolio/icons';
 import { Outlet } from 'react-router';
+import { Container } from '../../atoms/Container';
 import { SegmentedControl } from '../../atoms/SegmentedControl';
 import { Text } from '../../atoms/Text';
 import { NavigationShell, type NavigationShellItem } from '../NavigationShell';
@@ -40,14 +41,14 @@ export function AppShell({ navItems, activeNavId, onNavigate, title, maxWidth = 
           onChange={(next) => setTheme(next === 'Dark' ? 'dark' : 'light')}
         />
       </header>
-      <div className="mx-auto px-8 pt-9 pb-24" style={{ maxWidth }}>
+      <Container width={maxWidth} className="pt-9 pb-24">
         {title ? (
           <Text as="h1" size="title" className="mb-6">
             {title}
           </Text>
         ) : null}
         <Outlet />
-      </div>
+      </Container>
     </div>
   );
 }

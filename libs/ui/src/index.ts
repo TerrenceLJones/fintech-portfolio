@@ -26,6 +26,8 @@ export { ProgressBar } from './atoms/ProgressBar';
 export type { ProgressBarProps, ProgressTone } from './atoms/ProgressBar';
 export { Checkbox } from './atoms/Checkbox';
 export type { CheckboxProps } from './atoms/Checkbox';
+export { Container } from './atoms/Container';
+export type { ContainerProps, ContainerWidth } from './atoms/Container';
 
 export { VirtualCard } from './molecules/VirtualCard';
 export type { VirtualCardProps, CardState } from './molecules/VirtualCard';
