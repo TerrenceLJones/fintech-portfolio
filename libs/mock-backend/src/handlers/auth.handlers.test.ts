@@ -5,6 +5,12 @@ import { DEMO_USER_PASSWORD, SEED_USERS } from '../fixtures/users.fixture';
 import { startMswServer } from '../fixtures/test-factories';
 
 const [user] = SEED_USERS;
+const UNVERIFIED_USER = {
+  ...user!,
+  id: 'user_2',
+  email: 'unverified@clearline.dev',
+  verified: false,
+};
 
 function postLogin(email: string, password: string) {
   return fetch('http://localhost/api/auth/login', {
@@ -51,6 +57,25 @@ describe('POST /api/auth/login', () => {
 
     expect(response.status).toBe(401);
     expect(body).toEqual({ error: 'invalid_credentials' });
+  });
+});
+
+describe('POST /api/auth/login — unverified account (isolated service instance)', () => {
+  let server: ReturnType<typeof setupServer>;
+
+  beforeAll(() => {
+    const authService = new AuthService([UNVERIFIED_USER]);
+    server = setupServer(...createAuthHandlers(authService));
+    server.listen({ onUnhandledRequest: 'error' });
+  });
+  afterAll(() => server.close());
+
+  it('returns 403 with unverified_account for correct credentials on an unverified account (AC-07)', async () => {
+    const response = await postLogin(UNVERIFIED_USER.email, DEMO_USER_PASSWORD);
+    const body = await response.json();
+
+    expect(response.status).toBe(403);
+    expect(body).toEqual({ error: 'unverified_account' });
   });
 });
 

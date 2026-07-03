@@ -7,6 +7,18 @@ import {
   waitForApiResponse,
 } from './support/helpers';
 
+/** Creates an account via the real sign-up form, deliberately without verifying it (AC-07). */
+async function signUpWithoutVerifying(page: Page, email: string, password: string) {
+  await page.goto('/signup');
+  const response = page.waitForResponse(
+    (res) => res.url().includes('/api/auth/signup') && res.request().method() === 'POST',
+  );
+  await page.getByLabel('Work email').fill(email);
+  await page.getByLabel('Password', { exact: true }).fill(password);
+  await page.getByRole('button', { name: 'Create account' }).click();
+  await response;
+}
+
 test('an unauthenticated visitor is redirected to /login and back after signing in, with the access token kept out of storage (AC-01)', async ({
   page,
 }) => {
@@ -129,4 +141,29 @@ test('an unreachable auth service retries automatically, then offers a manual re
   await expect(page.getByText('Something went wrong on our end. Retrying…')).toBeVisible();
   await expect(tryAgainButton).toBeVisible({ timeout: 15_000 });
   expect(responseCount).toBe(8);
+});
+
+test('correct credentials for an unverified account are blocked, with a resend action, not the dashboard (AC-07)', async ({
+  page,
+}) => {
+  const email = 'not-yet-verified@clearline.dev';
+  const password = 'Correct-Horse-1';
+
+  await signUpWithoutVerifying(page, email, password);
+
+  await page.goto('/login');
+  const loginResponse = waitForLoginResponse(page);
+  await fillLoginForm(page, email, password);
+  await page.getByRole('button', { name: 'Sign in' }).click();
+  await loginResponse;
+
+  await expect(
+    page.getByText(
+      'Verify your email to continue. Check your inbox for the link, or request a new one.',
+    ),
+  ).toBeVisible();
+  await expect(page).toHaveURL(/\/login$/);
+
+  await page.getByRole('button', { name: 'Resend verification email' }).click();
+  await expect(page.getByText('Verification email sent. Check your inbox.')).toBeVisible();
 });

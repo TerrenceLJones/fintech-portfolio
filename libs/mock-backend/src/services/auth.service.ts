@@ -15,7 +15,8 @@ import { SEED_USERS, type SeedUser } from '../fixtures/users.fixture';
 const DUMMY_HASH_FOR_TIMING_PARITY =
   'pbkdf2-sha256$210000$AAAAAAAAAAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=';
 
-export type LoginOutcome = 'success' | 'invalid_credentials' | 'account_locked';
+export type LoginOutcome =
+  'success' | 'invalid_credentials' | 'account_locked' | 'unverified_account';
 
 export interface LoginResult {
   outcome: LoginOutcome;
@@ -85,7 +86,13 @@ export interface NotificationEvent {
 }
 
 export interface AuditEvent {
-  type: 'login_success' | 'login_failure' | 'account_locked' | 'password_reset' | 'email_verified';
+  type:
+    | 'login_success'
+    | 'login_failure'
+    | 'account_locked'
+    | 'password_reset'
+    | 'email_verified'
+    | 'login_blocked_unverified';
   /**
    * The attempted email, present on every event regardless of outcome — this is the only
    * identifier available for an account_locked/login_failure event against an unregistered
@@ -161,10 +168,27 @@ export class AuthService {
       return { outcome: 'invalid_credentials' };
     }
 
-    // A successful login clears any failed-attempt history for this email — otherwise stale
-    // failures from before the success would still count toward the 5-in-15-minutes threshold,
+    // A successful password match clears any failed-attempt history for this email — otherwise
+    // stale failures from before it would still count toward the 5-in-15-minutes threshold,
     // letting a single subsequent mistake lock out a user who just proved they know the password.
+    // This applies even when verified is false below: the credentials were correct, so this isn't
+    // a failure to penalize via lockout accounting — only the account's verified state blocks it.
     this.failedAttemptsByEmail.delete(key);
+
+    // AC-07: correct credentials for an unverified account must not issue tokens. Only reachable
+    // once the password has already matched, so this doesn't reopen AC-02/AC-03's enumeration
+    // guarantee — an attacker without the correct password never reaches this branch.
+    if (!user.verified) {
+      this.auditLog.push({
+        type: 'login_blocked_unverified',
+        userId: user.id,
+        email,
+        ip,
+        timestamp: now,
+      });
+      return { outcome: 'unverified_account' };
+    }
+
     this.auditLog.push({ type: 'login_success', userId: user.id, email, ip, timestamp: now });
 
     const refreshToken = `refresh_${crypto.randomUUID()}`;

@@ -9,13 +9,21 @@ const NOW = 1_700_000_000_000;
 const MINUTE = 60 * 1000;
 
 let USER: SeedUser;
+let UNVERIFIED_USER: SeedUser;
 
 beforeAll(async () => {
+  const passwordHash = await hashPassword(PLAINTEXT_PASSWORD);
   USER = {
     id: 'user_1',
     email: 'demo@clearline.dev',
-    passwordHash: await hashPassword(PLAINTEXT_PASSWORD),
+    passwordHash,
     verified: true,
+  };
+  UNVERIFIED_USER = {
+    id: 'user_2',
+    email: 'unverified@clearline.dev',
+    passwordHash,
+    verified: false,
   };
 });
 
@@ -179,5 +187,57 @@ describe('AuthService.login', () => {
     );
 
     expect(result.outcome).toBe('invalid_credentials');
+  });
+
+  it('blocks a correct-password login against an unverified account and issues no tokens (AC-07)', async () => {
+    const service = new AuthService([UNVERIFIED_USER]);
+    const result = await service.login(UNVERIFIED_USER.email, PLAINTEXT_PASSWORD, IP, NOW);
+
+    expect(result).toEqual({ outcome: 'unverified_account' });
+  });
+
+  it('records a login_blocked_unverified audit event, distinct from login_success (AC-07)', async () => {
+    const service = new AuthService([UNVERIFIED_USER]);
+    await service.login(UNVERIFIED_USER.email, PLAINTEXT_PASSWORD, IP, NOW);
+
+    const [event] = service.getAuditLog();
+    expect(event).toMatchObject({
+      type: 'login_blocked_unverified',
+      userId: UNVERIFIED_USER.id,
+      email: UNVERIFIED_USER.email,
+      ip: IP,
+      timestamp: NOW,
+    });
+  });
+
+  it('clears failed-attempt history on a correct-password-but-unverified attempt, same as a real success (AC-07)', async () => {
+    const service = new AuthService([UNVERIFIED_USER]);
+    for (let i = 0; i < 4; i++) {
+      await service.login(UNVERIFIED_USER.email, 'wrong-password', IP, NOW + i * MINUTE);
+    }
+    const blockedResult = await service.login(
+      UNVERIFIED_USER.email,
+      PLAINTEXT_PASSWORD,
+      IP,
+      NOW + 4 * MINUTE,
+    );
+    expect(blockedResult.outcome).toBe('unverified_account');
+
+    // A single failure afterward must not lock the account — if the pre-block failures were
+    // still counted, this would be the 5th failure within the window and lock.
+    const result = await service.login(
+      UNVERIFIED_USER.email,
+      'wrong-password',
+      IP,
+      NOW + 5 * MINUTE,
+    );
+    expect(result.outcome).toBe('invalid_credentials');
+  });
+
+  it('still returns invalid_credentials for a wrong password on an unverified account', async () => {
+    const service = new AuthService([UNVERIFIED_USER]);
+    const result = await service.login(UNVERIFIED_USER.email, 'wrong-password', IP, NOW);
+
+    expect(result).toEqual({ outcome: 'invalid_credentials' });
   });
 });

@@ -8,7 +8,8 @@ export interface LoginResponse {
   accessToken: string;
 }
 
-export type AuthErrorCode = 'invalid_credentials' | 'account_locked' | 'network_error';
+export type AuthErrorCode =
+  'invalid_credentials' | 'account_locked' | 'unverified_account' | 'network_error';
 
 export interface AuthErrorResponse {
   error: AuthErrorCode;

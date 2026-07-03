@@ -143,6 +143,48 @@ describe('LoginPage', () => {
     expect(screen.getByText(/SR-TEST1234/)).toBeInTheDocument();
   });
 
+  it('shows a verify-email message and no dashboard redirect for an unverified account (AC-07)', async () => {
+    server.use(
+      http.post('*/api/auth/login', () =>
+        HttpResponse.json({ error: 'unverified_account' }, { status: 403 }),
+      ),
+    );
+    renderLoginPage();
+
+    await fillAndSubmit('unverified@clearline.dev', 'correct-password');
+
+    expect(
+      await screen.findByText(
+        'Verify your email to continue. Check your inbox for the link, or request a new one.',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('Dashboard stub')).not.toBeInTheDocument();
+  });
+
+  it('resends the verification email and shows a confirmation (AC-07)', async () => {
+    server.use(
+      http.post('*/api/auth/login', () =>
+        HttpResponse.json({ error: 'unverified_account' }, { status: 403 }),
+      ),
+      http.post('*/api/auth/signup', () => HttpResponse.json({})),
+    );
+    renderLoginPage();
+
+    const user = await fillAndSubmit('unverified@clearline.dev', 'correct-password');
+    await screen.findByText(
+      'Verify your email to continue. Check your inbox for the link, or request a new one.',
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Resend verification email' }));
+
+    expect(
+      await screen.findByText('Verification email sent. Check your inbox.'),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Resend verification email' }),
+    ).not.toBeInTheDocument();
+  });
+
   it('shows "Retrying…" while a failed attempt is still being retried (AC-05)', async () => {
     server.use(
       http.post('*/api/auth/login', () =>
