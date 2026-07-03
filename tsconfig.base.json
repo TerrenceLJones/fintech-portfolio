@@ -25,10 +25,14 @@
     "paths": {
       "@fintech-portfolio/design-tokens": ["libs/design-tokens/src/index.ts"],
       "@fintech-portfolio/mock-backend": ["libs/mock-backend/src/index.ts"],
+      "@fintech-portfolio/mock-backend/browser": ["libs/mock-backend/src/browser.ts"],
+      "@fintech-portfolio/mock-backend/server": ["libs/mock-backend/src/server.ts"],
       "@fintech-portfolio/contracts": ["libs/contracts/src/index.ts"],
       "@fintech-portfolio/icons": ["libs/icons/src/index.ts"],
       "@fintech-portfolio/ui": ["libs/ui/src/index.ts"],
-      "@fintech-portfolio/money": ["libs/util/money/src/index.ts"]
+      "@fintech-portfolio/money": ["libs/util/money/src/index.ts"],
+      "@fintech-portfolio/domain-auth": ["libs/domain/auth/src/index.ts"],
+      "@fintech-portfolio/data-access-auth": ["libs/data-access/auth/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp", "dist"]

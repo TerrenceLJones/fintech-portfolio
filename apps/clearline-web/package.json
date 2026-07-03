@@ -4,20 +4,34 @@
   "private": true,
   "description": "B2B spend management / payments frontend demo. Web-only, no mobile companion.",
   "scripts": {
-    "dev": "echo \"dev command set when TDR-CW-WEB-001 (app baseline) selects the frontend framework\" && exit 1",
-    "build": "echo \"build command set when TDR-CW-WEB-001 (app baseline) selects the frontend framework\" && exit 1",
-    "start": "echo \"start command set when TDR-CW-WEB-001 (app baseline) selects the frontend framework\" && exit 1",
-    "test": "echo \"test command set when TDR-CW-WEB-001 (app baseline) selects the frontend framework\" && exit 1",
+    "dev": "vite",
+    "build": "vite build",
+    "start": "vite preview",
+    "test": "vitest run",
     "lint": "eslint .",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@fintech-portfolio/contracts": "workspace:*",
+    "@fintech-portfolio/data-access-auth": "workspace:*",
     "@fintech-portfolio/design-tokens": "workspace:*",
+    "@fintech-portfolio/icons": "workspace:*",
     "@fintech-portfolio/mock-backend": "workspace:*",
+    "@fintech-portfolio/ui": "workspace:*",
     "@sentry/cli": "^3.6.0",
     "@sentry/react": "^10.62.0",
+    "@tanstack/react-query": "^5.101.2",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "react-router": "^7.18.1",
     "vercel": "^54.18.6"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.2",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "msw": "^2.14.6",
+    "tailwindcss": "^4.3.2"
   },
   "engines": {
     "node": ">=24.0.0"
@@ -31,14 +45,20 @@
     "app": "clearline-web",
     "deployment_unit": "apps/clearline-web/",
     "platform_baseline_tdr": "TDR-PLATFORM-001",
-    "app_baseline_tdr": "TDR-CW-WEB-001 (not yet created)",
-    "status": "planned",
+    "app_baseline_tdr": "TDR-CW-WEB-001",
+    "status": "in_progress",
     "technologies": {
-      "frontend_framework": "TBD - from TDR-CW-WEB-001",
-      "api_style": "N/A - MSW v2 mock backend (see libs/mock-backend)"
+      "frontend_framework": "React 19 + Vite 7.3 (see TDR-CW-WEB-001 > technology_decisions.frontend_framework_and_build_tool)",
+      "api_style": "REST via MSW v2 mock backend for auth; GraphQL/Apollo reserved for data-dense dashboard views (see TDR-CW-WEB-001 > technology_decisions.api_style_and_graphql_client)",
+      "routing": "react-router 7.18.x — pinned below the very-recent 8.x major (released ~2 weeks prior), matching this TDR's own Vite 7.3-over-8.x stability reasoning"
     },
     "infrastructure": {
       "hosting_frontend": "Vercel (Hobby, free tier) — see TDR-PLATFORM-001 infrastructure_providers.frontend_hosting"
     }
+  },
+  "msw": {
+    "workerDirectory": [
+      "public"
+    ]
   }
 }

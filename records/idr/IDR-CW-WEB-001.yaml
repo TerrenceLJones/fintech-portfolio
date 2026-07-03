@@ -53,7 +53,7 @@ providers:
       known_caveats and github-actions-setup.md.
     setup_guide: /infrastructure/setup-guides/github-actions-setup.md
     known_caveats:
-      - 'lint/type-check CI steps have been real since PLATFORM-001; build/test/dev steps become real once Engineering Agent scaffolds Vite/React source for this TDR.'
+      - 'RESOLVED (US-CW-001, 2026-07-02): build/test/dev steps are now real — apps/clearline-web has a real vite.config.mts, vitest.config.mts, and package.json dev/build/test/lint/type-check scripts. lint/type-check CI steps have been real since PLATFORM-001.'
       - 'A GraphQL schema-validation CI step is a reasonable future addition now that api_style_and_graphql_client is decided (GraphQL + Apollo Client), but no GraphQL schema exists in the repo yet (mock-backend handlers are still REST-only per TDR mock_backend_gap_flag). NOT added to the live workflow in this run to avoid a step with nothing to validate against — see github-actions-setup.md Configuration for CW-WEB-001.'
 
   error_tracking_provider:
@@ -75,7 +75,7 @@ providers:
       browser bundle.
     setup_guide: /infrastructure/setup-guides/sentry-setup.md
     known_caveats:
-      - 'BREAKING RENAME: existing apps/clearline-web/.env.local (and the three .env*.example files, both in infrastructure/env-templates/clearline-web/ and the app-local copies) still use the platform-baseline placeholder name SENTRY_DSN. Human operator must rename to VITE_SENTRY_DSN when Engineering Agent scaffolds the Vite app — do not silently keep both names in sync forever.'
+      - 'RESOLVED (US-CW-001, 2026-07-02): apps/clearline-web/.env.local now uses VITE_SENTRY_DSN, and @sentry/react + @sentry/cli are declared dependencies in apps/clearline-web/package.json. OPEN FOLLOW-UP: no Sentry.init() call exists yet anywhere in apps/clearline-web/src (main.tsx does not initialize it) — the SDK is installed but not wired up. Track this as a small remaining task, not a records gap.'
       - 'Confirm CSP allows the Sentry beacon if clearline-web ever sets a strict Content-Security-Policy (carried over caveat from IDR-PLATFORM-001).'
 
   anthropic_api:

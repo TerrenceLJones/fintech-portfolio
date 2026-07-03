@@ -1,0 +1,32 @@
+{
+  "name": "@fintech-portfolio/mock-backend",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Platform-wide MSW v2 mock backend convention: stateful TypeScript services hold the invariants, MSW handlers are thin HTTP/WebSocket adapters in front of them. See TDR-PLATFORM-001 > technology_decisions.shared_mock_backend_strategy.",
+  "main": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./browser": "./src/browser.ts",
+    "./server": "./src/server.ts"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "type-check": "tsc --noEmit",
+    "test": "vitest run",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@fintech-portfolio/contracts": "workspace:*",
+    "@fintech-portfolio/domain-auth": "workspace:*"
+  },
+  "devDependencies": {
+    "msw": "^2.14.6"
+  },
+  "metadata": {
+    "package_type": "shared",
+    "platform_baseline_tdr": "TDR-PLATFORM-001",
+    "architectural_pattern": "services-first, handlers-second",
+    "structural_convention": "src/{services,handlers,fixtures}/ + src/browser.ts (dev/Storybook) + src/server.ts (Vitest/Playwright)",
+    "contract_testing": "No Pact / consumer-driven contract testing — see TDR-PLATFORM-001 ADR-006 reference and libs/contracts."
+  }
+}

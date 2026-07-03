@@ -100,6 +100,32 @@ technical_notes: |
   ID surfaced to the user for lockout recovery. The login client must implement retry with exponential backoff
   (max 3 attempts) for transient authentication-service unavailability, falling back to a manual retry affordance.
 
+  "Contact support" is decorative copy, not a functional link, in both the AC-04 lockout message and the login
+  screen's footer ("Trouble signing in? Contact support"). No story anywhere in the registry (this one, US-CW-005,
+  or US-CW-014, which all use the same "Contact support" phrasing) defines an actual destination — no mailto,
+  chat widget, or support-ticket page. Per TDR-CW-WEB-001's "frontend demo, not a real financial system" framing,
+  treat this as intentionally out of scope rather than a gap deferred to a specific future epic, so it isn't
+  mistaken for a bug later. "Forgot password?" is the one login-screen link that IS a real, tracked gap — it maps
+  to US-CW-003 (Password Reset).
+
+  Password confidentiality is two separate concerns, handled by two separate mechanisms, never conflated. In
+  transit: TLS/HTTPS is the only recognized mechanism (NIST SP 800-63B requires "an authenticated protected
+  channel using approved cryptography" for authenticator secrets) — Vercel enforces this at the platform level;
+  no per-request application-layer encryption is added on top, and none should be. At rest: passwords are hashed,
+  never encrypted — hashing is one-way by design, so nothing (including the backend itself) can ever recover the
+  plaintext. This is implemented via PBKDF2-HMAC-SHA256 (@fintech-portfolio/domain-auth's password-hashing
+  module), OWASP's documented fallback where Argon2id isn't available — Argon2id has no native Web Crypto support
+  and would require a WASM dependency inside the browser-mode MSW service worker this mock backend runs in.
+  AuthService.login also runs a dummy-hash verification for unregistered emails so response timing can't be used
+  to enumerate which emails are registered, matching this story's existing enumeration-safety intent (AC-02/AC-03).
+  Sources: OWASP Password Storage Cheat Sheet, NIST SP 800-63B §5.1.1 (Authenticators).
+
+  Failed-attempt lockout tracking must be keyed by the attempted email regardless of whether it corresponds to a
+  registered account. Scoping tracking to real accounts only would reopen an enumeration side-channel via lockout
+  timing — unregistered emails would never lock while registered ones lock after 5 attempts — even with the
+  identical invalid_credentials error message from AC-03 in place. This is intentional and should not be
+  "optimized" to skip tracking unregistered emails.
+
 # Edge Cases
 edge_cases: |
   - Incorrect password on a valid, registered email

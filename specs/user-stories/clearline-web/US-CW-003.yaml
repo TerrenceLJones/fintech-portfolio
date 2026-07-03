@@ -79,6 +79,15 @@ technical_notes: |
   refresh tokens for the account must be revoked server-side (forcing logout everywhere) and a notification email
   sent to the account owner as a security signal of the change.
 
+  Needed change carried over from US-CW-001's password-hashing decision: the new password submitted on AC-03 must
+  be hashed with the same PBKDF2-HMAC-SHA256 helper (@fintech-portfolio/domain-auth's password-hashing module) used
+  by login — never stored or compared in plaintext, and never "encrypted" in a reversible way. Transit confidentiality
+  is TLS/HTTPS, not application-layer crypto (see US-CW-001 technical_notes for the full OWASP/NIST rationale).
+  Additionally, per the OWASP Forgot Password Cheat Sheet, the reset token itself should be stored hashed
+  server-side (not in plaintext) — the emailed link carries the raw token, but only its hash is persisted, so a
+  compromise of the mock backend's in-memory store can't be used to forge valid reset links. Not yet implemented;
+  this note exists so the requirement isn't lost before US-CW-003 implementation begins.
+
 # Edge Cases
 edge_cases: |
   - Password reset requested for an email address that is not registered

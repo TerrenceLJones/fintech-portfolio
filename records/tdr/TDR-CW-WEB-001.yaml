@@ -141,6 +141,77 @@ technology_decisions:
       - url: 'https://www.brex.com/careers/8353867002?gh_jid=8353867002'
         note: 'Brex Frontend Platform SWE II posting requires React/TypeScript/GraphQL. Accessed 2026-06-30.'
 
+  client_side_routing:
+    selected: 'react-router'
+    version: '7.18.1 (last pre-v8 stable line)'
+    decision_type: retroactively_documented
+    context: >
+      Implemented as part of US-CW-001 (apps/clearline-web/src/main.tsx, App.tsx,
+      routes/RequireAuth.tsx use BrowserRouter/Routes/Outlet) but never decided in this
+      TDR's original research pass — no routing library appears anywhere in this TDR or
+      in TDR-PLATFORM-001. Documented here after the fact so the app's package.json
+      metadata note ("matching this TDR's own Vite 7.3-over-8.x stability reasoning") has
+      an actual decision record to point to, rather than implying a comparison that was
+      never written down.
+    rationale: >
+      react-router is the de facto standard client-side router for React SPAs; unlike
+      the framework/build-tool and state-management choices above, no credible
+      alternative (TanStack Router, wouter) was evaluated because routing didn't present
+      the kind of genuine ambiguity that triggered a full comparison elsewhere in this
+      TDR. That's a gap in this TDR's own process, not a considered "no contest"
+      finding — flagged honestly rather than backfilled with a comparison that wasn't
+      actually done.
+    version_pin_decision: >
+      React Router v8.0.1 shipped ~2026-06 as the first major on a new yearly-release
+      cadence (timed to Node 20's EOL), requiring Node >=22.22 and React >=19.2.7 and
+      making several breaking changes default (react-router-dom dropped in favor of
+      react-router/dom, middleware always-on). Pinning to the 7.18.x line — the last
+      pre-v8 stable line, still React 19-compatible — mirrors this TDR's identical
+      Vite-7-over-8 reasoning: prefer the more stability-proven pre-major line for a
+      solo-maintained demo over a major that was only weeks old at implementation time.
+      Revisit at the next TDR review.
+    alternatives_considered: []
+    research_sources:
+      - url: 'https://reactrouter.com/changelog'
+        note: 'Official changelog confirming v8.0.1 as latest, v7.18.x as prior stable line. Accessed 2026-07-02.'
+      - url: 'https://github.com/remix-run/react-router/discussions/14468'
+        note: 'v8 announcement/breaking-changes discussion — Node >=22.22, React >=19.2.7, react-router-dom dropped. Accessed 2026-07-02.'
+      - url: 'https://registry.npmjs.org/react-router/7.18.1'
+        note: 'Confirms 7.18.1 package metadata and React >=18 peer range (tested against React 19.2.3 in devDependencies). Accessed 2026-07-02.'
+
+  password_hashing:
+    selected: 'PBKDF2-HMAC-SHA256, via the Web Crypto API (crypto.subtle) — no external package'
+    version: 'N/A (standard-library primitive); 210,000 iterations, implemented in libs/domain/auth/src/password-hashing.ts'
+    decision_type: retroactively_documented
+    context: >
+      Decided and implemented as part of US-CW-001, documented in full in
+      US-CW-001.yaml's technical_notes and in the module's own code comments, but — like
+      client_side_routing above — never entered into this TDR despite being exactly the
+      kind of algorithm/library decision (with rejected alternatives and cited sources)
+      this TDR otherwise tracks for every other selection. Documented here for
+      completeness and future-review visibility.
+    rationale: >
+      Argon2id is OWASP's first-choice password-hashing algorithm but has no native Web
+      Crypto API support, which would mean shipping a WASM dependency into the
+      browser-mode MSW service worker this mock backend runs in. PBKDF2-HMAC-SHA256 is
+      OWASP's documented fallback for when Argon2id/bcrypt/scrypt aren't available, and
+      is natively available and identical in both runtimes this mock backend executes in
+      (the browser-mode MSW service worker and Node/Vitest) — no WASM or native addon
+      needed in either. 210,000 iterations matches OWASP's currently documented PBKDF2-
+      HMAC-SHA256 minimum. AuthService additionally runs a dummy-hash verification for
+      unregistered emails so PBKDF2's cost can't be used as a timing side-channel to
+      enumerate registered accounts.
+    alternatives_considered:
+      - option: 'Argon2id'
+        rejected_because: 'OWASP first choice, but no native Web Crypto support — would require a WASM dependency shipped into the browser-mode MSW service worker bundle.'
+      - option: 'bcrypt / scrypt'
+        rejected_because: 'Same practical constraint as Argon2id — no native Web Crypto API support in either target runtime; not evaluated in further depth once that constraint was identified.'
+    research_sources:
+      - url: 'https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html'
+        note: 'OWASP Password Storage Cheat Sheet — documents PBKDF2-HMAC-SHA256 as the fallback algorithm and current iteration-count minimum when Argon2id/bcrypt/scrypt are unavailable. Already cited in libs/domain/auth/src/password-hashing.ts. Accessed 2026-07-02.'
+      - url: 'https://pages.nist.gov/800-63-3/sp800-63b.html'
+        note: "NIST SP 800-63B §5.1.1.2 (Memorized Secret Verifiers) — general authenticator-secret handling requirements referenced alongside OWASP guidance in US-CW-001's technical_notes. Accessed 2026-07-02."
+
   workflow_state_modeling:
     selected: 'XState v5'
     version: '^5.32 (latest stable 5.32.2)'
@@ -670,6 +741,8 @@ validation:
       - 'TanStack Query + React 19: no conflict; retry/mutation lifecycle APIs used are stable v5 features.'
       - 'Apollo Client 4.2.4 + MSW v2 GraphQL handlers: MSW is explicitly documented as client-agnostic; __typename note documented above. No conflict.'
       - "Radix (unified radix-ui package) + Tailwind v4 + React 19: standard 'unstyled primitives + utility CSS' pairing, no conflict."
+      - 'react-router 7.18.1 + React 19.2: peer range is react>=18, tested against React 19.2.3 in the package own devDependencies; no conflict.'
+      - 'PBKDF2-HMAC-SHA256 via Web Crypto (crypto.subtle) + Vite (browser-mode MSW service worker) + Node/Vitest: crypto.subtle is natively available in both target runtimes, no WASM or native addon needed, no conflict.'
       - "Vitest 4.1.9 + Nx: first-party via the new @nx/vitest plugin (Nx 22+) — do not use @nx/vite's legacy Vitest support, which sunsets at Nx v23. See technology_decisions.testing_stack.nx_integration_note."
       - 'Playwright 1.61.0 + fast-check 4.8.0: independent of framework choice, no conflict with any of the above.'
       - 'Anthropic API (Claude Sonnet 5) structured outputs (zodOutputFormat) + TypeScript 6.0.3: current GA feature, no conflict.'
@@ -678,6 +751,7 @@ validation:
       - "The project plan's claim that Stately/XState docs 'explicitly position payment-authorization flows... as canonical use cases' could not be verified from official sources — softened in this TDR; see technology_decisions.workflow_state_modeling.plan_claim_correction."
       - "mock-backend-architecture.md's documented handler inventory is REST-only and doesn't yet include a GraphQL handler file for the dashboard queries implied by the api_style decision. The concrete recommendation (a new dashboard.graphql.handlers.ts, services-first per the existing pattern) is now documented in mock_backend_architecture.handler_layer below — that closes the documentation gap this TDR previously left dangling (three 'see mock_backend_architecture below' references with no such section). The code itself is still unwritten, since no mock-backend handlers of any kind exist yet — not a contradiction, just not yet implemented."
       - 'Vite version pin (7.3.x, conservative) vs. Vite 8.x (newer, Rolldown-based) is a judgment call between stability margin and newer-tooling signal — either is technically valid.'
+      - "client_side_routing (react-router) and password_hashing (PBKDF2-HMAC-SHA256) were decided during US-CW-001 implementation without going through this TDR's research pass at the time — added retroactively in this revision (technology_decisions.client_side_routing, technology_decisions.password_hashing) so the record matches what was actually built. No conflict was found once documented, but future new-technology decisions made mid-implementation should be added to this TDR at decision time, not backfilled after the fact."
   no_contradiction_with_plan_caveats:
     status: confirmed
     note: >

@@ -1,0 +1,23 @@
+import { Meta, Stories } from '@storybook/addon-docs/blocks';
+import * as AuthLayoutStories from './AuthLayout.stories';
+
+<Meta of={AuthLayoutStories} />
+
+# AuthLayout
+
+Branded split-screen shell for auth pages: a gradient hero panel carrying the Clearline brand
+message on wide viewports, and a centered form slot (`children`) for the actual page content.
+
+Extracted from the US-CW-001 login screen implementation — the hero panel's gradient, overlay
+pattern, and copy layout are non-trivial enough that the next auth screen (US-CW-003 password
+reset) should reuse this shell rather than re-authoring it.
+
+## Behavior
+
+- `headline`, `subcopy`, and `footer` default to the login-page brand copy but can be overridden
+  per page (e.g. a password-reset screen swapping in reset-specific copy).
+- Pass `footer={null}` to omit the footer line entirely (an omitted prop still gets the default).
+- Below the `lg` breakpoint the hero panel hides and a small inline wordmark renders above
+  `children` instead, so the brand is never entirely absent on narrow viewports.
+
+<Stories />

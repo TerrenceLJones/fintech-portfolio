@@ -20,7 +20,13 @@ export interface AppShellProps {
  * `<ThemeProvider>` ancestor (mounted once at the app root) rather than owning one itself, so theme
  * state stays shared across the whole app instead of being re-created per AppShell instance.
  */
-export function AppShell({ navItems, activeNavId, onNavigate, title, maxWidth = 1200 }: AppShellProps) {
+export function AppShell({
+  navItems,
+  activeNavId,
+  onNavigate,
+  title,
+  maxWidth = 1200,
+}: AppShellProps) {
   const { theme, setTheme } = useTheme();
 
   return (

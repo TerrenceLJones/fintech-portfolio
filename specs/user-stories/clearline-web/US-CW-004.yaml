@@ -114,6 +114,14 @@ technical_notes: |
   timeout that invalidates the in-progress step without discarding previously saved steps. EIN uniqueness must
   be enforced at submission time to detect duplicate business accounts before a new onboarding record is created.
 
+  Form library decision deferred to this story: clearline-web's login screen (US-CW-001) hand-rolled its form
+  state with plain useState, which was fine for a 2-field form with no client-side validation beyond HTML5
+  `required` (all real validation there is server-driven — invalid credentials, lockout, network errors). This
+  multi-step, save-and-resume wizard with real field-level validation (EIN format, SSN/ITIN, ownership
+  percentages, per-step error states) is a materially different shape and is where a form library likely
+  pays for itself — evaluate react-hook-form (+ zod, already a project dependency per TDR-CW-WEB-001's
+  ai_integration structured-outputs decision) before hand-rolling this wizard's state.
+
 # Edge Cases
 edge_cases: |
   - EIN entered does not match any registered business (failed registry verification)

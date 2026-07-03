@@ -1,0 +1,20 @@
+{
+  "name": "@fintech-portfolio/domain-auth",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Pure, framework-agnostic authentication business rules (e.g. account-lockout policy) — no data-access or UI dependencies, per the plan's domain-libs-stay-pure architecture.",
+  "main": "src/index.ts",
+  "scripts": {
+    "lint": "eslint .",
+    "type-check": "tsc --noEmit",
+    "test": "vitest run",
+    "build": "tsc"
+  },
+  "dependencies": {},
+  "devDependencies": {},
+  "metadata": {
+    "package_type": "shared",
+    "app": "clearline-web",
+    "scope": "First lib in the plan's libs/domain/* group. Holds business rules that must be identical regardless of caller (mock backend service, future real backend) — currently just the 5-attempts-in-15-minutes lockout window."
+  }
+}
