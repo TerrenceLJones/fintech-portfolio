@@ -1,7 +1,7 @@
 import type { ButtonHTMLAttributes, MouseEvent, ReactNode } from 'react';
 import { Icon, type IconName } from '@fintech-portfolio/icons';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
+export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'link';
 export type ButtonSize = 'sm' | 'md' | 'lg';
 /** Overrides a `primary`/`secondary` button's color to match a status/alert tone instead of the default accent look. */
 export type ButtonTone = 'accent' | 'positive' | 'negative' | 'warning' | 'critical' | 'neutral';
@@ -11,6 +11,9 @@ const VARIANT_CLASSES: Record<ButtonVariant, string> = {
   secondary: 'bg-cl-surface text-cl-text border border-cl-border-2',
   ghost: 'bg-transparent text-cl-accent-text',
   danger: 'bg-cl-surface text-cl-neg border border-cl-border-2',
+  // No box at all — see the `isLink` branching below, which also skips SIZE_CLASSES' padding and
+  // font-semibold/rounded-lg so this renders as plain inline text, not a shrunken box variant.
+  link: 'bg-transparent text-cl-accent-text',
 };
 
 const SOLID_TONE_CLASSES: Record<ButtonTone, string> = {
@@ -65,9 +68,16 @@ export function Button({
   ...rest
 }: ButtonProps) {
   const isDisabled = !!disabled;
+  // `link` renders as bare inline text (no padding/border/background) rather than a box, so its
+  // disabled/enabled looks skip the box-only classes (background, border) the other variants use.
+  const isLink = variant === 'link';
   let look: string;
   if (isDisabled) {
-    look = 'bg-cl-surface-2 text-cl-text-3 cursor-not-allowed';
+    look = isLink
+      ? 'text-cl-text-3 cursor-not-allowed'
+      : 'bg-cl-surface-2 text-cl-text-3 cursor-not-allowed';
+  } else if (isLink) {
+    look = VARIANT_CLASSES.link;
   } else if (tone && variant === 'primary') {
     look = `${SOLID_TONE_CLASSES[tone]} text-white`;
   } else if (tone && variant === 'secondary') {
@@ -96,12 +106,13 @@ export function Button({
       aria-busy={loading}
       onClick={handleClick}
       className={[
-        'font-sans font-semibold leading-none rounded-lg',
+        'font-sans leading-none',
+        isLink ? 'font-medium text-[12.5px]' : 'font-semibold rounded-lg',
         fullWidth ? 'flex w-full' : 'inline-flex',
         'items-center justify-center gap-1.5 whitespace-nowrap',
         !isDisabled && !loading && 'cursor-pointer',
         loading && 'cursor-not-allowed opacity-80',
-        SIZE_CLASSES[size],
+        isLink ? 'p-0 border-none' : SIZE_CLASSES[size],
         look,
         className,
       ]

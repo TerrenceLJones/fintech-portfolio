@@ -1,5 +1,5 @@
 import { useState, type SubmitEvent } from 'react';
-import { useNavigate, useSearchParams } from 'react-router';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router';
 import { Alert, AuthLayout, Button, PasswordField, Text, TextField } from '@fintech-portfolio/ui';
 import { LoginError, setAccessToken, useLogin } from '@fintech-portfolio/data-access-auth';
 
@@ -14,11 +14,15 @@ function resolveRedirectTarget(next: string | null): string {
 
 export function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const redirectTo = resolveRedirectTarget(searchParams.get('next'));
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const login = useLogin();
+  const passwordChanged = Boolean(
+    (location.state as { passwordChanged?: boolean } | null)?.passwordChanged,
+  );
 
   function handleSubmit(event: SubmitEvent) {
     event.preventDefault();
@@ -62,6 +66,13 @@ export function LoginPage() {
       </Text>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        {passwordChanged && (
+          <Alert
+            tone="positive"
+            title="Your password was changed. Sign in with your new password."
+          />
+        )}
+
         {isInvalidCredentials && (
           <div role="alert">
             <Alert tone="negative" title="Incorrect email or password" />
@@ -82,9 +93,9 @@ export function LoginPage() {
             <Text as="label" size="label" tone="muted" htmlFor="password">
               Password
             </Text>
-            <Text as="span" size="label" tone="accent">
+            <Link to="/forgot-password" className="text-cl-accent-text text-[12.5px] font-medium">
               Forgot password?
-            </Text>
+            </Link>
           </div>
           <PasswordField
             id="password"

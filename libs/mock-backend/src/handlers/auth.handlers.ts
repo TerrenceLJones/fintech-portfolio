@@ -1,6 +1,7 @@
 import { http, HttpResponse, type HttpHandler } from 'msw';
 import type { AuthErrorResponse, LoginRequest, LoginResponse } from '@fintech-portfolio/contracts';
 import { AuthService } from '../services/auth.service';
+import { sharedAuthService } from '../services/shared-auth-service';
 
 /**
  * No real client IP is visible to a browser-mode MSW service worker (there is no real network
@@ -9,10 +10,8 @@ import { AuthService } from '../services/auth.service';
  */
 const MOCKED_CLIENT_IP = '127.0.0.1 (mocked)';
 
-const defaultAuthService = new AuthService();
-
 /** Thin HTTP adapter in front of AuthService — the actual rules live in the service, not here. */
-export function createAuthHandlers(authService: AuthService = defaultAuthService): HttpHandler[] {
+export function createAuthHandlers(authService: AuthService = sharedAuthService): HttpHandler[] {
   return [
     http.post('*/api/auth/login', async ({ request }) => {
       const { email, password } = (await request.json()) as LoginRequest;

@@ -71,4 +71,22 @@ describe('Button', () => {
     render(<Button label="fallback">Actual content</Button>);
     expect(screen.getByRole('button')).toHaveTextContent('Actual content');
   });
+
+  it('renders the link variant as bare inline text — no box padding or border', async () => {
+    const onClick = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <Button variant="link" onClick={onClick}>
+        Back to sign in
+      </Button>,
+    );
+
+    const button = screen.getByRole('button', { name: 'Back to sign in' });
+    expect(button).not.toHaveClass('rounded-lg');
+    expect(button.className).not.toMatch(/\bpx-\d/);
+    expect(button).toHaveClass('p-0');
+
+    await user.click(button);
+    expect(onClick).toHaveBeenCalledTimes(1);
+  });
 });

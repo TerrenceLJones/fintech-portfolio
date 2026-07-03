@@ -165,4 +165,45 @@ describe('LoginPage', () => {
       await screen.findByText('Something went wrong on our end. Retrying…', {}, { timeout: 2000 }),
     ).toBeInTheDocument();
   });
+
+  it('links "Forgot password?" to the forgot-password page', async () => {
+    render(
+      withQueryClient(
+        <MemoryRouter initialEntries={['/login']}>
+          <Routes>
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/forgot-password" element={<div>Forgot password stub</div>} />
+          </Routes>
+        </MemoryRouter>,
+      ),
+    );
+    const user = userEvent.setup();
+
+    await user.click(screen.getByText('Forgot password?'));
+    expect(await screen.findByText('Forgot password stub')).toBeInTheDocument();
+  });
+
+  it('shows a success banner when arriving with a passwordChanged navigation state', () => {
+    render(
+      withQueryClient(
+        <MemoryRouter initialEntries={[{ pathname: '/login', state: { passwordChanged: true } }]}>
+          <Routes>
+            <Route path="/login" element={<LoginPage />} />
+          </Routes>
+        </MemoryRouter>,
+      ),
+    );
+
+    expect(
+      screen.getByText('Your password was changed. Sign in with your new password.'),
+    ).toBeInTheDocument();
+  });
+
+  it('shows no success banner on a normal visit with no passwordChanged navigation state', () => {
+    renderLoginPage();
+
+    expect(
+      screen.queryByText('Your password was changed. Sign in with your new password.'),
+    ).not.toBeInTheDocument();
+  });
 });

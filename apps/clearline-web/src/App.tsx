@@ -2,6 +2,8 @@ import { Route, Routes } from 'react-router';
 import { ThemeProvider } from '@fintech-portfolio/design-tokens';
 import { AppShell, type NavigationShellItem } from '@fintech-portfolio/ui';
 import { LoginPage } from './pages/LoginPage';
+import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
+import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { RequireAuth } from './routes/RequireAuth';
 
@@ -17,10 +19,16 @@ export function App() {
     <ThemeProvider>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route element={<RequireAuth />}>
           <Route
             element={
-              <AppShell navItems={EMPLOYEE_NAV_ITEMS} activeNavId="expenses" title="Spend Dashboard" />
+              <AppShell
+                navItems={EMPLOYEE_NAV_ITEMS}
+                activeNavId="expenses"
+                title="Spend Dashboard"
+              />
             }
           >
             <Route path="/" element={<DashboardPage />} />

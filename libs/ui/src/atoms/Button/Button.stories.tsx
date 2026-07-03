@@ -7,7 +7,7 @@ const meta: Meta<typeof Button> = {
   title: 'Atoms/Button',
   component: Button,
   argTypes: {
-    variant: { control: 'select', options: ['primary', 'secondary', 'ghost', 'danger'] },
+    variant: { control: 'select', options: ['primary', 'secondary', 'ghost', 'danger', 'link'] },
     size: { control: 'select', options: ['sm', 'md', 'lg'] },
   },
 };
@@ -33,6 +33,9 @@ export const Secondary: Story = {
 };
 export const Ghost: Story = {
   args: { label: 'Details', variant: 'ghost', onClick: alertingAction('Opening details…') },
+};
+export const Link: Story = {
+  args: { label: 'Back to sign in', variant: 'link', onClick: alertingAction('Navigating…') },
 };
 export const Danger: Story = {
   args: { label: 'Reject', variant: 'danger', onClick: alertingAction('Rejected') },

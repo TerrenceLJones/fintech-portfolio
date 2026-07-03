@@ -15,3 +15,27 @@ export interface AuthErrorResponse {
   /** Present only when error is 'account_locked'. */
   supportReferenceId?: string;
 }
+
+export interface ForgotPasswordRequest {
+  email: string;
+}
+
+/** Always identical whether or not the email is registered — see AuthService.requestPasswordReset. */
+export type ForgotPasswordResponse = Record<string, never>;
+
+export interface ValidateResetTokenResponse {
+  valid: boolean;
+}
+
+export interface ResetPasswordRequest {
+  token: string;
+  password: string;
+}
+
+export type ResetPasswordResponse = Record<string, never>;
+
+export type ResetPasswordErrorCode = 'token_invalid' | 'token_expired' | 'weak_password';
+
+export interface ResetPasswordErrorResponse {
+  error: ResetPasswordErrorCode;
+}

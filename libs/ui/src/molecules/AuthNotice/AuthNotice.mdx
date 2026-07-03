@@ -1,0 +1,28 @@
+import { Meta, Stories } from '@storybook/addon-docs/blocks';
+import * as AuthNoticeStories from './AuthNotice.stories';
+
+<Meta of={AuthNoticeStories} />
+
+# AuthNotice
+
+A centered icon-in-rounded-square notice — heading, optional description, and up to one primary
+(button) and one secondary (text-link) action. Used for single-message auth states where the
+message _is_ the page rather than an interruption of one: "Check your email", "This link has
+expired", "You've been signed out".
+
+## User story
+
+**US-CW-003 — Password Reset** (part of EPIC-CW-001 — Authentication & Session Management)
+
+As a Clearline user who has forgotten their password, I want to request a password reset email
+and set a new password via a time-limited link, so that I can securely regain account access
+while the system reveals nothing about which emails are registered.
+
+## Acceptance criteria
+
+- AC-01 — the "check your email" confirmation is identical regardless of whether the submitted
+  email is registered — `ForgotPasswordPage` composes this from `AuthNotice`.
+- AC-02 — an expired reset link shows "This link has expired" with a "Resend link" action —
+  `ResetPasswordPage` composes this from `AuthNotice`.
+
+<Stories />
