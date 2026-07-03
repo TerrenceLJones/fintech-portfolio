@@ -138,6 +138,13 @@ export function LoginPage() {
       </form>
 
       <Text as="div" size="label" weight="regular" tone="faint" className="mt-4.5 text-center">
+        Don't have an account?{' '}
+        <Link to="/signup" className="text-cl-accent-text text-[12.5px] font-medium">
+          Sign up
+        </Link>
+      </Text>
+
+      <Text as="div" size="label" weight="regular" tone="faint" className="mt-2 text-center">
         Trouble signing in?{' '}
         <Text as="span" size="label" tone="accent">
           Contact support

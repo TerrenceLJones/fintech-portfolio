@@ -12,6 +12,16 @@ declare global {
       issueResetTokenForE2E: (email: string) => Promise<string | undefined>;
       /** Same, but backdated past the 1-hour TTL so it's already expired on arrival. */
       issueExpiredResetTokenForE2E: (email: string) => Promise<string | undefined>;
+      /** Mints a valid sign-up verification token for `email`/`password`, standing in for the link a real inbox would receive. */
+      issueVerificationTokenForE2E: (
+        email: string,
+        password: string,
+      ) => Promise<string | undefined>;
+      /** Same, but backdated past the 24-hour TTL so it's already expired on arrival. */
+      issueExpiredVerificationTokenForE2E: (
+        email: string,
+        password: string,
+      ) => Promise<string | undefined>;
     };
   }
 }

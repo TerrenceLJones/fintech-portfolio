@@ -182,6 +182,23 @@ describe('LoginPage', () => {
     expect(await screen.findByText('Forgot password stub')).toBeInTheDocument();
   });
 
+  it('links "Sign up" to the sign-up page (AC-06)', async () => {
+    render(
+      withQueryClient(
+        <MemoryRouter initialEntries={['/login']}>
+          <Routes>
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/signup" element={<div>Sign up stub</div>} />
+          </Routes>
+        </MemoryRouter>,
+      ),
+    );
+    const user = userEvent.setup();
+
+    await user.click(screen.getByText('Sign up'));
+    expect(await screen.findByText('Sign up stub')).toBeInTheDocument();
+  });
+
   it('shows a success banner when arriving with a passwordChanged navigation state', () => {
     render(
       withQueryClient(

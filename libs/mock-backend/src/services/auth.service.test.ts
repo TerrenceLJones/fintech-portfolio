@@ -15,6 +15,7 @@ beforeAll(async () => {
     id: 'user_1',
     email: 'demo@clearline.dev',
     passwordHash: await hashPassword(PLAINTEXT_PASSWORD),
+    verified: true,
   };
 });
 

@@ -1,10 +1,12 @@
 import {
   isLockedOut,
   isResetTokenExpired,
+  isValidSignUpPassword,
+  isVerificationTokenExpired,
   verifyPassword,
   isValidPassword,
   hashPassword,
-  hashResetToken,
+  hashToken,
   type FailedAttempt,
 } from '@fintech-portfolio/domain-auth';
 import { SEED_USERS, type SeedUser } from '../fixtures/users.fixture';
@@ -39,14 +41,51 @@ interface ResetTokenRecord {
   used: boolean;
 }
 
+interface VerificationTokenRecord {
+  email: string;
+  issuedAt: number;
+  used: boolean;
+}
+
+export type SignUpOutcome = 'success' | 'weak_password';
+
+export interface SignUpResult {
+  outcome: SignUpOutcome;
+  /**
+   * Present only when a new verification email was actually sent — i.e. not for an
+   * already-registered, already-verified email (AC-02). Never surfaced over the network, same
+   * rule as RequestPasswordResetResult.token — see the handler.
+   */
+  verificationToken?: string;
+}
+
+export type VerifyEmailOutcome = 'success' | 'token_invalid' | 'token_expired';
+
+export interface VerifyEmailResult {
+  outcome: VerifyEmailOutcome;
+  accessToken?: string;
+  refreshToken?: string;
+}
+
+/** Plain-object mirror of AuthService's internal Maps/Sets, safe to JSON.stringify. */
+export interface AuthServiceSnapshot {
+  users: [string, SeedUser][];
+  failedAttempts: [string, FailedAttempt[]][];
+  auditLog: AuditEvent[];
+  resetTokens: [string, ResetTokenRecord][];
+  verificationTokens: [string, VerificationTokenRecord][];
+  activeRefreshTokens: [string, string[]][];
+  notifications: NotificationEvent[];
+}
+
 export interface NotificationEvent {
-  type: 'password_changed';
+  type: 'password_changed' | 'signup_verification' | 'signup_existing_account';
   email: string;
   timestamp: number;
 }
 
 export interface AuditEvent {
-  type: 'login_success' | 'login_failure' | 'account_locked' | 'password_reset';
+  type: 'login_success' | 'login_failure' | 'account_locked' | 'password_reset' | 'email_verified';
   /**
    * The attempted email, present on every event regardless of outcome — this is the only
    * identifier available for an account_locked/login_failure event against an unregistered
@@ -75,8 +114,10 @@ export class AuthService {
   private readonly usersByEmail: Map<string, SeedUser>;
   private readonly failedAttemptsByEmail = new Map<string, FailedAttempt[]>();
   private readonly auditLog: AuditEvent[] = [];
-  /** Keyed by the SHA-256 hash of the token, never the raw token — see hashResetToken. */
+  /** Keyed by the SHA-256 hash of the token, never the raw token — see hashToken. */
   private readonly resetTokensByTokenHash = new Map<string, ResetTokenRecord>();
+  /** Keyed by the SHA-256 hash of the token, never the raw token — see hashToken. */
+  private readonly verificationTokensByTokenHash = new Map<string, VerificationTokenRecord>();
   /** Every refresh token issued by a successful login, keyed by email, until revoked. */
   private readonly activeRefreshTokensByEmail = new Map<string, Set<string>>();
   private readonly notificationsSent: NotificationEvent[] = [];
@@ -147,7 +188,7 @@ export class AuthService {
    * Issues a single-use reset token only when the email is registered, but always returns the
    * same result shape either way — callers (the HTTP handler) must not branch on `token`'s
    * presence in a way that leaks into the response, or this defeats the point. Only the token's
-   * hash is persisted (see hashResetToken); the raw token returned here is the one — and only —
+   * hash is persisted (see hashToken); the raw token returned here is the one — and only —
    * copy, standing in for the link a real backend would email out.
    */
   async requestPasswordReset(
@@ -161,13 +202,13 @@ export class AuthService {
     }
 
     const token = `reset_${crypto.randomUUID()}`;
-    const tokenHash = await hashResetToken(token);
+    const tokenHash = await hashToken(token);
     this.resetTokensByTokenHash.set(tokenHash, { email: key, issuedAt: now, used: false });
     return { token };
   }
 
   async isResetTokenValid(token: string, now: number = Date.now()): Promise<boolean> {
-    const record = this.resetTokensByTokenHash.get(await hashResetToken(token));
+    const record = this.resetTokensByTokenHash.get(await hashToken(token));
     return !!record && !record.used && !isResetTokenExpired(record.issuedAt, now);
   }
 
@@ -176,7 +217,7 @@ export class AuthService {
     newPassword: string,
     now: number = Date.now(),
   ): Promise<ResetPasswordResult> {
-    const tokenHash = await hashResetToken(token);
+    const tokenHash = await hashToken(token);
     const record = this.resetTokensByTokenHash.get(tokenHash);
     if (!record || record.used) {
       return { outcome: 'token_invalid' };
@@ -210,12 +251,152 @@ export class AuthService {
     return { outcome: 'success' };
   }
 
+  /**
+   * Three outcomes, all returning the same `{outcome: 'success'}` shape from the caller's
+   * perspective (only `verificationToken`'s presence differs, and the handler must never branch
+   * on it — same enumeration-safety rule as requestPasswordReset):
+   *  - unregistered email: create the account unverified (AC-01) and mint a verification token.
+   *  - already registered AND verified: the real enumeration case AC-02 protects against — no
+   *    account created, no token minted, just an "already have an account" notice.
+   *  - already registered but NOT verified (an incomplete prior sign-up, including a same-page
+   *    "Resend"): treat as a resend — update the password to what was just submitted and mint a
+   *    fresh token, same as requestPasswordReset's precedent of never invalidating prior unused
+   *    tokens when a new one is issued.
+   */
+  async signUp(email: string, password: string, now: number = Date.now()): Promise<SignUpResult> {
+    if (!isValidSignUpPassword(password)) {
+      return { outcome: 'weak_password' };
+    }
+
+    const key = email.toLowerCase();
+    const existingUser = this.usersByEmail.get(key);
+
+    // Hashed unconditionally, even on the branch below that discards it, so an already-registered
+    // (verified) email and a brand-new one both pay the same PBKDF2 cost — otherwise the handler
+    // awaiting this call end-to-end would let response latency alone distinguish the two branches,
+    // the same timing side-channel login's DUMMY_HASH_FOR_TIMING_PARITY exists to close.
+    const passwordHash = await hashPassword(password);
+
+    if (existingUser?.verified) {
+      this.notificationsSent.push({ type: 'signup_existing_account', email: key, timestamp: now });
+      return { outcome: 'success' };
+    }
+
+    if (existingUser) {
+      existingUser.passwordHash = passwordHash;
+    } else {
+      this.usersByEmail.set(key, {
+        id: `user_${crypto.randomUUID()}`,
+        email: key,
+        passwordHash,
+        verified: false,
+      });
+    }
+
+    const token = `verify_${crypto.randomUUID()}`;
+    const tokenHash = await hashToken(token);
+    this.verificationTokensByTokenHash.set(tokenHash, { email: key, issuedAt: now, used: false });
+    this.notificationsSent.push({ type: 'signup_verification', email: key, timestamp: now });
+
+    return { outcome: 'success', verificationToken: token };
+  }
+
+  /**
+   * Consumes a verification token and, on success, auto-logs the now-verified user in exactly
+   * like a fresh login() would (AC-03) — there's no separate "log in after verifying" step for
+   * the user to go through.
+   */
+  async verifyEmail(token: string, now: number = Date.now()): Promise<VerifyEmailResult> {
+    const tokenHash = await hashToken(token);
+    const record = this.verificationTokensByTokenHash.get(tokenHash);
+    if (!record || record.used) {
+      return { outcome: 'token_invalid' };
+    }
+
+    if (isVerificationTokenExpired(record.issuedAt, now)) {
+      return { outcome: 'token_expired' };
+    }
+
+    const user = this.usersByEmail.get(record.email);
+    // The token can only have been issued for a user that existed at issuance time.
+    user!.verified = true;
+    record.used = true;
+    this.auditLog.push({
+      type: 'email_verified',
+      email: record.email,
+      userId: user!.id,
+      timestamp: now,
+    });
+
+    const refreshToken = `refresh_${crypto.randomUUID()}`;
+    const activeTokens = this.activeRefreshTokensByEmail.get(record.email) ?? new Set<string>();
+    activeTokens.add(refreshToken);
+    this.activeRefreshTokensByEmail.set(record.email, activeTokens);
+
+    return {
+      outcome: 'success',
+      accessToken: `access_${crypto.randomUUID()}`,
+      refreshToken,
+    };
+  }
+
+  async isVerificationTokenValid(token: string, now: number = Date.now()): Promise<boolean> {
+    const record = this.verificationTokensByTokenHash.get(await hashToken(token));
+    return !!record && !record.used && !isVerificationTokenExpired(record.issuedAt, now);
+  }
+
   getAuditLog(): readonly AuditEvent[] {
     return this.auditLog;
   }
 
   getSentNotifications(): readonly NotificationEvent[] {
     return this.notificationsSent;
+  }
+
+  /** Plain-object copy of all internal state, safe to JSON.stringify — see PersistedAuthService. */
+  snapshot(): AuthServiceSnapshot {
+    return {
+      users: [...this.usersByEmail],
+      failedAttempts: [...this.failedAttemptsByEmail],
+      auditLog: [...this.auditLog],
+      resetTokens: [...this.resetTokensByTokenHash],
+      verificationTokens: [...this.verificationTokensByTokenHash],
+      activeRefreshTokens: [...this.activeRefreshTokensByEmail].map(([email, tokens]) => [
+        email,
+        [...tokens],
+      ]),
+      notifications: [...this.notificationsSent],
+    };
+  }
+
+  /** Replaces all internal state with `snapshot` — see PersistedAuthService. */
+  restore(snapshot: AuthServiceSnapshot): void {
+    this.usersByEmail.clear();
+    snapshot.users.forEach(([email, user]) => this.usersByEmail.set(email, user));
+
+    this.failedAttemptsByEmail.clear();
+    snapshot.failedAttempts.forEach(([email, attempts]) =>
+      this.failedAttemptsByEmail.set(email, attempts),
+    );
+
+    this.auditLog.length = 0;
+    this.auditLog.push(...snapshot.auditLog);
+
+    this.resetTokensByTokenHash.clear();
+    snapshot.resetTokens.forEach(([hash, record]) => this.resetTokensByTokenHash.set(hash, record));
+
+    this.verificationTokensByTokenHash.clear();
+    snapshot.verificationTokens.forEach(([hash, record]) =>
+      this.verificationTokensByTokenHash.set(hash, record),
+    );
+
+    this.activeRefreshTokensByEmail.clear();
+    snapshot.activeRefreshTokens.forEach(([email, tokens]) =>
+      this.activeRefreshTokensByEmail.set(email, new Set(tokens)),
+    );
+
+    this.notificationsSent.length = 0;
+    this.notificationsSent.push(...snapshot.notifications);
   }
 
   private lockOut(email: string, ip: string, now: number): LoginResult {

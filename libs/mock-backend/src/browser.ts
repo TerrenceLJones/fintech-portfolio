@@ -3,9 +3,10 @@ import { http, HttpResponse } from 'msw';
 import { setupWorker } from 'msw/browser';
 import { authHandlers } from './handlers/auth.handlers';
 import { passwordResetHandlers } from './handlers/password-reset.handlers';
+import { signUpHandlers } from './handlers/signup.handlers';
 import { sharedAuthService } from './services/shared-auth-service';
 
-export const worker = setupWorker(...authHandlers, ...passwordResetHandlers);
+export const worker = setupWorker(...authHandlers, ...passwordResetHandlers, ...signUpHandlers);
 
 /**
  * Test-only override for e2e coverage of AC-05 (auth-service-unreachable retry/backoff) — see
@@ -52,4 +53,39 @@ export async function issueExpiredResetTokenForE2E(email: string): Promise<strin
     Date.now() - RESET_TOKEN_TTL_MS - 60_000,
   );
   return token;
+}
+
+const VERIFICATION_TOKEN_TTL_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Test-only bypass for e2e coverage of the sign-up flow — see apps/clearline-web/e2e/signup.spec.ts.
+ * Same rationale as issueResetTokenForE2E: AC-01's verification token never appears in the HTTP
+ * response, only in an email there's no inbox for Playwright to read. Calling signUp again for an
+ * email that already has an unverified account (the one the real UI flow just created) mints a
+ * second, independently valid token for that same account rather than creating a duplicate one —
+ * see AuthService.signUp's "already registered but NOT verified" branch. Resolves `undefined` if
+ * the email is already verified, since there's nothing left to verify.
+ */
+export async function issueVerificationTokenForE2E(
+  email: string,
+  password: string,
+): Promise<string | undefined> {
+  const { verificationToken } = await sharedAuthService.signUp(email, password);
+  return verificationToken;
+}
+
+/**
+ * Same as `issueVerificationTokenForE2E`, but backdated 1 minute past the 24-hour TTL so it's
+ * already expired the moment it's issued — for AC-05 e2e coverage.
+ */
+export async function issueExpiredVerificationTokenForE2E(
+  email: string,
+  password: string,
+): Promise<string | undefined> {
+  const { verificationToken } = await sharedAuthService.signUp(
+    email,
+    password,
+    Date.now() - VERIFICATION_TOKEN_TTL_MS - 60_000,
+  );
+  return verificationToken;
 }

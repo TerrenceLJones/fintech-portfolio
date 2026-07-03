@@ -1,4 +1,4 @@
-import { expect, test, type MockBackend } from './support/fixtures';
+import { expect, test } from './support/fixtures';
 import {
   DEMO_EMAIL,
   DEMO_PASSWORD,
@@ -19,10 +19,17 @@ async function requestReset(page: Page, email: string) {
   await response;
 }
 
-/** Mints a token via the e2e-only hook and navigates straight to the reset-password page with it
- * — standing in for the user clicking the link from their inbox. */
-async function goToResetLink(page: Page, mockBackend: MockBackend, email: string) {
-  const token = await mockBackend.issueResetTokenForE2E(email);
+/** Mints a token via the e2e-only hook and navigates straight to the reset-password page with
+ * it — standing in for the user clicking the link from their inbox (see browser.ts). */
+async function goToResetLink(page: Page, email: string) {
+  // Any app route first — __e2eMockBackend is wired up during main.tsx's bootstrap, which hasn't
+  // run yet on Playwright's default about:blank starting page.
+  await page.goto('/login');
+  await page.waitForFunction(() => window.__e2eMockBackend !== undefined);
+  const token = await page.evaluate(
+    (targetEmail) => window.__e2eMockBackend!.issueResetTokenForE2E(targetEmail),
+    email,
+  );
   await navigateSpa(page, `/reset-password?token=${token}`);
 }
 
@@ -82,7 +89,6 @@ test.describe('Password reset', () => {
 
   test('setting a new password from a valid link updates it, revokes the old one, and signs in with the new one (AC-03)', async ({
     page,
-    mockBackend,
   }) => {
     // Prove the old password works before the reset, so the later 401 is meaningfully "revoked"
     // rather than "was never valid".
@@ -91,7 +97,7 @@ test.describe('Password reset', () => {
     await page.getByRole('button', { name: 'Sign in' }).click();
     await expectSignedIn(page);
 
-    await goToResetLink(page, mockBackend, DEMO_EMAIL);
+    await goToResetLink(page, DEMO_EMAIL);
     await expect(page.getByLabel('New password', { exact: true })).toBeVisible();
 
     await page.getByLabel('New password', { exact: true }).fill(NEW_PASSWORD);
@@ -116,9 +122,8 @@ test.describe('Password reset', () => {
 
   test('a reused reset token is rejected after its first successful use (AC-03)', async ({
     page,
-    mockBackend,
   }) => {
-    await goToResetLink(page, mockBackend, DEMO_EMAIL);
+    await goToResetLink(page, DEMO_EMAIL);
     const usedToken = new URL(page.url()).searchParams.get('token');
 
     await page.getByLabel('New password', { exact: true }).fill(NEW_PASSWORD);
@@ -132,9 +137,8 @@ test.describe('Password reset', () => {
 
   test('a password failing complexity requirements is rejected inline without leaving the page (AC-03, edge case)', async ({
     page,
-    mockBackend,
   }) => {
-    await goToResetLink(page, mockBackend, DEMO_EMAIL);
+    await goToResetLink(page, DEMO_EMAIL);
     await expect(page.getByLabel('New password', { exact: true })).toBeVisible();
 
     await page.getByLabel('New password', { exact: true }).fill('weak');
@@ -151,9 +155,8 @@ test.describe('Password reset', () => {
 
   test('mismatched passwords are blocked inline without hitting the network (edge case)', async ({
     page,
-    mockBackend,
   }) => {
-    await goToResetLink(page, mockBackend, DEMO_EMAIL);
+    await goToResetLink(page, DEMO_EMAIL);
     await expect(page.getByLabel('New password', { exact: true })).toBeVisible();
 
     await page.getByLabel('New password', { exact: true }).fill(NEW_PASSWORD);

@@ -134,6 +134,9 @@ importers:
       '@fintech-portfolio/design-tokens':
         specifier: workspace:*
         version: link:../../libs/design-tokens
+      '@fintech-portfolio/domain-auth':
+        specifier: workspace:*
+        version: link:../../libs/domain/auth
       '@fintech-portfolio/icons':
         specifier: workspace:*
         version: link:../../libs/icons

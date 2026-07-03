@@ -39,3 +39,32 @@ export type ResetPasswordErrorCode = 'token_invalid' | 'token_expired' | 'weak_p
 export interface ResetPasswordErrorResponse {
   error: ResetPasswordErrorCode;
 }
+
+export interface SignUpRequest {
+  email: string;
+  password: string;
+}
+
+/** Always identical whether or not the email is already registered — see AuthService.signUp. */
+export type SignUpResponse = Record<string, never>;
+
+export type SignUpErrorCode = 'weak_password';
+
+export interface SignUpErrorResponse {
+  error: SignUpErrorCode;
+}
+
+export interface VerifyEmailRequest {
+  token: string;
+}
+
+/** The refresh token is never in this body — it travels only via the Set-Cookie response header. */
+export interface VerifyEmailResponse {
+  accessToken: string;
+}
+
+export type VerifyEmailErrorCode = 'token_invalid' | 'token_expired';
+
+export interface VerifyEmailErrorResponse {
+  error: VerifyEmailErrorCode;
+}

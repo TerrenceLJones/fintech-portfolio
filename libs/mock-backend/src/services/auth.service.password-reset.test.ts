@@ -1,8 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { hashResetToken } from '@fintech-portfolio/domain-auth';
+import { hashPassword, hashToken } from '@fintech-portfolio/domain-auth';
 import { AuthService } from './auth.service';
 import type { SeedUser } from '../fixtures/users.fixture';
-import { buildSeedUser } from '../fixtures/test-factories';
 
 const PLAINTEXT_PASSWORD = 'Correct-Horse-Battery-1';
 const IP = '127.0.0.1 (mocked)';
@@ -13,7 +12,12 @@ const NEW_PASSWORD = 'New-Horse-Battery-2';
 let USER: SeedUser;
 
 beforeAll(async () => {
-  USER = await buildSeedUser({ password: PLAINTEXT_PASSWORD });
+  USER = {
+    id: 'user_1',
+    email: 'demo@clearline.dev',
+    passwordHash: await hashPassword(PLAINTEXT_PASSWORD),
+    verified: true,
+  };
 });
 
 function newService() {
@@ -49,7 +53,7 @@ describe('AuthService.requestPasswordReset', () => {
     const rawStore = (service as unknown as { resetTokensByTokenHash: Map<string, unknown> })
       .resetTokensByTokenHash;
     expect(rawStore.has(token!)).toBe(false);
-    expect(rawStore.has(await hashResetToken(token!))).toBe(true);
+    expect(rawStore.has(await hashToken(token!))).toBe(true);
   });
 });
 
