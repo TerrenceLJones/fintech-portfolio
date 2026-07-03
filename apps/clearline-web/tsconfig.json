@@ -2,10 +2,10 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "dist",
-    "rootDir": "src",
-    "types": ["vite/client", "@testing-library/jest-dom"]
+    "rootDir": ".",
+    "types": ["vite/client", "@testing-library/jest-dom", "node"]
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx"],
+  "include": ["src/**/*.ts", "src/**/*.tsx", "e2e/**/*.ts", "playwright.config.ts"],
   "references": [
     { "path": "../../libs/ui" },
     { "path": "../../libs/contracts" },

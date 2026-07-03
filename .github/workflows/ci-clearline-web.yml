@@ -23,6 +23,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: ci-clearline-web-${{ github.ref }}
@@ -53,7 +54,7 @@ jobs:
           key: playwright-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
 
       - name: Install Playwright browsers
-        run: pnpm --filter @fintech-portfolio/ui exec playwright install --with-deps chromium
+        run: pnpm --filter @fintech-portfolio/ui --filter @fintech-portfolio/clearline-web exec playwright install --with-deps chromium
 
       - name: Derive base/head for nx affected
         uses: nrwl/nx-set-shas@v4
@@ -69,3 +70,14 @@ jobs:
 
       - name: Build affected
         run: pnpm exec nx affected --target=build --parallel=3
+
+      - name: E2E affected
+        run: pnpm exec nx affected --target=e2e --parallel=1
+
+      - name: Upload Playwright report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: apps/clearline-web/playwright-report/
+          retention-days: 14

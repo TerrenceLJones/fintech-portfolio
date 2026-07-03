@@ -79,4 +79,33 @@ describe('useLogin', () => {
     await waitFor(() => expect(result.current.isError).toBe(true), { timeout: 3000 });
     expect(requestCount).toBe(4); // 1 initial attempt + 3 retries
   });
+
+  it('exposes a failed attempt via failureReason while still retrying, not via isError', async () => {
+    let requestCount = 0;
+    server.use(
+      http.post('*/api/auth/login', () => {
+        requestCount++;
+        return HttpResponse.json({ error: 'server_error' }, { status: 500 });
+      }),
+    );
+
+    // A non-zero delay (rather than the 0ms other tests use) opens a real window between the
+    // first failed attempt and the second one firing, so the mid-retry state below is
+    // deterministically observable instead of racing the retry loop.
+    const { result } = renderHook(() => useLogin({ retryDelayMs: () => 50 }), { wrapper });
+    result.current.mutate({ email: 'demo@clearline.dev', password: 'correct' });
+
+    // isPending and isError are mutually exclusive statuses in TanStack Query, so error/isError
+    // stay unset for the whole retry window and only populate once retries are exhausted.
+    // failureReason is the field that updates on every failed attempt while still pending — this
+    // is what LoginPage.tsx must read to render "Retrying…" mid-retry (US-CW-001 AC-05).
+    await waitFor(() => expect(result.current.failureReason).not.toBeNull());
+    expect(result.current.isPending).toBe(true);
+    expect(result.current.isError).toBe(false);
+    expect(result.current.error).toBeNull();
+
+    await waitFor(() => expect(result.current.isError).toBe(true), { timeout: 3000 });
+    expect(result.current.isPending).toBe(false);
+    expect(requestCount).toBe(4); // 1 initial attempt + 3 retries
+  });
 });

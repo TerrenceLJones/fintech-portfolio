@@ -39,3 +39,8 @@ yarn-error.log*
 coverage/
 .pnpm-store/
 
+# Playwright
+playwright-report/
+test-results/
+blob-report/
+

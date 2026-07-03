@@ -143,4 +143,26 @@ describe('LoginPage', () => {
     ).toBeInTheDocument();
     expect(screen.getByText(/SR-TEST1234/)).toBeInTheDocument();
   });
+
+  it('shows "Retrying…" while a failed attempt is still being retried (AC-05)', async () => {
+    server.use(
+      http.post('*/api/auth/login', () =>
+        HttpResponse.json({ error: 'server_error' }, { status: 500 }),
+      ),
+    );
+    renderLoginPage();
+
+    await fillAndSubmit('demo@clearline.dev', 'correct-password');
+
+    // The real (unmocked) useLogin hook backs this test — unlike network-retry.test.tsx, which
+    // mocks the hook to test the exhausted-retries state without a slow real backoff wait. Real
+    // exponential backoff gives a ~1s window after the first failed attempt before the second one
+    // fires, which is enough to observe this mid-retry state deterministically without waiting for
+    // all 3 retries to exhaust. The explicit 2s timeout (double Testing Library's 1s default)
+    // gives headroom on a slow/contended CI runner, since that ~1s backoff window is otherwise the
+    // same order of magnitude as the default assertion timeout racing it.
+    expect(
+      await screen.findByText('Something went wrong on our end. Retrying…', {}, { timeout: 2000 }),
+    ).toBeInTheDocument();
+  });
 });

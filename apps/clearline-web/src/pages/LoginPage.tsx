@@ -44,7 +44,13 @@ export function LoginPage() {
   const error = login.error;
   const isLockedOut = error instanceof LoginError && error.code === 'account_locked';
   const isInvalidCredentials = error instanceof LoginError && error.code === 'invalid_credentials';
-  const isNetworkError = login.isError && !(error instanceof LoginError);
+  // isPending and isError are mutually exclusive statuses in TanStack Query, so login.error stays
+  // null for the whole retry window and only populates once retries are exhausted — checking
+  // isError here would make the mid-retry "Retrying…" copy below unreachable. failureReason is
+  // the field that updates on every failed attempt while still pending, so use that while
+  // isPending is true and fall back to the settled error once it isn't.
+  const networkFailure = login.isPending ? login.failureReason : error;
+  const isNetworkError = networkFailure != null && !(networkFailure instanceof LoginError);
 
   return (
     <AuthLayout>
