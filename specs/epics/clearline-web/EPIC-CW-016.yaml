@@ -30,7 +30,10 @@ changes:
       title: 'User Login'
       change: >
         Adds AC-06: a "Don't have an account? Sign up" link on the login page, navigating to the
-        sign-up page this epic introduces (US-CW-029).
+        sign-up page this epic introduces (US-CW-029). Also adds AC-07: correct credentials against an
+        unverified account are blocked rather than succeeding — no access or refresh token is issued,
+        and the user sees a "verify your email" message with a "Resend verification email" action
+        instead of reaching the spend dashboard.
   deprecates: []
   removes: []
 notes: >
@@ -46,3 +49,27 @@ notes: >
   Reciprocal navigation links tie the two flows together: US-CW-001 gains AC-06 ("Don't have an
   account? Sign up") and US-CW-029 gains AC-06 ("Already have an account? Log in"), each pointing at
   the other's page now that both destinations exist.
+
+  Amended 2026-07-03 to also close a related gap found in a follow-up review: US-CW-001 AC-01 already
+  presumed a "registered Clearline user with a verified account" precondition for login, and its
+  edge_cases list already flagged "Login submitted with an unverified account" as inferred, but no
+  acceptance criterion ever specified that behavior — and in the mock backend, AuthService.login()
+  never actually checked the verified flag before issuing tokens, so an unverified account could log in
+  exactly like a verified one. AC-07 closes that gap. This was initially drafted as its own epic
+  (EPIC-CW-017), on the same "don't reopen an already-shipped epic's scope" reasoning this epic states
+  above for not folding into EPIC-CW-001 — but consolidated back into this epic at the project owner's
+  direction, since this is a solo-developer project and the addition is a direct extension of this same
+  sign-up/verification body of work rather than an independently scoped effort. (EPIC-CW-017 is
+  intentionally absent from the epic sequence as a result — not a gap.)
+
+  Enumeration-safety is not reopened by AC-07: US-CW-001 AC-02/AC-03 guarantee that a wrong password and
+  an unregistered email produce an identical invalid_credentials response, and both of those branches
+  are untouched. The unverified_account outcome is only reachable after the correct password has
+  already been supplied, so it reveals nothing to an attacker who doesn't already know the account's
+  credentials. The "Resend verification email" action needs no new backend logic either — it reuses
+  AuthService.signUp's existing resend branch for an already-registered-but-unverified email (this
+  epic's own AC-01/AC-02 behavior), calling the same POST /api/auth/signup endpoint rather than adding a
+  parallel resend code path. Whether a correct-password-but-unverified attempt counts toward US-CW-001
+  AC-04's lockout counter is a deliberate decision, not an oversight: it's treated as a non-failure and
+  clears failed-attempt history exactly like a real success, since the credentials were valid — only the
+  account's verified state blocked the login.
