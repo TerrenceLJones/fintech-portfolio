@@ -11,7 +11,7 @@ title: 'Vendor Payment Submission & Idempotency'
 # Lifecycle status
 status: 'APPROVED'
 story_points: 8
-dependencies: ['US-CW-006']
+dependencies: ['US-CW-006', 'US-CW-002']
 
 # Provenance — immutable after creation
 created_by_epic: 'EPIC-CW-004'
@@ -25,6 +25,9 @@ history:
   - epic_id: 'EPIC-CW-004'
     action: 'approved'
     date: '2026-06-30'
+  - epic_id: 'EPIC-CW-001'
+    action: 'updated'
+    date: '2026-07-03'
 
 # Status timestamps — set when status transitions occur
 approved_date: '2026-06-30'
@@ -100,6 +103,16 @@ acceptance_criteria:
       And the client generates a new idempotency key only because this is a genuinely new operation
       And I see "Something changed since your last attempt — resubmitting as a new payment."
     status: 'active'
+  - id: 'AC-06'
+    description: |
+      Given I am submitting a vendor payment
+      And my session expires before the submission completes
+      When the submission request is sent
+      Then a dialog appears: "Your session timed out. Please sign in again to complete this payment."
+      And my form data (amount, recipient, memo) is preserved
+      And the original idempotency key for this payment intent is preserved
+      And after re-authentication I am returned to the same form with my data intact
+    status: 'active'
 
 # Technical Notes
 technical_notes: |
@@ -111,6 +124,13 @@ technical_notes: |
   successful submissions must produce an immutable ledger entry with matching debit/credit postings and a
   corresponding audit event.
 
+  AC-06 was moved here from US-CW-002 AC-04 by EPIC-CW-001 (see that epic's notes) since this story owns the actual
+  "New Payment" form and idempotency-key handling AC-04 presumed but no story had yet built. It depends on, but does
+  not duplicate, US-CW-002's forced-logout/redirect mechanism (expired refresh token → redirect to /login with the
+  prior route preserved): this AC layers the same idempotency key and in-progress form fields on top of that
+  redirect, carried through re-authentication, so resuming the submission replays the original PaymentIntent rather
+  than starting a new one with a new key.
+
 # Edge Cases
 edge_cases: |
   - Double-click on Submit while the original request is still in flight
@@ -119,6 +139,7 @@ edge_cases: |
   - All automatic retries exhausted, requiring a manual Retry action
   - Idempotency key reused with a different payload (amount mismatch), requiring server-side rejection and client-side new-key generation
   - (inferred) Idempotency key collision from a stale browser tab/session submitting after the user has navigated away
+  - Session expiring at the exact moment of a vendor payment submission, requiring form/idempotency-key preservation across forced re-authentication (moved here from US-CW-002 AC-04)
 
 # Implementation Status
 implementation_status: |
