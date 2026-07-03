@@ -25,6 +25,9 @@ history:
   - epic_id: 'EPIC-CW-001'
     action: 'approved'
     date: '2026-06-30'
+  - epic_id: 'EPIC-CW-016'
+    action: 'updated'
+    date: '2026-07-02'
 
 # Status timestamps — set when status transitions occur
 approved_date: '2026-06-30'
@@ -89,6 +92,13 @@ acceptance_criteria:
       And the client retries the request up to 3 times with exponential backoff
       And after 3 failed retries I see a manual "Try again" button
     status: 'active'
+  - id: 'AC-06'
+    description: |
+      Given I am on the login page
+      Then I see a "Don't have an account? Sign up" link
+      When I click it
+      Then I am navigated to the sign-up page (US-CW-029)
+    status: 'active'
 
 # Technical Notes
 technical_notes: |
@@ -107,6 +117,10 @@ technical_notes: |
   treat this as intentionally out of scope rather than a gap deferred to a specific future epic, so it isn't
   mistaken for a bug later. "Forgot password?" is the one login-screen link that IS a real, tracked gap — it maps
   to US-CW-003 (Password Reset).
+
+  AC-06 ("Don't have an account? Sign up") was added by EPIC-CW-016 once US-CW-029 introduced an actual sign-up
+  destination for it to point to — the login screen had no such link before then, unlike "Forgot password?",
+  which predates a working destination and remains decorative until US-CW-003 is built.
 
   Password confidentiality is two separate concerns, handled by two separate mechanisms, never conflated. In
   transit: TLS/HTTPS is the only recognized mechanism (NIST SP 800-63B requires "an authenticated protected

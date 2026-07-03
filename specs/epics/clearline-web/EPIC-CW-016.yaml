@@ -1,0 +1,48 @@
+epic_id: 'EPIC-CW-016'
+title: 'Account Sign-Up'
+app: 'clearline-web'
+feature_area: 'core'
+status: 'APPROVED'
+approved_date: '2026-07-02'
+created_date: '2026-07-02'
+source_reference: >
+  Not sourced from clearline-user-stories-gherkin.md — added post-hoc to close a gap surfaced while
+  implementing US-CW-001's password-hashing technical notes: no story in the registry modeled the
+  credential-creation step US-CW-004's AC-01 presumes ("Given I have created a Clearline account"),
+  and EPIC-CW-001/EPIC-CW-002 both begin from an account that already exists.
+package_location: 'apps/clearline-web/'
+deployment_unit: 'apps/clearline-web/'
+tdr_reference: 'TDR-CW-WEB-001'
+depends_on_epics: ['EPIC-CW-001']
+extends_stories: ['US-CW-001']
+reuses_from:
+  - '@fintech-portfolio/domain-auth password-hashing module (PBKDF2-HMAC-SHA256), introduced for US-CW-001 login'
+has_ui: true
+ui_library: '@fintech-portfolio/ui'
+changes:
+  adds:
+    - story_id: 'US-CW-029'
+      story_path: '/specs/user-stories/clearline-web/US-CW-029.yaml'
+      title: 'Sign Up'
+  updates:
+    - story_id: 'US-CW-001'
+      story_path: '/specs/user-stories/clearline-web/US-CW-001.yaml'
+      title: 'User Login'
+      change: >
+        Adds AC-06: a "Don't have an account? Sign up" link on the login page, navigating to the
+        sign-up page this epic introduces (US-CW-029).
+  deprecates: []
+  removes: []
+notes: >
+  Establishes the account-creation step that precedes both login (US-CW-001) and business onboarding
+  (US-CW-004): a business owner signs up with a work email and password, receives an enumeration-safe
+  response regardless of whether that email is already registered, and verifies their email before
+  being routed into KYB onboarding. Deliberately kept as its own epic rather than folded into the
+  already-APPROVED EPIC-CW-001, whose adds list reflects a completed scoping pass this gap was found
+  after. US-CW-004's dependencies field is not modified by this epic — see US-CW-029's technical_notes
+  for that cross-reference instead, so this epic's blast radius stays limited to the one new story it
+  adds.
+
+  Reciprocal navigation links tie the two flows together: US-CW-001 gains AC-06 ("Don't have an
+  account? Sign up") and US-CW-029 gains AC-06 ("Already have an account? Log in"), each pointing at
+  the other's page now that both destinations exist.
