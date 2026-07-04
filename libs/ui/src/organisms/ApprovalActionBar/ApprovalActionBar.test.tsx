@@ -15,10 +15,21 @@ describe('ApprovalActionBar', () => {
     expect(onApprove).toHaveBeenCalledTimes(1);
   });
 
-  it('disables Approve and shows the reason when a reason is given (separation of duties)', () => {
+  it('disables Approve and links it to the reason when a reason is given (separation of duties)', () => {
     render(<ApprovalActionBar reason="You can't approve your own expense." />);
-    expect(screen.getByRole('button', { name: 'Approve' })).toBeDisabled();
-    expect(screen.getByText("You can't approve your own expense.")).toBeInTheDocument();
+
+    const approveButton = screen.getByRole('button', { name: 'Approve' });
+    expect(approveButton).not.toBeDisabled();
+    expect(approveButton).toHaveAttribute('aria-disabled', 'true');
+
+    const reasonText = screen.getByText("You can't approve your own expense.");
+    expect(reasonText).toBeInTheDocument();
+
+    const describedById = approveButton.getAttribute('aria-describedby');
+    expect(describedById).toBeTruthy();
+    expect(document.getElementById(describedById as string)).toHaveTextContent(
+      "You can't approve your own expense.",
+    );
   });
 
   it('shows the Escalate action by default and hides it when showEscalate is false', () => {

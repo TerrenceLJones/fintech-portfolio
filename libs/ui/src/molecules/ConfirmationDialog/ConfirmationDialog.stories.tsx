@@ -45,7 +45,12 @@ export const DisabledDuringCountdown: Story = {
     const body = within(document.body);
     await userEvent.click(canvas.getByRole('button', { name: 'Send payment' }));
     const dialog = within(await body.findByRole('dialog'));
-    await expect(dialog.getByRole('button', { name: /Confirm in 3…/ })).toBeDisabled();
+    const confirmButton = dialog.getByRole('button', { name: /Confirm in 3…/ });
+    // Stays enabled/focusable so keyboard/screen-reader users aren't stranded — aria-disabled +
+    // aria-describedby (pointing at the visually-hidden countdown reason) explain the gate instead.
+    await expect(confirmButton).not.toBeDisabled();
+    await expect(confirmButton).toHaveAttribute('aria-disabled', 'true');
+    await expect(confirmButton).toHaveAttribute('aria-describedby');
 
     await userEvent.click(dialog.getByRole('button', { name: /Cancel/ }));
     await waitFor(() => expect(body.queryByRole('dialog')).not.toBeInTheDocument());

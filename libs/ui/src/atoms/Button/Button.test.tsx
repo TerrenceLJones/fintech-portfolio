@@ -62,9 +62,34 @@ describe('Button', () => {
     expect(onSubmit).toHaveBeenCalledTimes(1);
   });
 
-  it('is disabled when the disabled prop is set', () => {
-    render(<Button label="Approve" disabled />);
-    expect(screen.getByRole('button')).toBeDisabled();
+  it('blocks clicks while disabled but stays focusable and announces disabled state', async () => {
+    const onClick = vi.fn();
+    const user = userEvent.setup();
+    render(<Button label="Approve" disabled onClick={onClick} />);
+
+    const button = screen.getByRole('button');
+    expect(button).not.toBeDisabled();
+    expect(button).toHaveAttribute('aria-disabled', 'true');
+    expect(button).toHaveClass('cursor-not-allowed');
+
+    button.focus();
+    expect(button).toHaveFocus();
+
+    await user.click(button);
+    expect(onClick).not.toHaveBeenCalled();
+  });
+
+  it('does not resubmit its parent form while disabled, even though it stays enabled', async () => {
+    const onSubmit = vi.fn((event: SubmitEvent) => event.preventDefault());
+    const user = userEvent.setup();
+    render(
+      <form onSubmit={onSubmit}>
+        <Button type="submit" label="Sign in" disabled />
+      </form>,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Sign in' }));
+    expect(onSubmit).not.toHaveBeenCalled();
   });
 
   it('prefers children over the label prop', () => {

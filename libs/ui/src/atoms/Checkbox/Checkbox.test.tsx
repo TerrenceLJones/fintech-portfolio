@@ -28,14 +28,20 @@ describe('Checkbox', () => {
     expect(onCheckedChange).toHaveBeenCalledTimes(2);
   });
 
-  it('is disabled and non-interactive when disabled', async () => {
+  it('blocks clicks and keyboard activation while disabled but stays focusable', async () => {
     const onCheckedChange = vi.fn();
     const user = userEvent.setup();
     render(<Checkbox disabled aria-label="Select row" onCheckedChange={onCheckedChange} />);
 
     const checkbox = screen.getByRole('checkbox');
-    expect(checkbox).toBeDisabled();
+    expect(checkbox).not.toBeDisabled();
+    expect(checkbox).toHaveAttribute('aria-disabled', 'true');
+
+    checkbox.focus();
+    expect(checkbox).toHaveFocus();
+
     await user.click(checkbox);
+    await user.keyboard(' ');
     expect(onCheckedChange).not.toHaveBeenCalled();
   });
 });

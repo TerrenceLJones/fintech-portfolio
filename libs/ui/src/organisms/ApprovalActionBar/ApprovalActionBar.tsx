@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { Icon } from '@fintech-portfolio/icons';
 import { Button } from '../../atoms/Button';
 import { Text } from '../../atoms/Text';
@@ -22,6 +23,8 @@ export function ApprovalActionBar({
   onEscalate,
 }: ApprovalActionBarProps) {
   const approvable = canApprove !== false && !reason;
+  const reasonId = useId();
+  const showReason = !approvable && !!reason;
 
   return (
     <div className="font-sans">
@@ -31,6 +34,7 @@ export function ApprovalActionBar({
           tone="positive"
           icon={approvable ? 'check' : 'lock'}
           disabled={!approvable}
+          aria-describedby={showReason ? reasonId : undefined}
           onClick={onApprove}
           className="flex-1"
         >
@@ -45,8 +49,11 @@ export function ApprovalActionBar({
           </Button>
         ) : null}
       </div>
-      {!approvable && reason ? (
-        <div className="text-cl-warn bg-cl-warn-weak mt-3 flex items-start gap-2 rounded-lg px-2.75 py-2.25">
+      {showReason ? (
+        <div
+          id={reasonId}
+          className="text-cl-warn bg-cl-warn-weak mt-3 flex items-start gap-2 rounded-lg px-2.75 py-2.25"
+        >
           <Icon name="triangle-alert" size={14} className="mt-0.5 flex-shrink-0" />
           <Text as="span" size="label" weight="regular">
             {reason}

@@ -25,4 +25,10 @@ describe('PasswordField', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('Incorrect email or password');
     expect(screen.getByLabelText('Password')).toHaveAttribute('aria-invalid', 'true');
   });
+
+  it('disables the reveal toggle when the field is disabled', () => {
+    render(<PasswordField label="Password" disabled defaultValue="secret123" />);
+
+    expect(screen.getByRole('button', { name: 'Show password' })).toBeDisabled();
+  });
 });

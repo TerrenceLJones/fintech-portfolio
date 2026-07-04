@@ -11,6 +11,7 @@ export type PasswordFieldProps = Omit<TextFieldProps, 'type' | 'suffix'>;
  */
 export function PasswordField(props: PasswordFieldProps) {
   const [visible, setVisible] = useState(false);
+  const isFieldDisabled = props.state === 'disabled' || !!props.disabled;
 
   return (
     <TextField
@@ -19,8 +20,9 @@ export function PasswordField(props: PasswordFieldProps) {
       suffix={
         <button
           type="button"
+          disabled={isFieldDisabled}
           onClick={() => setVisible((prev) => !prev)}
-          className="text-cl-text-3 flex items-center gap-1 text-xs font-medium"
+          className="text-cl-text-3 flex items-center gap-1 text-xs font-medium disabled:cursor-not-allowed disabled:opacity-60"
           aria-label={visible ? 'Hide password' : 'Show password'}
         >
           <Icon name={visible ? 'eye-off' : 'eye'} size={14} />

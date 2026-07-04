@@ -22,15 +22,16 @@ and risk missing an accessibility or formatting rule the design system already s
 
 - AC-01 — AC-04 — StatusBadge/MoneyDisplay/BudgetGauge, covered on their own docs pages.
 - AC-05 — Checkbox wraps Radix `Checkbox` for correct `onCheckedChange`/`aria-checked` behavior.
-- **AC-06 — Button.** Given Button with `loading={true}`, when rendered, then the button shows a
-  spinning icon and a not-allowed cursor, stays focusable (`aria-disabled`/`aria-busy` are set
-  rather than the native `disabled` attribute, so keyboard/screen-reader focus isn't lost
-  mid-action), and does not fire `onClick` or submit an enclosing form.
+- **AC-06 — Button.** Given Button with `loading={true}` or `disabled={true}`, when rendered, then
+  the button stays focusable (`aria-disabled` — and, for `loading`, `aria-busy` — are set rather
+  than the native `disabled` attribute, so keyboard/screen-reader focus isn't lost on a
+  not-yet-submittable or in-flight form), and does not fire `onClick` or submit an enclosing form.
 - AC-07 — TextField's `state="error"` sets `aria-invalid` and `aria-describedby`.
 
 ### Edge case covered here
 
-Disabled and loading are both exercised as separate stories — both block `onClick`, but only
-loading shows the spinner and `aria-busy`, so the two states must never be conflated.
+Disabled and loading are both exercised as separate stories — both block `onClick` via the same
+`aria-disabled` + guarded-click-handler mechanism and stay focusable, but only loading shows the
+spinner and `aria-busy`, so the two states must never be conflated.
 
 <Stories />

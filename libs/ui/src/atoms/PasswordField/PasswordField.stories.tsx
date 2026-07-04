@@ -36,3 +36,12 @@ export const ToggleReveal: Story = {
 export const ErrorState: Story = {
   args: { label: 'Password', state: 'error', error: 'Incorrect email or password' },
 };
+
+export const Disabled: Story = {
+  args: { label: 'Password', disabled: true, defaultValue: 'correct-horse-battery-staple' },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByLabelText('Password')).toBeDisabled();
+    await expect(canvas.getByRole('button', { name: 'Show password' })).toBeDisabled();
+  },
+};

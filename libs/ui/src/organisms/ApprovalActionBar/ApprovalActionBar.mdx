@@ -22,8 +22,10 @@ disabling logic from scratch in each feature epic.
 
 - AC-01 — AC-02 — DataTable's select-all toggle and vendor-column sort.
 - **AC-03 — ApprovalActionBar.** Given ApprovalActionBar with a `reason` prop set (e.g.
-  separation-of-duties) and no explicit `canApprove`, when it renders, then Approve is disabled
-  and the reason is shown in text beneath the buttons — never silently missing.
+  separation-of-duties) and no explicit `canApprove`, when it renders, then Approve is gated (via
+  Button's `aria-disabled`, staying focusable) and the reason is shown in text beneath the
+  buttons, programmatically linked to Approve via `aria-describedby` — never silently missing,
+  and never only visually adjacent.
 - AC-04 — BulkActionResult excludes failures from the committed count and lists each reason.
 - AC-05 — AppShell owns theme state and requires zero additional per-page token setup.
 

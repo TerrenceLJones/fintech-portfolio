@@ -46,7 +46,10 @@ export const Disabled: Story = {
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
     const checkbox = canvas.getByRole('checkbox', { name: 'Select row' });
-    await expect(checkbox).toBeDisabled();
+    // Stays enabled/focusable so keyboard/screen-reader users aren't left without an explanation
+    // — aria-disabled + Radix's composed click handler block the toggle instead.
+    await expect(checkbox).not.toBeDisabled();
+    await expect(checkbox).toHaveAttribute('aria-disabled', 'true');
     await userEvent.click(checkbox);
     await expect(args.onCheckedChange).not.toHaveBeenCalled();
   },

@@ -39,7 +39,11 @@ export const DisabledWithReason: Story = {
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
     const approve = canvas.getByRole('button', { name: 'Approve' });
-    await expect(approve).toBeDisabled();
+    // Stays enabled/focusable so keyboard/screen-reader users aren't stranded — aria-disabled +
+    // aria-describedby (pointing at the visible reason text) explain the gate instead.
+    await expect(approve).not.toBeDisabled();
+    await expect(approve).toHaveAttribute('aria-disabled', 'true');
+    await expect(approve).toHaveAttribute('aria-describedby');
     await userEvent.click(approve);
     await expect(args.onApprove).not.toHaveBeenCalled();
 

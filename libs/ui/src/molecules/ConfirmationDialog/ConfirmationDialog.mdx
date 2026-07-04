@@ -21,8 +21,10 @@ free, instead of each feature epic re-implementing dialog accessibility by hand.
 
 - AC-01 — Modal exposes `role="dialog"`, traps focus, and closes via Escape/Cancel.
 - **AC-02 — ConfirmationDialog.** Given a ConfirmationDialog with `countdown={3}`, when it opens,
-  then the confirm button is disabled and reads "Confirm in 3…", counting down each second until
-  armed, and re-gates on every subsequent open transition even if previously armed.
+  then the confirm button is gated (via `aria-disabled`, not the native `disabled` attribute, so
+  it stays focusable) and reads "Confirm in 3…", with an `aria-describedby`-linked, visually-hidden
+  explanation of the wait, counting down each second until armed, and re-gates on every subsequent
+  open transition even if previously armed.
 - AC-03 — VirtualCard hides the derived remaining-limit figure entirely when frozen.
 - AC-04 — Timeline shows before → after diffs with an arrow between them.
 - AC-05 — AIInsightCard's primary/secondary actions independently invoke their own callbacks.

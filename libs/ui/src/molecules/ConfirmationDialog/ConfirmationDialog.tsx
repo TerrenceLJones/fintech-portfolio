@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { Dialog } from 'radix-ui';
 import { Icon } from '@fintech-portfolio/icons';
 import { Text } from '../../atoms/Text';
+import { useDisabledGuard } from '../../utils/useDisabledGuard';
 
 export interface ConfirmationDialogProps {
   open: boolean;
@@ -42,6 +43,8 @@ export function ConfirmationDialog({
   }, [open, secondsLeft]);
 
   const armed = secondsLeft <= 0;
+  const countdownReasonId = useId();
+  const guard = useDisabledGuard<HTMLButtonElement>(!armed, onConfirm);
 
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
@@ -85,13 +88,19 @@ export function ConfirmationDialog({
             </Dialog.Close>
             <button
               type="button"
-              disabled={!armed}
-              onClick={onConfirm}
+              aria-disabled={guard['aria-disabled']}
+              aria-describedby={armed ? undefined : countdownReasonId}
+              onClick={guard.onClick}
               className={`bg-cl-accent flex-[1.4] rounded-lg px-4 py-2.5 text-[13px] font-semibold text-white ${armed ? 'cursor-pointer' : 'cursor-not-allowed opacity-70'}`}
             >
               {armed ? confirmLabel : `Confirm in ${secondsLeft}…`}
             </button>
           </div>
+          {armed ? null : (
+            <span id={countdownReasonId} className="sr-only">
+              Waiting a few seconds before this irreversible action can be confirmed.
+            </span>
+          )}
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

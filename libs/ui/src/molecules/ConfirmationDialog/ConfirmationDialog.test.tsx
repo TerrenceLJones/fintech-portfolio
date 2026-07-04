@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { ConfirmationDialog } from './ConfirmationDialog';
 
 describe('ConfirmationDialog', () => {
-  it('disables the confirm button and shows the countdown while gated', () => {
+  it('gates the confirm button while counting down, but keeps it focusable and explained', () => {
     render(
       <ConfirmationDialog
         open
@@ -15,7 +15,15 @@ describe('ConfirmationDialog', () => {
     );
 
     const confirmButton = screen.getByRole('button', { name: /Confirm in 3/ });
-    expect(confirmButton).toBeDisabled();
+    expect(confirmButton).not.toBeDisabled();
+    expect(confirmButton).toHaveAttribute('aria-disabled', 'true');
+
+    confirmButton.focus();
+    expect(confirmButton).toHaveFocus();
+
+    const reasonId = confirmButton.getAttribute('aria-describedby');
+    expect(reasonId).toBeTruthy();
+    expect(document.getElementById(reasonId as string)).toHaveTextContent(/waiting a few seconds/i);
   });
 
   it('arms the confirm button once the countdown reaches zero', async () => {
@@ -68,6 +76,8 @@ describe('ConfirmationDialog', () => {
     );
     rerender(<ConfirmationDialog open onOpenChange={() => {}} title="Confirm?" countdown={3} />);
 
-    expect(screen.getByRole('button', { name: /Confirm in 3/ })).toBeDisabled();
+    const confirmButton = screen.getByRole('button', { name: /Confirm in 3/ });
+    expect(confirmButton).not.toBeDisabled();
+    expect(confirmButton).toHaveAttribute('aria-disabled', 'true');
   });
 });
