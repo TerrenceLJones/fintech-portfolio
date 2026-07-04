@@ -11,7 +11,11 @@ const MINUTE = 60 * 1000;
 let USER: SeedUser;
 
 beforeAll(async () => {
-  USER = { id: 'user_1', email: 'demo@clearline.dev', passwordHash: await hashPassword(PLAINTEXT_PASSWORD) };
+  USER = {
+    id: 'user_1',
+    email: 'demo@clearline.dev',
+    passwordHash: await hashPassword(PLAINTEXT_PASSWORD),
+  };
 });
 
 function newService() {
@@ -47,7 +51,12 @@ describe('AuthService.login', () => {
     await service.login(USER.email, 'wrong-password', IP, NOW);
 
     const [event] = service.getAuditLog();
-    expect(event).toMatchObject({ type: 'login_failure', email: USER.email, ip: IP, timestamp: NOW });
+    expect(event).toMatchObject({
+      type: 'login_failure',
+      email: USER.email,
+      ip: IP,
+      timestamp: NOW,
+    });
   });
 
   it('resets the failed-attempt count after a successful login', async () => {
@@ -161,7 +170,12 @@ describe('AuthService.login', () => {
     for (let i = 0; i < 3; i++) {
       await service.login(USER.email, 'wrong-password', IP, NOW + 16 * MINUTE + i * MINUTE);
     }
-    const result = await service.login(USER.email, 'wrong-password', IP, NOW + 16 * MINUTE + 3 * MINUTE);
+    const result = await service.login(
+      USER.email,
+      'wrong-password',
+      IP,
+      NOW + 16 * MINUTE + 3 * MINUTE,
+    );
 
     expect(result.outcome).toBe('invalid_credentials');
   });

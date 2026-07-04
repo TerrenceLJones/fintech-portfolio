@@ -1,7 +1,8 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { hashPassword, hashResetToken } from '@fintech-portfolio/domain-auth';
+import { hashResetToken } from '@fintech-portfolio/domain-auth';
 import { AuthService } from './auth.service';
 import type { SeedUser } from '../fixtures/users.fixture';
+import { buildSeedUser } from '../fixtures/test-factories';
 
 const PLAINTEXT_PASSWORD = 'Correct-Horse-Battery-1';
 const IP = '127.0.0.1 (mocked)';
@@ -12,11 +13,7 @@ const NEW_PASSWORD = 'New-Horse-Battery-2';
 let USER: SeedUser;
 
 beforeAll(async () => {
-  USER = {
-    id: 'user_1',
-    email: 'demo@clearline.dev',
-    passwordHash: await hashPassword(PLAINTEXT_PASSWORD),
-  };
+  USER = await buildSeedUser({ password: PLAINTEXT_PASSWORD });
 });
 
 function newService() {

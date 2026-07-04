@@ -4,11 +4,9 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { ThemeProvider } from '@fintech-portfolio/design-tokens';
 import { AppShell, type AppShellProps } from './AppShell';
+import { buildNavItem } from '../../test-factories';
 
-const NAV_ITEMS = [
-  { id: 'expenses', icon: 'file-text' as const, label: 'My Expenses' },
-  { id: 'cards', icon: 'copy' as const, label: 'My Cards' },
-];
+const NAV_ITEMS = [buildNavItem(), buildNavItem({ id: 'cards', icon: 'copy', label: 'My Cards' })];
 
 function renderAppShell(props: Partial<AppShellProps> = {}, pageContent = <div>Page content</div>) {
   return render(

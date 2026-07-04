@@ -1,20 +1,19 @@
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router';
-import { setupServer } from 'msw/node';
 import { http, HttpResponse } from 'msw';
 import { clearAccessToken } from '@fintech-portfolio/data-access-auth';
+import {
+  buildAuthErrorResponse,
+  buildLoginSuccessResponse,
+  registerMswServer,
+} from '@fintech-portfolio/mock-backend/test-factories';
 import { LoginPage } from './LoginPage';
 import { withQueryClient } from '../test/with-query-client';
 
-const server = setupServer();
-beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
-afterEach(() => {
-  server.resetHandlers();
-  clearAccessToken();
-});
-afterAll(() => server.close());
+const server = registerMswServer();
+afterEach(() => clearAccessToken());
 
 function renderLoginPage() {
   return render(
@@ -39,9 +38,7 @@ async function fillAndSubmit(email: string, password: string) {
 
 describe('LoginPage', () => {
   it('redirects to the dashboard on successful login (AC-01)', async () => {
-    server.use(
-      http.post('*/api/auth/login', () => HttpResponse.json({ accessToken: 'access_123' })),
-    );
+    server.use(http.post('*/api/auth/login', () => HttpResponse.json(buildLoginSuccessResponse())));
     renderLoginPage();
 
     await fillAndSubmit('demo@clearline.dev', 'correct-password');
@@ -50,9 +47,7 @@ describe('LoginPage', () => {
   });
 
   it('redirects to the `next` path after successful login when present', async () => {
-    server.use(
-      http.post('*/api/auth/login', () => HttpResponse.json({ accessToken: 'access_123' })),
-    );
+    server.use(http.post('*/api/auth/login', () => HttpResponse.json(buildLoginSuccessResponse())));
     render(
       withQueryClient(
         <MemoryRouter initialEntries={[`/login?next=${encodeURIComponent('/approvals')}`]}>
@@ -77,7 +72,7 @@ describe('LoginPage', () => {
     'ignores an unsafe `next` value (%s) and falls back to / (open-redirect protection)',
     async (_description, unsafeNext) => {
       server.use(
-        http.post('*/api/auth/login', () => HttpResponse.json({ accessToken: 'access_123' })),
+        http.post('*/api/auth/login', () => HttpResponse.json(buildLoginSuccessResponse())),
       );
       render(
         withQueryClient(
@@ -99,7 +94,9 @@ describe('LoginPage', () => {
   it('shows a generic error and clears the password field on wrong password (AC-02)', async () => {
     server.use(
       http.post('*/api/auth/login', () =>
-        HttpResponse.json({ error: 'invalid_credentials' }, { status: 401 }),
+        HttpResponse.json(buildAuthErrorResponse({ error: 'invalid_credentials' }), {
+          status: 401,
+        }),
       ),
     );
     renderLoginPage();
@@ -113,7 +110,9 @@ describe('LoginPage', () => {
   it('shows the identical generic error for an unregistered email (AC-03)', async () => {
     server.use(
       http.post('*/api/auth/login', () =>
-        HttpResponse.json({ error: 'invalid_credentials' }, { status: 401 }),
+        HttpResponse.json(buildAuthErrorResponse({ error: 'invalid_credentials' }), {
+          status: 401,
+        }),
       ),
     );
     renderLoginPage();
@@ -127,7 +126,7 @@ describe('LoginPage', () => {
     server.use(
       http.post('*/api/auth/login', () =>
         HttpResponse.json(
-          { error: 'account_locked', supportReferenceId: 'SR-TEST1234' },
+          buildAuthErrorResponse({ error: 'account_locked', supportReferenceId: 'SR-TEST1234' }),
           { status: 423 },
         ),
       ),

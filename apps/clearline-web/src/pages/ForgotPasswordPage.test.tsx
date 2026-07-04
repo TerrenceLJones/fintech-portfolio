@@ -1,16 +1,13 @@
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router';
-import { setupServer } from 'msw/node';
 import { http, HttpResponse } from 'msw';
 import { ForgotPasswordPage } from './ForgotPasswordPage';
 import { withQueryClient } from '../test/with-query-client';
+import { registerMswServer } from '@fintech-portfolio/mock-backend/test-factories';
 
-const server = setupServer();
-beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
-afterEach(() => server.resetHandlers());
-afterAll(() => server.close());
+const server = registerMswServer();
 
 function renderForgotPasswordPage() {
   return render(

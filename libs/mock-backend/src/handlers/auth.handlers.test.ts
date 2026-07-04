@@ -1,17 +1,10 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { setupServer } from 'msw/node';
 import { createAuthHandlers } from './auth.handlers';
-import { AuthService } from '../services/auth.service';
 import { DEMO_USER_PASSWORD, SEED_USERS } from '../fixtures/users.fixture';
+import { startMswServer } from '../fixtures/test-factories';
 
 const [user] = SEED_USERS;
-
-function startServerWithFreshService() {
-  const authService = new AuthService();
-  const server = setupServer(...createAuthHandlers(authService));
-  server.listen({ onUnhandledRequest: 'error' });
-  return server;
-}
 
 function postLogin(email: string, password: string) {
   return fetch('http://localhost/api/auth/login', {
@@ -25,7 +18,7 @@ describe('POST /api/auth/login', () => {
   let server: ReturnType<typeof setupServer>;
 
   beforeAll(() => {
-    server = startServerWithFreshService();
+    ({ server } = startMswServer(createAuthHandlers));
   });
   afterEach(() => server.resetHandlers());
   afterAll(() => server.close());
@@ -65,7 +58,7 @@ describe('POST /api/auth/login — lockout (isolated service instance)', () => {
   let server: ReturnType<typeof setupServer>;
 
   beforeAll(() => {
-    server = startServerWithFreshService();
+    ({ server } = startMswServer(createAuthHandlers));
   });
   afterAll(() => server.close());
 

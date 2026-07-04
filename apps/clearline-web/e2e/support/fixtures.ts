@@ -1,0 +1,29 @@
+import { test as base } from '@playwright/test';
+
+// Window.__e2eMockBackend's shape lives in ../global.d.ts, the single source of truth shared with
+// src/main.tsx.
+export type MockBackend = NonNullable<Window['__e2eMockBackend']>;
+
+export const test = base.extend<{ mockBackend: MockBackend }>({
+  // Fixtures are lazy — this only runs (navigating to /login and waiting for the e2e-only hook)
+  // for tests that actually declare `mockBackend`, so specs that don't need it are unaffected.
+  mockBackend: async ({ page }, use) => {
+    // Any app route first — __e2eMockBackend is wired up during main.tsx's bootstrap, which
+    // hasn't run yet on Playwright's default about:blank starting page. It's attached
+    // asynchronously during bootstrap (after worker.start() resolves), which lands after
+    // page.goto() considers navigation complete, so wait for it rather than assuming it's there.
+    await page.goto('/login');
+    await page.waitForFunction(() => window.__e2eMockBackend !== undefined);
+
+    await use({
+      simulateLoginFailure: () =>
+        page.evaluate(() => window.__e2eMockBackend!.simulateLoginFailure()),
+      issueResetTokenForE2E: (email) =>
+        page.evaluate((e) => window.__e2eMockBackend!.issueResetTokenForE2E(e), email),
+      issueExpiredResetTokenForE2E: (email) =>
+        page.evaluate((e) => window.__e2eMockBackend!.issueExpiredResetTokenForE2E(e), email),
+    });
+  },
+});
+
+export { expect } from '@playwright/test';

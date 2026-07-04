@@ -1,42 +1,41 @@
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { setupServer } from 'msw/node';
 import { http, HttpResponse } from 'msw';
-import type { ReactNode } from 'react';
 import { useValidateResetToken } from './use-validate-reset-token';
+import {
+  buildValidateResetTokenResponse,
+  registerMswServer,
+} from '@fintech-portfolio/mock-backend/test-factories';
+import { createQueryWrapper } from './test/create-query-wrapper';
 
-const server = setupServer();
-beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
-afterEach(() => server.resetHandlers());
-afterAll(() => server.close());
-
-function wrapper({ children }: { children: ReactNode }) {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
-}
+const server = registerMswServer();
+const wrapper = createQueryWrapper({ queries: { retry: false } });
 
 describe('useValidateResetToken', () => {
   it('resolves valid: true for a valid token', async () => {
     server.use(
-      http.get('*/api/auth/reset-password/validate', () => HttpResponse.json({ valid: true })),
+      http.get('*/api/auth/reset-password/validate', () =>
+        HttpResponse.json(buildValidateResetTokenResponse()),
+      ),
     );
 
     const { result } = renderHook(() => useValidateResetToken('reset_abc'), { wrapper });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data).toEqual({ valid: true });
+    expect(result.current.data).toEqual(buildValidateResetTokenResponse());
   });
 
   it('resolves valid: false for an expired/unknown token', async () => {
     server.use(
-      http.get('*/api/auth/reset-password/validate', () => HttpResponse.json({ valid: false })),
+      http.get('*/api/auth/reset-password/validate', () =>
+        HttpResponse.json(buildValidateResetTokenResponse({ valid: false })),
+      ),
     );
 
     const { result } = renderHook(() => useValidateResetToken('reset_expired'), { wrapper });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data).toEqual({ valid: false });
+    expect(result.current.data).toEqual(buildValidateResetTokenResponse({ valid: false }));
   });
 
   it('surfaces an error state on a network failure', async () => {
@@ -52,7 +51,7 @@ describe('useValidateResetToken', () => {
     server.use(
       http.get('*/api/auth/reset-password/validate', () => {
         requestCount++;
-        return HttpResponse.json({ valid: false });
+        return HttpResponse.json(buildValidateResetTokenResponse({ valid: false }));
       }),
     );
 

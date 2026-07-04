@@ -1,18 +1,16 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { setupServer } from 'msw/node';
 import { createPasswordResetHandlers } from './password-reset.handlers';
-import { AuthService } from '../services/auth.service';
+import type { AuthService } from '../services/auth.service';
 import { SEED_USERS } from '../fixtures/users.fixture';
+import {
+  buildResetPasswordErrorResponse,
+  buildValidateResetTokenResponse,
+  startMswServer,
+} from '../fixtures/test-factories';
 
 const [user] = SEED_USERS;
 const NEW_PASSWORD = 'New-Horse-Battery-2';
-
-function startServerWithFreshService() {
-  const authService = new AuthService();
-  const server = setupServer(...createPasswordResetHandlers(authService));
-  server.listen({ onUnhandledRequest: 'error' });
-  return { server, authService };
-}
 
 function postForgotPassword(email: string) {
   return fetch('http://localhost/api/auth/forgot-password', {
@@ -40,7 +38,7 @@ describe('POST /api/auth/forgot-password', () => {
   let server: ReturnType<typeof setupServer>;
 
   beforeAll(() => {
-    ({ server } = startServerWithFreshService());
+    ({ server } = startMswServer(createPasswordResetHandlers));
   });
   afterEach(() => server.resetHandlers());
   afterAll(() => server.close());
@@ -88,7 +86,7 @@ describe('GET /api/auth/reset-password/validate', () => {
   let authService: AuthService;
 
   beforeAll(() => {
-    ({ server, authService } = startServerWithFreshService());
+    ({ server, authService } = startMswServer(createPasswordResetHandlers));
   });
   afterEach(() => server.resetHandlers());
   afterAll(() => server.close());
@@ -99,14 +97,14 @@ describe('GET /api/auth/reset-password/validate', () => {
     const body = await response.json();
 
     expect(response.status).toBe(200);
-    expect(body).toEqual({ valid: true });
+    expect(body).toEqual(buildValidateResetTokenResponse());
   });
 
   it('returns valid: false for an unknown token', async () => {
     const response = await getValidateResetToken('not-a-real-token');
     const body = await response.json();
 
-    expect(body).toEqual({ valid: false });
+    expect(body).toEqual(buildValidateResetTokenResponse({ valid: false }));
   });
 
   it('returns valid: false for an expired token', async () => {
@@ -115,7 +113,7 @@ describe('GET /api/auth/reset-password/validate', () => {
     const response = await getValidateResetToken(token!);
     const body = await response.json();
 
-    expect(body).toEqual({ valid: false });
+    expect(body).toEqual(buildValidateResetTokenResponse({ valid: false }));
   });
 });
 
@@ -124,7 +122,7 @@ describe('POST /api/auth/reset-password', () => {
   let authService: AuthService;
 
   beforeAll(() => {
-    ({ server, authService } = startServerWithFreshService());
+    ({ server, authService } = startMswServer(createPasswordResetHandlers));
   });
   afterEach(() => server.resetHandlers());
   afterAll(() => server.close());
@@ -143,7 +141,7 @@ describe('POST /api/auth/reset-password', () => {
     const body = await response.json();
 
     expect(response.status).toBe(400);
-    expect(body).toEqual({ error: 'token_invalid' });
+    expect(body).toEqual(buildResetPasswordErrorResponse({ error: 'token_invalid' }));
   });
 
   it('returns 400 token_expired for an expired token', async () => {
@@ -153,7 +151,7 @@ describe('POST /api/auth/reset-password', () => {
     const body = await response.json();
 
     expect(response.status).toBe(400);
-    expect(body).toEqual({ error: 'token_expired' });
+    expect(body).toEqual(buildResetPasswordErrorResponse({ error: 'token_expired' }));
   });
 
   it('returns 422 weak_password for a password failing the complexity policy', async () => {
@@ -162,6 +160,6 @@ describe('POST /api/auth/reset-password', () => {
     const body = await response.json();
 
     expect(response.status).toBe(422);
-    expect(body).toEqual({ error: 'weak_password' });
+    expect(body).toEqual(buildResetPasswordErrorResponse({ error: 'weak_password' }));
   });
 });

@@ -27,6 +27,9 @@
       "@fintech-portfolio/mock-backend": ["libs/mock-backend/src/index.ts"],
       "@fintech-portfolio/mock-backend/browser": ["libs/mock-backend/src/browser.ts"],
       "@fintech-portfolio/mock-backend/server": ["libs/mock-backend/src/server.ts"],
+      "@fintech-portfolio/mock-backend/test-factories": [
+        "libs/mock-backend/src/fixtures/test-factories.ts"
+      ],
       "@fintech-portfolio/contracts": ["libs/contracts/src/index.ts"],
       "@fintech-portfolio/icons": ["libs/icons/src/index.ts"],
       "@fintech-portfolio/ui": ["libs/ui/src/index.ts"],

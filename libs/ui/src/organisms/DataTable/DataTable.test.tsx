@@ -2,24 +2,18 @@ import { describe, expect, it, vi } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { DataTable, type DataTableRow } from './DataTable';
+import { buildDataTableRow } from '../../test-factories';
 
 const ROWS: DataTableRow[] = [
-  {
-    id: '1',
-    vendor: 'Zephyr Co.',
-    date: 'Jun 28, 2026',
-    amount: 100,
-    status: 'approved',
-    account: '••1111',
-  },
-  {
+  buildDataTableRow(),
+  buildDataTableRow({
     id: '2',
     vendor: 'Acme Corp',
     date: 'Jun 27, 2026',
     amount: 200,
     status: 'paid',
     account: '••2222',
-  },
+  }),
 ];
 
 describe('DataTable', () => {

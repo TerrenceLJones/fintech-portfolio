@@ -1,6 +1,6 @@
 // Single source of truth for the e2e-only control surface main.tsx exposes on window (only in
-// DEV mode — see src/main.tsx), driven via page.evaluate() by login.spec.ts's AC-05 test and by
-// password-reset.spec.ts. Kept here rather than duplicated in both files so the two can't
+// DEV mode — see src/main.tsx), wrapped by support/fixtures.ts's `mockBackend` fixture and driven
+// via page.evaluate() from there. Kept here rather than duplicated across spec files so they can't
 // independently drift out of sync.
 export {};
 

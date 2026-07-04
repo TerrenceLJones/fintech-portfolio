@@ -1,32 +1,26 @@
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { setupServer } from 'msw/node';
 import { http, HttpResponse } from 'msw';
-import type { ReactNode } from 'react';
 import { LoginError, useLogin } from './use-login';
+import {
+  buildAuthErrorResponse,
+  buildLoginSuccessResponse,
+  registerMswServer,
+} from '@fintech-portfolio/mock-backend/test-factories';
+import { createQueryWrapper } from './test/create-query-wrapper';
 
-const server = setupServer();
-beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
-afterEach(() => server.resetHandlers());
-afterAll(() => server.close());
-
-function wrapper({ children }: { children: ReactNode }) {
-  const queryClient = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
-  return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
-}
+const server = registerMswServer();
+const wrapper = createQueryWrapper({ mutations: { retry: false } });
 
 describe('useLogin', () => {
   it('resolves with the access token on success', async () => {
-    server.use(
-      http.post('*/api/auth/login', () => HttpResponse.json({ accessToken: 'access_123' })),
-    );
+    server.use(http.post('*/api/auth/login', () => HttpResponse.json(buildLoginSuccessResponse())));
 
     const { result } = renderHook(() => useLogin({ retryDelayMs: () => 0 }), { wrapper });
     result.current.mutate({ email: 'demo@clearline.dev', password: 'correct' });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data).toEqual({ accessToken: 'access_123' });
+    expect(result.current.data).toEqual(buildLoginSuccessResponse());
   });
 
   it('does not retry a 401 invalid_credentials response', async () => {
@@ -34,7 +28,9 @@ describe('useLogin', () => {
     server.use(
       http.post('*/api/auth/login', () => {
         requestCount++;
-        return HttpResponse.json({ error: 'invalid_credentials' }, { status: 401 });
+        return HttpResponse.json(buildAuthErrorResponse({ error: 'invalid_credentials' }), {
+          status: 401,
+        });
       }),
     );
 

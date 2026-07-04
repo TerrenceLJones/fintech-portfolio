@@ -1,24 +1,11 @@
-import { expect, test, type Page } from '@playwright/test';
-
-// Window.__e2eMockBackend's type lives in e2e/global.d.ts, shared with src/main.tsx.
-
-// Matches the seed user in libs/mock-backend/src/fixtures/users.fixture.ts
-const DEMO_EMAIL = 'demo@clearline.dev';
-const DEMO_PASSWORD = 'Correct-Horse-Battery-1';
-
-async function fillLoginForm(page: Page, email: string, password: string) {
-  await page.getByLabel('Work email').fill(email);
-  // exact: true — otherwise this also matches the PasswordField's "Show password" toggle button,
-  // whose aria-label contains "Password" as a substring (Playwright's getByLabel is substring
-  // matching by default, unlike Testing Library's getByLabelText which is exact).
-  await page.getByLabel('Password', { exact: true }).fill(password);
-}
-
-function waitForLoginResponse(page: Page) {
-  return page.waitForResponse(
-    (res) => res.url().includes('/api/auth/login') && res.request().method() === 'POST',
-  );
-}
+import { expect, test } from './support/fixtures';
+import {
+  DEMO_EMAIL,
+  DEMO_PASSWORD,
+  expectSignedIn,
+  fillLoginForm,
+  waitForApiResponse,
+} from './support/helpers';
 
 test('an unauthenticated visitor is redirected to /login and back after signing in, with the access token kept out of storage (AC-01)', async ({
   page,
@@ -27,14 +14,13 @@ test('an unauthenticated visitor is redirected to /login and back after signing 
 
   await expect(page).toHaveURL(`${new URL(page.url()).origin}/login?next=%2F`);
 
-  const loginResponse = waitForLoginResponse(page);
+  const loginResponse = waitForApiResponse(page, '/api/auth/login');
   await fillLoginForm(page, DEMO_EMAIL, DEMO_PASSWORD);
   await page.getByRole('button', { name: 'Sign in' }).click();
   const { accessToken } = await (await loginResponse).json();
   expect(accessToken).toBeTruthy();
 
-  await expect(page).toHaveURL(`${new URL(page.url()).origin}/`);
-  await expect(page.getByText('Welcome back.')).toBeVisible();
+  await expectSignedIn(page);
 
   // access token must be held in memory only — never persisted to localStorage/sessionStorage.
   // The refresh-token cookie's httpOnly/Secure/SameSite=Strict contract is asserted at the
@@ -90,7 +76,7 @@ test('5 failed attempts within 15 minutes locks the account and surfaces a suppo
     // attempt's still-visible alert and race ahead of the network round trip. A click that lands
     // while the button is still loading is silently swallowed (Button.tsx preventDefaults it), so
     // racing ahead here would under-count attempts and never reach the 5th, lockout-triggering one.
-    const response = waitForLoginResponse(page);
+    const response = waitForApiResponse(page, '/api/auth/login');
     await fillLoginForm(page, email, 'wrong-password');
     await page.getByRole('button', { name: 'Sign in' }).click();
     await response;
@@ -110,6 +96,7 @@ test('5 failed attempts within 15 minutes locks the account and surfaces a suppo
 
 test('an unreachable auth service retries automatically, then offers a manual retry (AC-05)', async ({
   page,
+  mockBackend,
 }) => {
   // Real exponential backoff (1s/2s/4s ≈ 7s across 3 retries) runs in this test, unlike the unit
   // tests which inject retryDelayMs: () => 0 — give this test headroom beyond the 30s default.
@@ -120,15 +107,11 @@ test('an unreachable auth service retries automatically, then offers a manual re
     if (res.url().includes('/api/auth/login')) responseCount += 1;
   });
 
-  await page.goto('/login');
   // MSW's Service Worker answers /api/auth/login in-process, so Playwright's page.route() can't
   // intercept it to force a failure (confirmed — a forced-500 route silently never fires, and the
   // real mocked response goes through instead). This dev-only hook overrides the handler from
-  // inside the page's own MSW instance; see libs/mock-backend/src/browser.ts. It's attached
-  // asynchronously during bootstrap (after worker.start() resolves), which lands after Playwright
-  // considers page.goto() complete, so wait for it rather than assuming it's already there.
-  await page.waitForFunction(() => window.__e2eMockBackend !== undefined);
-  await page.evaluate(() => window.__e2eMockBackend!.simulateLoginFailure());
+  // inside the page's own MSW instance; see libs/mock-backend/src/browser.ts.
+  await mockBackend.simulateLoginFailure();
 
   await fillLoginForm(page, DEMO_EMAIL, DEMO_PASSWORD);
   await page.getByRole('button', { name: 'Sign in' }).click();

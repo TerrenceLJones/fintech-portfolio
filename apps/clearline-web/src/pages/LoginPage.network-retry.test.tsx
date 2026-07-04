@@ -5,6 +5,7 @@ import { MemoryRouter, Route, Routes } from 'react-router';
 import { LoginPage } from './LoginPage';
 import { useLogin } from '@fintech-portfolio/data-access-auth';
 import { withQueryClient } from '../test/with-query-client';
+import { buildMutationResult } from '../test/build-mutation-result';
 
 // The retry/backoff mechanics themselves are already covered by libs/data-access/auth's
 // use-login.test.tsx with an injected near-zero delay; this file mocks the hook entirely so the
@@ -32,14 +33,13 @@ function renderLoginPage() {
 describe('LoginPage — network error exhausted retries (AC-05)', () => {
   it('shows a manual "Try again" button once retries are exhausted, and it re-submits', async () => {
     const mutate = vi.fn();
-    vi.mocked(useLogin).mockReturnValue({
-      mutate,
-      isPending: false,
-      isError: true,
-      isSuccess: false,
-      error: new Error('network_error'),
-      data: undefined,
-    } as unknown as ReturnType<typeof useLogin>);
+    vi.mocked(useLogin).mockReturnValue(
+      buildMutationResult({
+        mutate,
+        isError: true,
+        error: new Error('network_error'),
+      }) as unknown as ReturnType<typeof useLogin>,
+    );
 
     renderLoginPage();
     const user = userEvent.setup();
@@ -53,14 +53,9 @@ describe('LoginPage — network error exhausted retries (AC-05)', () => {
 describe('LoginPage — does not resubmit while a login request is already pending', () => {
   it('does not call mutate again if the Sign in button is clicked while isPending is true', async () => {
     const mutate = vi.fn();
-    vi.mocked(useLogin).mockReturnValue({
-      mutate,
-      isPending: true,
-      isError: false,
-      isSuccess: false,
-      error: null,
-      data: undefined,
-    } as unknown as ReturnType<typeof useLogin>);
+    vi.mocked(useLogin).mockReturnValue(
+      buildMutationResult({ mutate, isPending: true }) as unknown as ReturnType<typeof useLogin>,
+    );
 
     renderLoginPage();
     const user = userEvent.setup();

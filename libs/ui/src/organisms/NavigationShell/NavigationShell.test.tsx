@@ -2,22 +2,23 @@ import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { NavigationShell, type NavigationShellItem } from './NavigationShell';
+import { buildNavItem } from '../../test-factories';
 
 const EMPLOYEE_ITEMS: NavigationShellItem[] = [
-  { id: 'expenses', icon: 'file-text', label: 'My Expenses' },
-  { id: 'cards', icon: 'copy', label: 'My Cards' },
+  buildNavItem(),
+  buildNavItem({ id: 'cards', icon: 'copy', label: 'My Cards' }),
 ];
 
 const FINANCE_MANAGER_ITEMS: NavigationShellItem[] = [
   ...EMPLOYEE_ITEMS,
-  { id: 'approvals', icon: 'check', label: 'Approvals' },
-  { id: 'reconciliation', icon: 'refresh', label: 'Reconciliation' },
+  buildNavItem({ id: 'approvals', icon: 'check', label: 'Approvals' }),
+  buildNavItem({ id: 'reconciliation', icon: 'refresh', label: 'Reconciliation' }),
 ];
 
 const CONTROLLER_ITEMS: NavigationShellItem[] = [
   ...FINANCE_MANAGER_ITEMS,
-  { id: 'budgets', icon: 'shield', label: 'Budget Management' },
-  { id: 'audit-log', icon: 'clock', label: 'Audit Log' },
+  buildNavItem({ id: 'budgets', icon: 'shield', label: 'Budget Management' }),
+  buildNavItem({ id: 'audit-log', icon: 'clock', label: 'Audit Log' }),
 ];
 
 describe('NavigationShell', () => {
@@ -53,7 +54,11 @@ describe('NavigationShell', () => {
     const onNavigate = vi.fn();
     const user = userEvent.setup();
     render(
-      <NavigationShell items={FINANCE_MANAGER_ITEMS} activeId="approvals" onNavigate={onNavigate} />,
+      <NavigationShell
+        items={FINANCE_MANAGER_ITEMS}
+        activeId="approvals"
+        onNavigate={onNavigate}
+      />,
     );
 
     expect(screen.getByRole('button', { name: 'Approvals' })).toHaveAttribute(

@@ -1,17 +1,18 @@
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router';
 import { QueryClient } from '@tanstack/react-query';
-import { setupServer } from 'msw/node';
 import { http, HttpResponse } from 'msw';
 import { ResetPasswordPage } from './ResetPasswordPage';
 import { withQueryClient } from '../test/with-query-client';
+import {
+  buildResetPasswordErrorResponse,
+  buildValidateResetTokenResponse,
+  registerMswServer,
+} from '@fintech-portfolio/mock-backend/test-factories';
 
-const server = setupServer();
-beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
-afterEach(() => server.resetHandlers());
-afterAll(() => server.close());
+const server = registerMswServer();
 
 function LoginStub() {
   const location = useLocation();
@@ -46,7 +47,9 @@ async function fillAndSubmit(password: string, confirmPassword: string) {
 describe('ResetPasswordPage', () => {
   it('renders the new-password form for a valid token (AC-03)', async () => {
     server.use(
-      http.get('*/api/auth/reset-password/validate', () => HttpResponse.json({ valid: true })),
+      http.get('*/api/auth/reset-password/validate', () =>
+        HttpResponse.json(buildValidateResetTokenResponse()),
+      ),
     );
     renderResetPasswordPage();
 
@@ -80,7 +83,9 @@ describe('ResetPasswordPage', () => {
 
   it('renders the expired-link notice for an invalid/expired token (AC-02)', async () => {
     server.use(
-      http.get('*/api/auth/reset-password/validate', () => HttpResponse.json({ valid: false })),
+      http.get('*/api/auth/reset-password/validate', () =>
+        HttpResponse.json(buildValidateResetTokenResponse({ valid: false })),
+      ),
     );
     renderResetPasswordPage();
 
@@ -89,7 +94,9 @@ describe('ResetPasswordPage', () => {
 
   it('navigates to the forgot-password page when "Resend link" is clicked', async () => {
     server.use(
-      http.get('*/api/auth/reset-password/validate', () => HttpResponse.json({ valid: false })),
+      http.get('*/api/auth/reset-password/validate', () =>
+        HttpResponse.json(buildValidateResetTokenResponse({ valid: false })),
+      ),
     );
     renderResetPasswordPage();
     const user = userEvent.setup();
@@ -101,7 +108,9 @@ describe('ResetPasswordPage', () => {
   it('blocks submission and shows an inline error when passwords do not match, without hitting the network', async () => {
     let requestCount = 0;
     server.use(
-      http.get('*/api/auth/reset-password/validate', () => HttpResponse.json({ valid: true })),
+      http.get('*/api/auth/reset-password/validate', () =>
+        HttpResponse.json(buildValidateResetTokenResponse()),
+      ),
       http.post('*/api/auth/reset-password', () => {
         requestCount++;
         return HttpResponse.json({});
@@ -118,7 +127,9 @@ describe('ResetPasswordPage', () => {
 
   it('navigates to /login with a success flag after a successful reset (AC-03)', async () => {
     server.use(
-      http.get('*/api/auth/reset-password/validate', () => HttpResponse.json({ valid: true })),
+      http.get('*/api/auth/reset-password/validate', () =>
+        HttpResponse.json(buildValidateResetTokenResponse()),
+      ),
       http.post('*/api/auth/reset-password', () => HttpResponse.json({})),
     );
     renderResetPasswordPage();
@@ -131,9 +142,13 @@ describe('ResetPasswordPage', () => {
 
   it('surfaces the server weak_password error inline', async () => {
     server.use(
-      http.get('*/api/auth/reset-password/validate', () => HttpResponse.json({ valid: true })),
+      http.get('*/api/auth/reset-password/validate', () =>
+        HttpResponse.json(buildValidateResetTokenResponse()),
+      ),
       http.post('*/api/auth/reset-password', () =>
-        HttpResponse.json({ error: 'weak_password' }, { status: 422 }),
+        HttpResponse.json(buildResetPasswordErrorResponse({ error: 'weak_password' }), {
+          status: 422,
+        }),
       ),
     );
     renderResetPasswordPage();
