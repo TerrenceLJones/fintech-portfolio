@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { hashPassword } from '@fintech-portfolio/domain-auth';
 import { AuthService } from './auth.service';
 import type { SeedUser } from '../fixtures/users.fixture';
+import { buildSeedUser } from '../fixtures/test-factories';
 
 const NEW_PASSWORD = 'Brand-New-Password-1!';
 const NOW = 1_700_000_000_000;
@@ -9,12 +9,7 @@ const NOW = 1_700_000_000_000;
 let VERIFIED_USER: SeedUser;
 
 beforeAll(async () => {
-  VERIFIED_USER = {
-    id: 'user_1',
-    email: 'demo@clearline.dev',
-    passwordHash: await hashPassword('Correct-Horse-Battery-1'),
-    verified: true,
-  };
+  VERIFIED_USER = await buildSeedUser({ password: 'Correct-Horse-Battery-1' });
 });
 
 describe('AuthService snapshot/restore — verification state', () => {

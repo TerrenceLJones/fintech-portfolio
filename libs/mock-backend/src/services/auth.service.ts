@@ -364,6 +364,11 @@ export class AuthService {
     };
   }
 
+  async isVerificationTokenValid(token: string, now: number = Date.now()): Promise<boolean> {
+    const record = this.verificationTokensByTokenHash.get(await hashToken(token));
+    return !!record && !record.used && !isVerificationTokenExpired(record.issuedAt, now);
+  }
+
   getAuditLog(): readonly AuditEvent[] {
     return this.auditLog;
   }

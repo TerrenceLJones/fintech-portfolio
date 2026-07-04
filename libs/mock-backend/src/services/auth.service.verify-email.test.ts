@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { hashPassword } from '@fintech-portfolio/domain-auth';
 import { AuthService } from './auth.service';
 import type { SeedUser } from '../fixtures/users.fixture';
+import { buildSeedUser } from '../fixtures/test-factories';
 
 const NEW_PASSWORD = 'Brand-New-Password-1!';
 const NOW = 1_700_000_000_000;
@@ -10,12 +10,7 @@ const DAY = 24 * 60 * 60 * 1000;
 let VERIFIED_USER: SeedUser;
 
 beforeAll(async () => {
-  VERIFIED_USER = {
-    id: 'user_1',
-    email: 'demo@clearline.dev',
-    passwordHash: await hashPassword('Correct-Horse-Battery-1'),
-    verified: true,
-  };
+  VERIFIED_USER = await buildSeedUser({ password: 'Correct-Horse-Battery-1' });
 });
 
 function newService() {
@@ -84,5 +79,15 @@ describe('AuthService.verifyEmail', () => {
 
     const second = await service.verifyEmail(token, NOW + 2000);
     expect(second).toEqual({ outcome: 'token_invalid' });
+  });
+
+  it('isVerificationTokenValid mirrors verifyEmail without consuming the token', async () => {
+    const service = newService();
+    const token = await signUpNewUser(service, 'new-owner@clearline.dev');
+
+    expect(await service.isVerificationTokenValid(token, NOW + 1000)).toBe(true);
+    // still valid afterward — isVerificationTokenValid must not mark it used
+    expect(await service.isVerificationTokenValid(token, NOW + 2000)).toBe(true);
+    expect(await service.isVerificationTokenValid('unknown', NOW)).toBe(false);
   });
 });

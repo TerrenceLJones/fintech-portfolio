@@ -22,6 +22,18 @@ export const test = base.extend<{ mockBackend: MockBackend }>({
         page.evaluate((e) => window.__e2eMockBackend!.issueResetTokenForE2E(e), email),
       issueExpiredResetTokenForE2E: (email) =>
         page.evaluate((e) => window.__e2eMockBackend!.issueExpiredResetTokenForE2E(e), email),
+      issueVerificationTokenForE2E: (email, password) =>
+        page.evaluate(
+          ({ email, password }) =>
+            window.__e2eMockBackend!.issueVerificationTokenForE2E(email, password),
+          { email, password },
+        ),
+      issueExpiredVerificationTokenForE2E: (email, password) =>
+        page.evaluate(
+          ({ email, password }) =>
+            window.__e2eMockBackend!.issueExpiredVerificationTokenForE2E(email, password),
+          { email, password },
+        ),
     });
   },
 });

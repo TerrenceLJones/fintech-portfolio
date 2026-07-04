@@ -4,20 +4,9 @@ import {
   DEMO_PASSWORD,
   expectSignedIn,
   fillLoginForm,
+  signUp,
   waitForApiResponse,
 } from './support/helpers';
-
-/** Creates an account via the real sign-up form, deliberately without verifying it (AC-07). */
-async function signUpWithoutVerifying(page: Page, email: string, password: string) {
-  await page.goto('/signup');
-  const response = page.waitForResponse(
-    (res) => res.url().includes('/api/auth/signup') && res.request().method() === 'POST',
-  );
-  await page.getByLabel('Work email').fill(email);
-  await page.getByLabel('Password', { exact: true }).fill(password);
-  await page.getByRole('button', { name: 'Create account' }).click();
-  await response;
-}
 
 test('an unauthenticated visitor is redirected to /login and back after signing in, with the access token kept out of storage (AC-01)', async ({
   page,
@@ -149,10 +138,11 @@ test('correct credentials for an unverified account are blocked, with a resend a
   const email = 'not-yet-verified@clearline.dev';
   const password = 'Correct-Horse-1';
 
-  await signUpWithoutVerifying(page, email, password);
+  // deliberately not verifying, to exercise AC-07
+  await signUp(page, email, password);
 
   await page.goto('/login');
-  const loginResponse = waitForLoginResponse(page);
+  const loginResponse = waitForApiResponse(page, '/api/auth/login');
   await fillLoginForm(page, email, password);
   await page.getByRole('button', { name: 'Sign in' }).click();
   await loginResponse;

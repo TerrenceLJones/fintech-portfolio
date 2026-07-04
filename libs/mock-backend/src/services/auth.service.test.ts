@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { hashPassword } from '@fintech-portfolio/domain-auth';
 import { AuthService } from './auth.service';
 import type { SeedUser } from '../fixtures/users.fixture';
+import { buildSeedUser } from '../fixtures/test-factories';
 
 const PLAINTEXT_PASSWORD = 'correct-password';
 const IP = '127.0.0.1 (mocked)';
@@ -12,19 +12,13 @@ let USER: SeedUser;
 let UNVERIFIED_USER: SeedUser;
 
 beforeAll(async () => {
-  const passwordHash = await hashPassword(PLAINTEXT_PASSWORD);
-  USER = {
-    id: 'user_1',
-    email: 'demo@clearline.dev',
-    passwordHash,
-    verified: true,
-  };
-  UNVERIFIED_USER = {
+  USER = await buildSeedUser({ password: PLAINTEXT_PASSWORD });
+  UNVERIFIED_USER = await buildSeedUser({
     id: 'user_2',
     email: 'unverified@clearline.dev',
-    passwordHash,
+    passwordHash: USER.passwordHash,
     verified: false,
-  };
+  });
 });
 
 function newService() {

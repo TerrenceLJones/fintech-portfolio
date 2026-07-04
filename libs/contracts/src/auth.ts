@@ -55,6 +55,10 @@ export interface SignUpErrorResponse {
   error: SignUpErrorCode;
 }
 
+export interface ValidateVerifyEmailTokenResponse {
+  valid: boolean;
+}
+
 export interface VerifyEmailRequest {
   token: string;
 }

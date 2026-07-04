@@ -2,6 +2,7 @@ import type { DataTableRow } from './organisms/DataTable/DataTable';
 import type { NavigationShellItem } from './organisms/NavigationShell/NavigationShell';
 import type { BulkActionFailure } from './organisms/BulkActionResult/BulkActionResult';
 import type { TimelineEntry } from './molecules/Timeline/Timeline';
+import type { PasswordRequirementItem } from './molecules/PasswordRequirementsList/PasswordRequirementsList';
 
 /** Replaces the hand-built `DataTableRow` array literals duplicated across DataTable.test.tsx cases. */
 export function buildDataTableRow(overrides: Partial<DataTableRow> = {}): DataTableRow {
@@ -43,6 +44,16 @@ export function buildTimelineEntry(overrides: Partial<TimelineEntry> = {}): Time
     time: 'Jun 28, 2026 · 14:22:07 PT',
     ...overrides,
   };
+}
+
+/**
+ * Shape mirrors `evaluateSignUpPassword`'s return value as well as `PasswordRequirementsList`
+ * props, so this factory backs both the domain policy tests and the molecule's tests.
+ */
+export function buildPasswordRequirementItem(
+  overrides: Partial<PasswordRequirementItem> = {},
+): PasswordRequirementItem {
+  return { label: 'At least 12 characters', met: true, ...overrides };
 }
 
 export function buildBulkActionFailure(

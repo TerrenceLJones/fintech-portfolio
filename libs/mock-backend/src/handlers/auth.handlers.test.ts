@@ -2,15 +2,19 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { setupServer } from 'msw/node';
 import { createAuthHandlers } from './auth.handlers';
 import { DEMO_USER_PASSWORD, SEED_USERS } from '../fixtures/users.fixture';
-import { startMswServer } from '../fixtures/test-factories';
+import { buildSeedUser, startMswServer } from '../fixtures/test-factories';
 
 const [user] = SEED_USERS;
-const UNVERIFIED_USER = {
-  ...user!,
-  id: 'user_2',
-  email: 'unverified@clearline.dev',
-  verified: false,
-};
+let UNVERIFIED_USER: Awaited<ReturnType<typeof buildSeedUser>>;
+
+beforeAll(async () => {
+  UNVERIFIED_USER = await buildSeedUser({
+    id: 'user_2',
+    email: 'unverified@clearline.dev',
+    passwordHash: user!.passwordHash,
+    verified: false,
+  });
+});
 
 function postLogin(email: string, password: string) {
   return fetch('http://localhost/api/auth/login', {
@@ -64,9 +68,7 @@ describe('POST /api/auth/login — unverified account (isolated service instance
   let server: ReturnType<typeof setupServer>;
 
   beforeAll(() => {
-    const authService = new AuthService([UNVERIFIED_USER]);
-    server = setupServer(...createAuthHandlers(authService));
-    server.listen({ onUnhandledRequest: 'error' });
+    ({ server } = startMswServer(createAuthHandlers, [UNVERIFIED_USER]));
   });
   afterAll(() => server.close());
 

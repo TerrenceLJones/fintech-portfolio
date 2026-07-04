@@ -1,20 +1,15 @@
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { setupServer } from 'msw/node';
 import { http, HttpResponse } from 'msw';
-import type { ReactNode } from 'react';
 import { SignUpError, useSignUp } from './use-sign-up';
+import {
+  buildSignUpErrorResponse,
+  registerMswServer,
+} from '@fintech-portfolio/mock-backend/test-factories';
+import { createQueryWrapper } from './test/create-query-wrapper';
 
-const server = setupServer();
-beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
-afterEach(() => server.resetHandlers());
-afterAll(() => server.close());
-
-function wrapper({ children }: { children: ReactNode }) {
-  const queryClient = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
-  return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
-}
+const server = registerMswServer();
+const wrapper = createQueryWrapper({ mutations: { retry: false } });
 
 describe('useSignUp', () => {
   it('resolves on a 200 response', async () => {
@@ -29,7 +24,7 @@ describe('useSignUp', () => {
   it('throws a SignUpError with code weak_password for a 422 response', async () => {
     server.use(
       http.post('*/api/auth/signup', () =>
-        HttpResponse.json({ error: 'weak_password' }, { status: 422 }),
+        HttpResponse.json(buildSignUpErrorResponse(), { status: 422 }),
       ),
     );
 

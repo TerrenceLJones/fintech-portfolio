@@ -1,16 +1,13 @@
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router';
-import { setupServer } from 'msw/node';
 import { http, HttpResponse } from 'msw';
 import { SignUpPage } from './SignUpPage';
 import { withQueryClient } from '../test/with-query-client';
+import { registerMswServer } from '@fintech-portfolio/mock-backend/test-factories';
 
-const server = setupServer();
-beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
-afterEach(() => server.resetHandlers());
-afterAll(() => server.close());
+const server = registerMswServer();
 
 const VALID_PASSWORD = 'Correct-Horse-1';
 
@@ -47,17 +44,30 @@ describe('SignUpPage', () => {
     renderSignUpPage();
     const user = userEvent.setup();
 
-    expect(screen.getByRole('button', { name: 'Create account' })).toBeDisabled();
+    // Button uses aria-disabled (not the native disabled attribute) to stay focusable,
+    // so we assert on aria-disabled rather than toBeDisabled()/toBeEnabled().
+    expect(screen.getByRole('button', { name: 'Create account' })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
 
     await user.type(screen.getByLabelText('Password'), 'weak');
-    expect(screen.getByRole('button', { name: 'Create account' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Create account' })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
 
     await user.type(screen.getByLabelText('Password'), '2!Aa');
     // 'weak2!Aa' is 8 chars — still under 12
-    expect(screen.getByRole('button', { name: 'Create account' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Create account' })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
 
     await user.type(screen.getByLabelText('Password'), 'extra-chars');
-    expect(screen.getByRole('button', { name: 'Create account' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Create account' })).not.toHaveAttribute(
+      'aria-disabled',
+    );
   });
 
   it('shows a live checklist reflecting which password requirements are met (AC-04)', async () => {

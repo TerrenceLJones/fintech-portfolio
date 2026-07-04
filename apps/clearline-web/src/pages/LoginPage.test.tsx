@@ -146,7 +146,7 @@ describe('LoginPage', () => {
   it('shows a verify-email message and no dashboard redirect for an unverified account (AC-07)', async () => {
     server.use(
       http.post('*/api/auth/login', () =>
-        HttpResponse.json({ error: 'unverified_account' }, { status: 403 }),
+        HttpResponse.json(buildAuthErrorResponse({ error: 'unverified_account' }), { status: 403 }),
       ),
     );
     renderLoginPage();
@@ -164,7 +164,7 @@ describe('LoginPage', () => {
   it('resends the verification email and shows a confirmation (AC-07)', async () => {
     server.use(
       http.post('*/api/auth/login', () =>
-        HttpResponse.json({ error: 'unverified_account' }, { status: 403 }),
+        HttpResponse.json(buildAuthErrorResponse({ error: 'unverified_account' }), { status: 403 }),
       ),
       http.post('*/api/auth/signup', () => HttpResponse.json({})),
     );

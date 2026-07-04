@@ -1,7 +1,8 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { hashPassword, hashToken } from '@fintech-portfolio/domain-auth';
+import { hashToken } from '@fintech-portfolio/domain-auth';
 import { AuthService } from './auth.service';
 import type { SeedUser } from '../fixtures/users.fixture';
+import { buildSeedUser } from '../fixtures/test-factories';
 
 const EXISTING_PASSWORD = 'Correct-Horse-Battery-1';
 const NEW_PASSWORD = 'Brand-New-Password-1!';
@@ -10,12 +11,7 @@ const NOW = 1_700_000_000_000;
 let VERIFIED_USER: SeedUser;
 
 beforeAll(async () => {
-  VERIFIED_USER = {
-    id: 'user_1',
-    email: 'demo@clearline.dev',
-    passwordHash: await hashPassword(EXISTING_PASSWORD),
-    verified: true,
-  };
+  VERIFIED_USER = await buildSeedUser({ password: EXISTING_PASSWORD });
 });
 
 function newService() {

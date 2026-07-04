@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { PasswordRequirementsList } from './PasswordRequirementsList';
+import { buildPasswordRequirementItem } from '../../test-factories';
 
 const ITEMS = [
-  { label: 'At least 12 characters', met: true },
-  { label: 'Upper & lowercase', met: true },
-  { label: 'A number', met: false },
-  { label: 'A symbol', met: false },
+  buildPasswordRequirementItem(),
+  buildPasswordRequirementItem({ label: 'Upper & lowercase' }),
+  buildPasswordRequirementItem({ label: 'A number', met: false }),
+  buildPasswordRequirementItem({ label: 'A symbol', met: false }),
 ];
 
 describe('PasswordRequirementsList', () => {
