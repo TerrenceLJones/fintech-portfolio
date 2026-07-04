@@ -5,23 +5,7 @@ name: Chromatic - ui
 on:
   push:
     branches: [main]
-    paths:
-      - 'libs/ui/**'
-      - 'libs/design-tokens/**'
-      - 'libs/icons/**'
-      - 'package.json'
-      - 'pnpm-lock.yaml'
-      - 'nx.json'
-      - 'tsconfig.base.json'
   pull_request:
-    paths:
-      - 'libs/ui/**'
-      - 'libs/design-tokens/**'
-      - 'libs/icons/**'
-      - 'package.json'
-      - 'pnpm-lock.yaml'
-      - 'nx.json'
-      - 'tsconfig.base.json'
 
 permissions:
   contents: read
@@ -31,7 +15,28 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      ui: ${{ steps.filter.outputs.ui }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            ui:
+              - 'libs/ui/**'
+              - 'libs/design-tokens/**'
+              - 'libs/icons/**'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'nx.json'
+              - 'tsconfig.base.json'
+
   chromatic:
+    needs: changes
+    if: needs.changes.outputs.ui == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
