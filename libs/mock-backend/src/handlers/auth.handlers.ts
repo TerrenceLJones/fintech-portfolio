@@ -40,6 +40,11 @@ export function createAuthHandlers(authService: AuthService = sharedAuthService)
         return HttpResponse.json(body, { status: 423 });
       }
 
+      if (result.outcome === 'unverified_account') {
+        const body: AuthErrorResponse = { error: 'unverified_account' };
+        return HttpResponse.json(body, { status: 403 });
+      }
+
       const body: AuthErrorResponse = { error: 'invalid_credentials' };
       return HttpResponse.json(body, { status: 401 });
     }),

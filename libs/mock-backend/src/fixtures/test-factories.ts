@@ -8,7 +8,12 @@ import type {
   LoginResponse,
   ResetPasswordErrorResponse,
   ResetPasswordRequest,
+  SignUpErrorResponse,
+  SignUpRequest,
   ValidateResetTokenResponse,
+  ValidateVerifyEmailTokenResponse,
+  VerifyEmailErrorResponse,
+  VerifyEmailResponse,
 } from '@fintech-portfolio/contracts';
 import { AuthService } from '../services/auth.service';
 import type { SeedUser } from './users.fixture';
@@ -28,11 +33,18 @@ export async function buildSeedUser(
     passwordHash?: string;
   } = {},
 ): Promise<SeedUser> {
-  const { password, passwordHash, id = 'user_1', email = 'demo@clearline.dev' } = overrides;
+  const {
+    password,
+    passwordHash,
+    id = 'user_1',
+    email = 'demo@clearline.dev',
+    verified = true,
+  } = overrides;
 
   return {
     id,
     email,
+    verified,
     passwordHash: passwordHash ?? (await hashPassword(password ?? DEFAULT_TEST_PASSWORD)),
   };
 }
@@ -45,11 +57,21 @@ export function buildLoginSuccessResponse(overrides: Partial<LoginResponse> = {}
   return { accessToken: 'access_123', ...overrides };
 }
 
+export function buildVerifyEmailSuccessResponse(
+  overrides: Partial<VerifyEmailResponse> = {},
+): VerifyEmailResponse {
+  return { accessToken: 'access_123', ...overrides };
+}
+
 /** Covers every AuthErrorResponse shape — pass `{ error: 'account_locked', supportReferenceId }` etc. */
 export function buildAuthErrorResponse(
   overrides: Partial<AuthErrorResponse> = {},
 ): AuthErrorResponse {
   return { error: 'invalid_credentials', ...overrides };
+}
+
+export function buildSignUpRequest(overrides: Partial<SignUpRequest> = {}): SignUpRequest {
+  return { email: 'new-owner@clearline.dev', password: 'Brand-New-Password-1!', ...overrides };
 }
 
 export function buildResetPasswordRequest(
@@ -61,6 +83,24 @@ export function buildResetPasswordRequest(
 export function buildValidateResetTokenResponse(
   overrides: Partial<ValidateResetTokenResponse> = {},
 ): ValidateResetTokenResponse {
+  return { valid: true, ...overrides };
+}
+
+export function buildSignUpErrorResponse(
+  overrides: Partial<SignUpErrorResponse> = {},
+): SignUpErrorResponse {
+  return { error: 'weak_password', ...overrides };
+}
+
+export function buildVerifyEmailErrorResponse(
+  overrides: Partial<VerifyEmailErrorResponse> = {},
+): VerifyEmailErrorResponse {
+  return { error: 'token_invalid', ...overrides };
+}
+
+export function buildValidateVerifyEmailTokenResponse(
+  overrides: Partial<ValidateVerifyEmailTokenResponse> = {},
+): ValidateVerifyEmailTokenResponse {
   return { valid: true, ...overrides };
 }
 

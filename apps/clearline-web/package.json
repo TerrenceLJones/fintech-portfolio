@@ -16,6 +16,7 @@
     "@fintech-portfolio/contracts": "workspace:*",
     "@fintech-portfolio/data-access-auth": "workspace:*",
     "@fintech-portfolio/design-tokens": "workspace:*",
+    "@fintech-portfolio/domain-auth": "workspace:*",
     "@fintech-portfolio/icons": "workspace:*",
     "@fintech-portfolio/mock-backend": "workspace:*",
     "@fintech-portfolio/ui": "workspace:*",

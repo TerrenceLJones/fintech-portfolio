@@ -3,6 +3,8 @@ export interface SeedUser {
   email: string;
   /** PBKDF2-HMAC-SHA256 hash (see @fintech-portfolio/domain-auth password-hashing) — never plaintext, even in seed data. */
   passwordHash: string;
+  /** False from account creation (US-CW-029 AC-01) until the sign-up verification link is clicked (AC-03). */
+  verified: boolean;
 }
 
 /** The plaintext DEMO_USER_PASSWORD was hashed from, kept only so local dev/tests can log in as the seed user. */
@@ -13,6 +15,8 @@ export const SEED_USERS: SeedUser[] = [
   {
     id: 'user_1',
     email: 'demo@clearline.dev',
-    passwordHash: 'pbkdf2-sha256$210000$EVdpGm+5ZSyaf/tp5qNqAA==$2HU7zHF8PxFivV/4XCZ8GGQeUpHl/B71IO6/yMl3ZhM=',
+    passwordHash:
+      'pbkdf2-sha256$210000$EVdpGm+5ZSyaf/tp5qNqAA==$2HU7zHF8PxFivV/4XCZ8GGQeUpHl/B71IO6/yMl3ZhM=',
+    verified: true,
   },
 ];

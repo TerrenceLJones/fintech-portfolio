@@ -25,6 +25,12 @@ history:
   - epic_id: 'EPIC-CW-001'
     action: 'approved'
     date: '2026-06-30'
+  - epic_id: 'EPIC-CW-016'
+    action: 'updated'
+    date: '2026-07-02'
+  - epic_id: 'EPIC-CW-016'
+    action: 'updated'
+    date: '2026-07-03'
 
 # Status timestamps — set when status transitions occur
 approved_date: '2026-06-30'
@@ -89,6 +95,23 @@ acceptance_criteria:
       And the client retries the request up to 3 times with exponential backoff
       And after 3 failed retries I see a manual "Try again" button
     status: 'active'
+  - id: 'AC-06'
+    description: |
+      Given I am on the login page
+      Then I see a "Don't have an account? Sign up" link
+      When I click it
+      Then I am navigated to the sign-up page (US-CW-029)
+    status: 'active'
+  - id: 'AC-07'
+    description: |
+      Given I am a registered Clearline user whose account is not yet verified
+      When I enter my correct email and password
+      And I submit the login form
+      Then I am not redirected to the spend dashboard, and no access or refresh token is issued
+      And I see "Verify your email to continue. Check your inbox for the link, or request a new one."
+      with a "Resend verification email" action
+      And an audit event distinct from login_success records the blocked attempt
+    status: 'active'
 
 # Technical Notes
 technical_notes: |
@@ -107,6 +130,23 @@ technical_notes: |
   treat this as intentionally out of scope rather than a gap deferred to a specific future epic, so it isn't
   mistaken for a bug later. "Forgot password?" is the one login-screen link that IS a real, tracked gap — it maps
   to US-CW-003 (Password Reset).
+
+  AC-06 ("Don't have an account? Sign up") was added by EPIC-CW-016 once US-CW-029 introduced an actual sign-up
+  destination for it to point to — the login screen had no such link before then, unlike "Forgot password?",
+  which predates a working destination and remains decorative until US-CW-003 is built.
+
+  AC-07 was added by EPIC-CW-016 (as an amendment on 2026-07-03, alongside its original AC-06 addition on
+  2026-07-02 — see that epic's notes) to close a gap this story always implied but never enforced: AC-01's own
+  precondition ("a registered Clearline user with a verified account") only holds if login() actually checks
+  verified status, which it did not until this AC. The check must run after password verification succeeds —
+  it does not reopen AC-02/AC-03's enumeration guarantee, since it's only reachable once the correct password
+  has already been supplied, unlike the wrong-password/unregistered-email branches those ACs protect. A
+  correct-password-but-unverified attempt clears failed-attempt history exactly like a real success (the
+  credentials were valid; only verification status blocked the login) and is logged as its own audit event
+  type, distinct from login_success, so audit trails can distinguish "logged in" from "proved the password but
+  was turned away." The "Resend verification email" affordance this AC surfaces reuses AuthService.signUp's
+  existing resend branch for an already-registered-but-unverified email (see US-CW-029's technical_notes) —
+  no new token-issuing logic was added for it.
 
   Password confidentiality is two separate concerns, handled by two separate mechanisms, never conflated. In
   transit: TLS/HTTPS is the only recognized mechanism (NIST SP 800-63B requires "an authenticated protected
@@ -133,7 +173,7 @@ edge_cases: |
   - Account lockout after 5 failed attempts within a 15-minute window
   - Authentication service unreachable during login submission (network outage)
   - Exhausting all 3 automatic retries without success, requiring manual "Try again" action
-  - Login submitted with an unverified account (inferred)
+  - Login submitted with an unverified account, blocked with a "Resend verification email" action (AC-07)
 
 # Implementation Status
 implementation_status: |

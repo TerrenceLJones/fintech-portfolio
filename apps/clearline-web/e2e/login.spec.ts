@@ -4,6 +4,7 @@ import {
   DEMO_PASSWORD,
   expectSignedIn,
   fillLoginForm,
+  signUp,
   waitForApiResponse,
 } from './support/helpers';
 
@@ -129,4 +130,30 @@ test('an unreachable auth service retries automatically, then offers a manual re
   await expect(page.getByText('Something went wrong on our end. Retrying…')).toBeVisible();
   await expect(tryAgainButton).toBeVisible({ timeout: 15_000 });
   expect(responseCount).toBe(8);
+});
+
+test('correct credentials for an unverified account are blocked, with a resend action, not the dashboard (AC-07)', async ({
+  page,
+}) => {
+  const email = 'not-yet-verified@clearline.dev';
+  const password = 'Correct-Horse-1';
+
+  // deliberately not verifying, to exercise AC-07
+  await signUp(page, email, password);
+
+  await page.goto('/login');
+  const loginResponse = waitForApiResponse(page, '/api/auth/login');
+  await fillLoginForm(page, email, password);
+  await page.getByRole('button', { name: 'Sign in' }).click();
+  await loginResponse;
+
+  await expect(
+    page.getByText(
+      'Verify your email to continue. Check your inbox for the link, or request a new one.',
+    ),
+  ).toBeVisible();
+  await expect(page).toHaveURL(/\/login$/);
+
+  await page.getByRole('button', { name: 'Resend verification email' }).click();
+  await expect(page.getByText('Verification email sent. Check your inbox.')).toBeVisible();
 });

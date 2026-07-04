@@ -1,0 +1,133 @@
+# User Story Registry Record
+# User stories are the source of truth for what the application supports.
+# Epics declare changes to these records via their changes.adds/updates/deprecates/removes sections.
+
+# Identity
+id: 'US-CW-029'
+app: 'clearline-web'
+feature_area: 'core'
+title: 'Sign Up'
+
+# Lifecycle status
+status: 'APPROVED'
+story_points: 5
+dependencies: []
+
+# Provenance — immutable after creation
+created_by_epic: 'EPIC-CW-016'
+created_date: '2026-07-02'
+
+# Provenance history — append-only record of every epic that has touched this story
+history:
+  - epic_id: 'EPIC-CW-016'
+    action: 'created'
+    date: '2026-07-02'
+  - epic_id: 'EPIC-CW-016'
+    action: 'approved'
+    date: '2026-07-02'
+
+# Status timestamps — set when status transitions occur
+approved_date: '2026-07-02'
+implementation_date: null
+deprecated_date: null
+removed_date: null
+
+# User Story
+user_story:
+  persona: 'business owner setting up a new Clearline account'
+  capability: 'sign up with a work email and password to create a Clearline account and verify my email, without the system revealing whether that email is already registered'
+  business_value: 'I can start using Clearline quickly and securely, with my credentials protected from the moment I create them, before beginning business onboarding'
+  description: |
+    As a business owner setting up a new Clearline account
+    I want to sign up with a work email and password, meeting complexity requirements, and verify my email via a time-limited link
+    So that I can securely create my account and proceed into business onboarding, while the system reveals nothing about which emails already have accounts
+
+# Acceptance Criteria
+acceptance_criteria:
+  - id: 'AC-01'
+    description: |
+      Given I am on the sign-up page
+      When I enter a work email and a password meeting complexity requirements
+      And I submit the sign-up form
+      Then I see "Check your email to verify your account" regardless of whether the email is already registered
+      And if the email is not already registered, an account is created in an unverified state
+      And a time-limited verification email is sent to that address
+    status: 'active'
+  - id: 'AC-02'
+    description: |
+      Given I submit the sign-up form with an email that is already registered
+      Then I see the identical "Check your email to verify your account" message as AC-01
+      And no second account is created
+      And an email is sent to that address noting an account already exists, with a link to reset the password instead
+    status: 'active'
+  - id: 'AC-03'
+    description: |
+      Given I have a valid, unexpired verification link
+      When I click it
+      Then my account is marked verified
+      And I am automatically logged in, with an access token held in memory and a refresh token issued as an httpOnly, Secure, SameSite=Strict cookie
+      And I am redirected into business onboarding
+    status: 'active'
+  - id: 'AC-04'
+    description: |
+      Given I am on the sign-up page
+      When I enter a password that does not meet complexity requirements
+      Then I see inline validation errors before the form can be submitted
+      And no account or verification email is created
+    status: 'active'
+  - id: 'AC-05'
+    description: |
+      Given I received a verification email more than 24 hours ago
+      When I click the verification link
+      Then I see "This link has expired. Request a new one."
+      And a "Resend link" button is shown
+    status: 'active'
+  - id: 'AC-06'
+    description: |
+      Given I am on the sign-up page
+      Then I see an "Already have an account? Log in" link
+      When I click it
+      Then I am navigated to the login page (US-CW-001)
+    status: 'active'
+
+# Technical Notes
+technical_notes: |
+  Enumeration-safety mirrors US-CW-003's forgot-password design: the sign-up endpoint returns an identical response
+  regardless of whether the submitted email is already registered, and email dispatch happens asynchronously so
+  response timing doesn't leak registration state either. An already-registered email gets a "you already have an
+  account" notice with a password-reset link rather than a verification link — the account owner learns about the
+  attempt without the person submitting the form learning the email is taken.
+
+  Passwords are hashed, never encrypted, using the same PBKDF2-HMAC-SHA256 helper introduced for US-CW-001
+  (@fintech-portfolio/domain-auth's password-hashing module) — no new hashing logic should be written for this
+  story. See US-CW-001's technical_notes for the full OWASP/NIST rationale (transit confidentiality is TLS/HTTPS;
+  at-rest confidentiality is one-way hashing; nothing should ever be able to recover the plaintext).
+
+  The email-verification token follows the same shape as US-CW-003's reset token: single-use, cryptographically
+  random, and stored hashed at rest per the OWASP Forgot Password Cheat Sheet (so a compromise of the mock
+  backend's in-memory store can't be used to forge valid verification links). Expiry is 24 hours, longer than the
+  1-hour password-reset window, since a stolen verification link only lets someone verify an email they'd need to
+  already control, versus a stolen reset link granting account takeover directly.
+
+  Signup attempts need their own rate limit, distinct from US-CW-001 AC-04's 5-in-15-minutes lockout (which throttles
+  authentication failures against existing accounts, not account-creation volume) — without one, repeated signup
+  submissions for the same email before verification could be used to spam verification/already-registered emails
+  to a target address. Not yet designed in detail; flagged here so it isn't dropped during implementation.
+
+  This story closes the account-creation precondition US-CW-004's AC-01 presumes ("Given I have created a Clearline
+  account") but which no prior story modeled. US-CW-004.dependencies is intentionally left unchanged by this story —
+  formalizing that link would mean editing an already-APPROVED story, which is a separate decision for whoever picks
+  up EPIC-CW-016 or a future epic touching US-CW-004.
+
+# Edge Cases
+edge_cases: |
+  - Sign-up attempted with an email that is already registered
+  - Sign-up attempted with a password failing complexity requirements
+  - Verification link clicked after more than 24 hours have elapsed since issuance
+  - Verification link reused after it has already been consumed once (inferred)
+  - Resending a new verification link after the original has expired
+  - Rapid repeated sign-up submissions for the same unverified email (must not create duplicate accounts or duplicate verification tokens)
+
+# Implementation Status
+implementation_status: |
+  Not yet implemented. This story is APPROVED and ready for implementation planning — no application code exists yet.

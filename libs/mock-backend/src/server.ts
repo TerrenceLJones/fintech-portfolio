@@ -2,5 +2,6 @@
 import { setupServer } from 'msw/node';
 import { authHandlers } from './handlers/auth.handlers';
 import { passwordResetHandlers } from './handlers/password-reset.handlers';
+import { signUpHandlers } from './handlers/signup.handlers';
 
-export const server = setupServer(...authHandlers, ...passwordResetHandlers);
+export const server = setupServer(...authHandlers, ...passwordResetHandlers, ...signUpHandlers);

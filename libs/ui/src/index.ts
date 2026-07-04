@@ -39,6 +39,11 @@ export { Modal } from './molecules/Modal';
 export type { ModalProps, ModalTone } from './molecules/Modal';
 export { AuthNotice } from './molecules/AuthNotice';
 export type { AuthNoticeAction, AuthNoticeProps, AuthNoticeTone } from './molecules/AuthNotice';
+export { PasswordRequirementsList } from './molecules/PasswordRequirementsList';
+export type {
+  PasswordRequirementItem,
+  PasswordRequirementsListProps,
+} from './molecules/PasswordRequirementsList';
 export { ConfirmationDialog } from './molecules/ConfirmationDialog';
 export type { ConfirmationDialogProps } from './molecules/ConfirmationDialog';
 export { Timeline } from './molecules/Timeline';

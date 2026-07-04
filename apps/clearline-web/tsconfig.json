@@ -9,6 +9,7 @@
   "references": [
     { "path": "../../libs/ui" },
     { "path": "../../libs/contracts" },
+    { "path": "../../libs/domain/auth" },
     { "path": "../../libs/mock-backend" },
     { "path": "../../libs/data-access/auth" }
   ]

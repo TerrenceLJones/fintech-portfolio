@@ -1,7 +1,12 @@
 import { useState, type SubmitEvent } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router';
 import { Alert, AuthLayout, Button, PasswordField, Text, TextField } from '@fintech-portfolio/ui';
-import { LoginError, setAccessToken, useLogin } from '@fintech-portfolio/data-access-auth';
+import {
+  LoginError,
+  setAccessToken,
+  useLogin,
+  useSignUp,
+} from '@fintech-portfolio/data-access-auth';
 
 // Only redirect to a same-origin path carried in `next` — anything else (an absolute URL, or a
 // `//host` protocol-relative one) could send a just-authenticated user off Clearline entirely.
@@ -20,6 +25,7 @@ export function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const login = useLogin();
+  const resendVerification = useSignUp();
   const passwordChanged = Boolean(
     (location.state as { passwordChanged?: boolean } | null)?.passwordChanged,
   );
@@ -48,6 +54,7 @@ export function LoginPage() {
   const error = login.error;
   const isLockedOut = error instanceof LoginError && error.code === 'account_locked';
   const isInvalidCredentials = error instanceof LoginError && error.code === 'invalid_credentials';
+  const isUnverified = error instanceof LoginError && error.code === 'unverified_account';
   // isPending and isError are mutually exclusive statuses in TanStack Query, so login.error stays
   // null for the whole retry window and only populates once retries are exhausted — checking
   // isError here would make the mid-retry "Retrying…" copy below unreachable. failureReason is
@@ -119,6 +126,23 @@ export function LoginPage() {
           />
         )}
 
+        {isUnverified && (
+          <Alert
+            tone="warning"
+            title={
+              resendVerification.isSuccess
+                ? 'Verification email sent. Check your inbox.'
+                : 'Verify your email to continue. Check your inbox for the link, or request a new one.'
+            }
+            action={
+              resendVerification.isPending || resendVerification.isSuccess
+                ? undefined
+                : 'Resend verification email'
+            }
+            onAction={() => resendVerification.mutate({ email, password })}
+          />
+        )}
+
         {isNetworkError && (
           <Alert
             tone="warning"
@@ -138,6 +162,13 @@ export function LoginPage() {
       </form>
 
       <Text as="div" size="label" weight="regular" tone="faint" className="mt-4.5 text-center">
+        Don't have an account?{' '}
+        <Link to="/signup" className="text-cl-accent-text text-[12.5px] font-medium">
+          Sign up
+        </Link>
+      </Text>
+
+      <Text as="div" size="label" weight="regular" tone="faint" className="mt-2 text-center">
         Trouble signing in?{' '}
         <Text as="span" size="label" tone="accent">
           Contact support
