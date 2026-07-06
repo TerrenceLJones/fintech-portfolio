@@ -9,7 +9,7 @@ feature_area: 'core'
 title: 'Business Onboarding Flow'
 
 # Lifecycle status
-status: 'APPROVED'
+status: 'IMPLEMENTED'
 story_points: 8
 dependencies: []
 
@@ -28,7 +28,7 @@ history:
 
 # Status timestamps — set when status transitions occur
 approved_date: '2026-06-30'
-implementation_date: null
+implementation_date: '2026-07-06'
 deprecated_date: null
 removed_date: null
 
@@ -131,3 +131,31 @@ edge_cases: |
   - Beneficial owner added at or above the 25% ownership threshold requiring additional KYC data collection
   - (inferred) Network or registry-service outage during Business Info submission preventing entity verification
   - (inferred) Concurrent onboarding attempts for the same EIN from two different sessions
+
+# Implementation Status
+implementation_status: |
+  ✅ Implemented: 2026-07-06 (EPIC-CW-002, PR #11)
+  📁 Files created/modified (grouped by area):
+    - libs/domain/onboarding/src/{ein-format-policy,ownership-threshold-policy,
+      onboarding-inactivity-policy}.ts — pure logic: EIN format, 25% KYC ownership threshold,
+      30-minute onboarding-inactivity timeout
+    - libs/mock-backend/src/services/onboarding.service.ts — OnboardingService: save-and-resume
+      step state (server-authoritative currentStep/lastCompletedStep), mock EIN-registry
+      verification, duplicate-EIN detection (userIdByEin), 30-min timeout rollback on getStatus,
+      approval NotificationEvent (AC-08); shared-onboarding-service.ts — sessionStorage-persisted
+      variant mirroring PersistedAuthService
+    - libs/mock-backend/src/handlers/onboarding.handlers.ts — GET /api/onboarding/status,
+      POST /api/onboarding/{business,owners,steps/:step/complete,review/submit}
+    - libs/data-access/onboarding/src/use-{onboarding-status,submit-business-info,add-owner,
+      complete-step,submit-review}.ts — React Query hooks; each mutation invalidates the shared
+      onboarding-status query so the route guard reads fresh progress
+    - apps/clearline-web/src/pages/onboarding/{BusinessInfoStepPage,BeneficialOwnersStepPage,
+      ReviewStepPage,OnboardingStatusPage}.tsx, schemas.ts (react-hook-form + zod — new pattern
+      for this repo), wizard-steps.ts; routes/OnboardingProgressBoundary.tsx (new — one guard
+      drives both step-resume and 30-min-timeout resume); App.tsx (updated)
+  🧪 Test coverage: full unit/component suite green across all Nx projects, plus 6 Playwright
+  e2e tests in apps/clearline-web/e2e/onboarding.spec.ts covering AC-01/02/03/04/05/07/08. AC-06
+  (30-minute real-time inactivity) is covered at the component level only
+  (OnboardingProgressBoundary.test.tsx sets sessionTimedOut and asserts the timeout banner),
+  not e2e — a real 30-minute wait per run wasn't judged worth the added coverage, mirroring
+  US-CW-002's AC-04/05 rationale.

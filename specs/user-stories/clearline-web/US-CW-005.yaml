@@ -9,7 +9,7 @@ feature_area: 'core'
 title: 'Identity Document Verification & Compliance Screening'
 
 # Lifecycle status
-status: 'APPROVED'
+status: 'IMPLEMENTED'
 story_points: 5
 dependencies: ['US-CW-004']
 
@@ -28,7 +28,7 @@ history:
 
 # Status timestamps — set when status transitions occur
 approved_date: '2026-06-30'
-implementation_date: null
+implementation_date: '2026-07-06'
 deprecated_date: null
 removed_date: null
 
@@ -100,3 +100,31 @@ edge_cases: |
   - Document verification has failed 3 times, triggering a hard stop requiring support intervention
   - Business or beneficial owner matches a sanctions/watchlist screening, requiring neutral-language messaging and non-blocking pending state
   - (inferred) Support reference ID generation fails or is delayed after the 3rd failed attempt
+
+# Implementation Status
+implementation_status: |
+  ✅ Implemented: 2026-07-06 (EPIC-CW-002, PR #11)
+  📁 Files created/modified (grouped by area):
+    - libs/domain/onboarding/src/{blur-detection,glare-detection,document-quality-policy}.ts —
+      real client-side image analysis (Laplacian-variance blur / overexposure-ratio glare) over
+      grayscale pixel arrays; document-retry-policy.ts — 3-attempt cap
+    - libs/mock-backend/src/services/onboarding.service.ts — mock document-type classification
+      (filename heuristic, same approach as the EIN-registry mock), per-session retry counter
+      with SR-XXXX support-reference generation on the 3rd failure, and watchlist screening that
+      only ever surfaces a neutral 'under_review' status (the match reason never crosses the API
+      boundary, so "sanctions"/"watchlist"/"flagged" cannot leak into any client copy)
+    - libs/data-access/onboarding/src/use-submit-document.ts — runs the client-side quality gate
+      before any upload, so a glare/blur capture never reaches the server and never counts toward
+      the 3-attempt cap; extract-grayscale-image.ts — canvas-based pixel extraction
+    - libs/ui/src/molecules/DocumentDropzone/ — new component with the AC-mandated coaching copy
+      for glare/blur/wrong-type states, owner-scoped input labels
+    - apps/clearline-web/src/pages/onboarding/DocumentUploadStepPage.tsx (one dropzone per
+      KYC-flagged owner) and OnboardingStatusPage.tsx (documents_blocked + neutral under_review
+      terminal states)
+  🧪 Test coverage: full unit/component suite green across all Nx projects, plus Playwright e2e
+  in apps/clearline-web/e2e/onboarding.spec.ts covering AC-03 (wrong type), AC-04 (blocked after
+  3 + support reference), and AC-05 (neutral under-review copy, asserts restricted terms absent).
+  AC-01/02 (glare/blur) are covered by real pixel-analysis unit tests in libs/domain/onboarding
+  and at the component level in DocumentDropzone; the e2e happy path uploads a real generated PNG
+  through the actual client-side quality gate. Simulating a live camera capturing a genuinely
+  glared/blurred frame in a headless browser wasn't judged worth the added coverage.
