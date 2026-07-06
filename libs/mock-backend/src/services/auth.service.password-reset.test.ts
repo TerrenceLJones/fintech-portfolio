@@ -155,14 +155,14 @@ describe('AuthService.resetPassword', () => {
       IP,
       NOW,
     );
-    expect(service.isRefreshTokenActive(USER.email, firstSession!)).toBe(true);
-    expect(service.isRefreshTokenActive(USER.email, secondSession!)).toBe(true);
+    expect(await service.isRefreshTokenActive(USER.email, firstSession!)).toBe(true);
+    expect(await service.isRefreshTokenActive(USER.email, secondSession!)).toBe(true);
 
     const { token } = await service.requestPasswordReset(USER.email, NOW);
     await service.resetPassword(token!, NEW_PASSWORD, NOW);
 
-    expect(service.isRefreshTokenActive(USER.email, firstSession!)).toBe(false);
-    expect(service.isRefreshTokenActive(USER.email, secondSession!)).toBe(false);
+    expect(await service.isRefreshTokenActive(USER.email, firstSession!)).toBe(false);
+    expect(await service.isRefreshTokenActive(USER.email, secondSession!)).toBe(false);
   });
 
   it('does not revoke refresh tokens when the reset fails', async () => {
@@ -172,7 +172,7 @@ describe('AuthService.resetPassword', () => {
 
     await service.resetPassword(token!, 'weak', NOW);
 
-    expect(service.isRefreshTokenActive(USER.email, refreshToken!)).toBe(true);
+    expect(await service.isRefreshTokenActive(USER.email, refreshToken!)).toBe(true);
   });
 
   it('records a password-changed notification on a successful reset (AC-03)', async () => {

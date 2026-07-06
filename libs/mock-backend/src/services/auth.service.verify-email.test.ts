@@ -32,9 +32,9 @@ describe('AuthService.verifyEmail', () => {
     expect(result.outcome).toBe('success');
     expect(result.accessToken).toBeDefined();
     expect(result.refreshToken).toBeDefined();
-    expect(service.isRefreshTokenActive('new-owner@clearline.dev', result.refreshToken!)).toBe(
-      true,
-    );
+    expect(
+      await service.isRefreshTokenActive('new-owner@clearline.dev', result.refreshToken!),
+    ).toBe(true);
 
     const rawStore = (service as unknown as { usersByEmail: Map<string, SeedUser> }).usersByEmail;
     expect(rawStore.get('new-owner@clearline.dev')?.verified).toBe(true);

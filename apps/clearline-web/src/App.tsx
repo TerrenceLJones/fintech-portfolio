@@ -8,6 +8,7 @@ import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { RequireAuth } from './routes/RequireAuth';
+import { SessionActivityBoundary } from './routes/SessionActivityBoundary';
 
 // Static stand-in for the Employee item set until US-CW-006 wires up real role/session state
 // and server-enforced authorization — AppShell/NavigationShell just render whatever list they're given.
@@ -26,16 +27,18 @@ export function App() {
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route element={<RequireAuth />}>
-          <Route
-            element={
-              <AppShell
-                navItems={EMPLOYEE_NAV_ITEMS}
-                activeNavId="expenses"
-                title="Spend Dashboard"
-              />
-            }
-          >
-            <Route path="/" element={<DashboardPage />} />
+          <Route element={<SessionActivityBoundary />}>
+            <Route
+              element={
+                <AppShell
+                  navItems={EMPLOYEE_NAV_ITEMS}
+                  activeNavId="expenses"
+                  title="Spend Dashboard"
+                />
+              }
+            >
+              <Route path="/" element={<DashboardPage />} />
+            </Route>
           </Route>
         </Route>
       </Routes>

@@ -17,18 +17,22 @@ async function bootstrap() {
       issueExpiredResetTokenForE2E,
       issueVerificationTokenForE2E,
       issueExpiredVerificationTokenForE2E,
+      expireAccessTokenForE2E,
+      simulateRefreshOutcomeForE2E,
     } = await import('@fintech-portfolio/mock-backend/browser');
     await worker.start({ onUnhandledRequest: 'bypass' });
     // e2e-only control surface (apps/clearline-web/e2e/login.spec.ts AC-05,
-    // apps/clearline-web/e2e/password-reset.spec.ts, apps/clearline-web/e2e/signup.spec.ts) —
-    // Playwright drives this via page.evaluate() since it can't intercept MSW's Service
-    // Worker-mocked requests.
+    // apps/clearline-web/e2e/password-reset.spec.ts, apps/clearline-web/e2e/signup.spec.ts,
+    // apps/clearline-web/e2e/session.spec.ts) — Playwright drives this via page.evaluate() since
+    // it can't intercept MSW's Service Worker-mocked requests.
     window.__e2eMockBackend = {
       simulateLoginFailure,
       issueResetTokenForE2E,
       issueExpiredResetTokenForE2E,
       issueVerificationTokenForE2E,
       issueExpiredVerificationTokenForE2E,
+      expireAccessTokenForE2E,
+      simulateRefreshOutcomeForE2E,
     };
   }
 

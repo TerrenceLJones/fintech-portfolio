@@ -45,3 +45,18 @@ export const EmptySearch: Story = {
     onAction: alertingAction('Filters reset to June 2026'),
   },
 };
+
+export const ConnectionError: Story = {
+  args: {
+    icon: 'triangle-alert',
+    title: 'Connection problem',
+    body: "Couldn't reach the server to verify your session.",
+    action: 'Try again',
+    onAction: fn(),
+  },
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole('button', { name: 'Try again' }));
+    await expect(args.onAction).toHaveBeenCalledOnce();
+  },
+};

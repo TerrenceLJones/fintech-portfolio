@@ -162,11 +162,16 @@ test.describe('Sign up', () => {
     await goToVerifyLink(page, NEW_OWNER_EMAIL, VALID_PASSWORD);
     await expect(page).toHaveURL(`${new URL(page.url()).origin}/`);
 
-    // logging in afterward proves exactly one account exists with the submitted password
+    // logging in afterward proves exactly one account exists with the submitted password. The
+    // email-verification link above already auto-logged in (its own session is still active), so
+    // this explicit login now surfaces US-CW-002 AC-07's concurrent-session notice rather than
+    // navigating straight through — "Continue here" completes it the same way a real second
+    // sign-in would.
     await navigateSpa(page, '/login');
     await page.getByLabel('Work email').fill(NEW_OWNER_EMAIL);
     await page.getByLabel('Password', { exact: true }).fill(VALID_PASSWORD);
     await page.getByRole('button', { name: 'Sign in' }).click();
+    await page.getByRole('button', { name: 'Continue here' }).click();
     await expect(page).toHaveURL(`${new URL(page.url()).origin}/`);
     await expect(page.getByText('Welcome back.')).toBeVisible();
   });

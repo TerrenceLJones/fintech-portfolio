@@ -22,6 +22,13 @@ declare global {
         email: string,
         password: string,
       ) => Promise<string | undefined>;
+      /** Backdates `email`'s active access token(s) so the next session check reports them expired — US-CW-002 AC-01. */
+      expireAccessTokenForE2E: (email: string) => void;
+      /** Overrides POST /api/auth/refresh's outcome — see browser.ts for why a real cookie round-trip can't be exercised here (US-CW-002 AC-01/AC-02/AC-03/AC-06). `email` is only used for 'success', to mint a token the account's session check will actually recognize. */
+      simulateRefreshOutcomeForE2E: (
+        outcome: 'success' | 'reused' | 'expired' | 'password_changed',
+        email: string,
+      ) => void;
     };
   }
 }

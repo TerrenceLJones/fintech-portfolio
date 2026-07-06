@@ -34,3 +34,42 @@ describe('AuthService snapshot/restore — verification state', () => {
     expect(result.outcome).toBe('success');
   });
 });
+
+describe('AuthService snapshot/restore — refresh-token family state', () => {
+  it('round-trips the refresh-token family so it can still be rotated after restore, but does not carry the access token over', async () => {
+    const service = new AuthService([VERIFIED_USER]);
+    const { accessToken, refreshToken } = await service.login(
+      VERIFIED_USER.email,
+      'Correct-Horse-Battery-1',
+      '127.0.0.1 (mocked)',
+      NOW,
+    );
+
+    const restored = new AuthService([VERIFIED_USER]);
+    restored.restore(service.snapshot());
+
+    // Access tokens are deliberately not persisted (see AuthService.snapshot) — a restore always
+    // implies a reload, which already clears the client's in-memory copy by design, so the client
+    // re-establishes a fresh one via silent refresh regardless.
+    expect(restored.checkSession(accessToken!, NOW).outcome).toBe('invalid');
+    const rotated = await restored.refresh(refreshToken!, NOW);
+    expect(rotated.outcome).toBe('success');
+  });
+
+  it('round-trips an already-used token hash, so a stale replay is still detected as reuse after restore', async () => {
+    const service = new AuthService([VERIFIED_USER]);
+    const { refreshToken: original } = await service.login(
+      VERIFIED_USER.email,
+      'Correct-Horse-Battery-1',
+      '127.0.0.1 (mocked)',
+      NOW,
+    );
+    await service.refresh(original!, NOW);
+
+    const restored = new AuthService([VERIFIED_USER]);
+    restored.restore(service.snapshot());
+
+    const replay = await restored.refresh(original!, NOW);
+    expect(replay.outcome).toBe('reused');
+  });
+});

@@ -197,6 +197,9 @@ importers:
       '@fintech-portfolio/contracts':
         specifier: workspace:*
         version: link:../../contracts
+      '@fintech-portfolio/domain-auth':
+        specifier: workspace:*
+        version: link:../../domain/auth
       '@tanstack/react-query':
         specifier: ^5.101.2
         version: 5.101.2(react@19.2.7)

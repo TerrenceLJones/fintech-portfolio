@@ -1,0 +1,38 @@
+import { Meta, Stories } from '@storybook/addon-docs/blocks';
+import * as InactivityWarningModalStories from './InactivityWarningModal.stories';
+
+<Meta of={InactivityWarningModalStories} />
+
+# InactivityWarningModal
+
+A Radix-`Dialog`-backed warning with a live countdown ring, shown at the 14-minute inactivity
+mark. Purely presentational — the countdown value and the decision to open/close both come from
+the caller (`useInactivityTimer` in `@fintech-portfolio/data-access-auth`, composed in
+`apps/clearline-web`'s `SessionActivityBoundary`), not owned by this component.
+
+## User story
+
+**US-CW-002 — Session & Token Lifecycle** (part of EPIC-CW-001 — Authentication & Session
+Management)
+
+As a logged-in Clearline user, I want my session to be protected from unexpected sign-outs during
+inactivity, so that I'm warned before being signed out and can stay signed in with a single click
+or any interaction with the page.
+
+## Acceptance criteria
+
+- **AC-04.** At the 14-minute inactivity mark, a warning modal appears reading "You'll be signed
+  out in 60 seconds due to inactivity." — the body copy stays fixed at "60 seconds" per the
+  literal wording; only the visual countdown ring/digits count down live.
+- **AC-05.** Clicking "Stay signed in", or any other interaction with the page — including
+  dismissing the dialog via Escape or the overlay — resets the inactivity timer and closes the
+  modal without ending the session.
+
+### Edge case covered here
+
+Every dismissal path (Escape, overlay click, "Stay signed in") is treated identically: `onOpenChange`
+routes them all through the same "stay signed in" callback, so there's exactly one way for this
+component to end the session — the explicit "Sign out" button — and every other path resets the
+timer instead.
+
+<Stories />

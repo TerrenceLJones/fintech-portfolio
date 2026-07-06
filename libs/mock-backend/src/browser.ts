@@ -1,12 +1,19 @@
 // MSW v2 browser worker entry point (dev server / Storybook).
 import { http, HttpResponse } from 'msw';
 import { setupWorker } from 'msw/browser';
+import type { SessionErrorCode } from '@fintech-portfolio/contracts';
 import { authHandlers } from './handlers/auth.handlers';
 import { passwordResetHandlers } from './handlers/password-reset.handlers';
 import { signUpHandlers } from './handlers/signup.handlers';
+import { sessionHandlers } from './handlers/session.handlers';
 import { sharedAuthService } from './services/shared-auth-service';
 
-export const worker = setupWorker(...authHandlers, ...passwordResetHandlers, ...signUpHandlers);
+export const worker = setupWorker(
+  ...authHandlers,
+  ...passwordResetHandlers,
+  ...signUpHandlers,
+  ...sessionHandlers,
+);
 
 /**
  * Test-only override for e2e coverage of AC-05 (auth-service-unreachable retry/backoff) — see
@@ -88,4 +95,62 @@ export async function issueExpiredVerificationTokenForE2E(
     Date.now() - VERIFICATION_TOKEN_TTL_MS - 60_000,
   );
   return verificationToken;
+}
+
+/**
+ * Test-only bypass for US-CW-002 AC-01 e2e coverage: there's no way to fast-forward a real
+ * browser's clock, so this backdates the signed-in account's access token(s) directly via
+ * AuthService rather than waiting out the real TTL. The refresh-token cookie is left untouched,
+ * so the very next authenticated request should 401 with access_token_expired and the app's
+ * silent-refresh interceptor should recover it transparently.
+ */
+export function expireAccessTokenForE2E(email: string): void {
+  sharedAuthService.expireAccessTokensForE2E(email);
+}
+
+export type SimulatedRefreshOutcome = 'success' | 'reused' | 'expired' | 'password_changed';
+
+/**
+ * Test-only override of POST /api/auth/refresh for e2e coverage of US-CW-002 AC-01 (success),
+ * AC-02 (reused), AC-03 (expired) and AC-06 (password_changed)'s client-side reaction to each
+ * outcome — same worker.use() override pattern as simulateLoginFailure, and for the same
+ * page.route()-can't-intercept-an-in-process-Service-Worker reason.
+ *
+ * This exists because the real family/token bookkeeping (AuthService.refresh) can't be exercised
+ * through an actual browser round trip here: `Set-Cookie` is a forbidden response header per the
+ * Fetch spec, so browsers never apply it from a Service Worker's synthetic Response — confirmed
+ * empirically (document.cookie and page.context().cookies() are both empty after login in a real
+ * Playwright/Chromium run) — meaning the refresh-token cookie the login handler "sets" never
+ * actually reaches the browser's cookie jar, and every subsequent request that would normally
+ * carry it sends none at all. That bookkeeping is already thoroughly covered where MSW's Node
+ * interceptor doesn't have this restriction: auth.service.session.test.ts (unit) and
+ * session.handlers.test.ts (Node-http integration, via a real shared cookie jar). This hook lets
+ * e2e instead verify what it uniquely can: that the app's own interceptor and UI correctly react
+ * to each server outcome in a real browser.
+ *
+ * `email` is only used for the 'success' outcome — it identifies which account's family to mint
+ * a properly-registered replacement access token against (see AuthService.mintAccessTokenForE2E),
+ * since a bare random string wouldn't pass the very next checkSession() call the app makes.
+ */
+export function simulateRefreshOutcomeForE2E(
+  outcome: SimulatedRefreshOutcome,
+  email: string,
+): void {
+  if (outcome === 'success') {
+    worker.use(
+      http.post('*/api/auth/refresh', () =>
+        HttpResponse.json({ accessToken: sharedAuthService.mintAccessTokenForE2E(email) }),
+      ),
+    );
+    return;
+  }
+
+  const error: SessionErrorCode =
+    outcome === 'reused'
+      ? 'session_revoked_security'
+      : outcome === 'password_changed'
+        ? 'session_revoked_password_changed'
+        : 'session_expired';
+
+  worker.use(http.post('*/api/auth/refresh', () => HttpResponse.json({ error }, { status: 401 })));
 }

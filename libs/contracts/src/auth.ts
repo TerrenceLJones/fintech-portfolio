@@ -6,6 +6,8 @@ export interface LoginRequest {
 /** The refresh token is never in this body — it travels only via the Set-Cookie response header. */
 export interface LoginResponse {
   accessToken: string;
+  /** True when this account already had another active (non-revoked) session at login time — see US-CW-002 AC-07. */
+  hasOtherActiveSession: boolean;
 }
 
 export type AuthErrorCode =

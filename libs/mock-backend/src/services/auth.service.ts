@@ -3,6 +3,8 @@ import {
   isResetTokenExpired,
   isValidSignUpPassword,
   isVerificationTokenExpired,
+  isAccessTokenExpired,
+  classifyRefreshTokenPresentation,
   verifyPassword,
   isValidPassword,
   hashPassword,
@@ -23,6 +25,8 @@ export interface LoginResult {
   accessToken?: string;
   refreshToken?: string;
   supportReferenceId?: string;
+  /** Present only on outcome 'success' — true if this account already had another active session at login time (US-CW-002 AC-07). */
+  hasOtherActiveSession?: boolean;
 }
 
 export type ResetPasswordOutcome = 'success' | 'token_invalid' | 'token_expired' | 'weak_password';
@@ -68,6 +72,65 @@ export interface VerifyEmailResult {
   refreshToken?: string;
 }
 
+/** Why a refresh-token family was killed before its natural expiry — surfaced to the client so it can show the right copy (US-CW-002 AC-02 vs AC-06). */
+export type RevocationReason = 'reuse_detected' | 'password_changed';
+
+export type RefreshOutcome = 'success' | 'reused' | 'revoked' | 'expired' | 'invalid';
+
+export interface RefreshResult {
+  outcome: RefreshOutcome;
+  accessToken?: string;
+  refreshToken?: string;
+  /** Present only when outcome is 'revoked'. */
+  reason?: RevocationReason;
+}
+
+export type SessionCheckOutcome = 'active' | 'expired' | 'revoked' | 'invalid';
+
+export interface SessionCheckResult {
+  outcome: SessionCheckOutcome;
+  /** Present only when outcome is 'active'. */
+  userId?: string;
+  /** Present only when outcome is 'active'. */
+  email?: string;
+  /** Present only when outcome is 'revoked'. */
+  reason?: RevocationReason;
+}
+
+/**
+ * One family per login (not per email) — a second device logging in must not kill the first's
+ * session (US-CW-002 AC-07), so each successful login/verifyEmail mints its own family rather
+ * than reusing or replacing whatever family already exists for the email. `issuedAt` is the
+ * family's origin (the original login), and stays fixed across rotation — it anchors the
+ * refresh-token TTL so rotating indefinitely can't extend a session forever.
+ */
+interface RefreshTokenFamily {
+  id: string;
+  email: string;
+  issuedAt: number;
+  /** Hash of the one refresh token currently valid for this family. */
+  currentTokenHash: string;
+  /** Hashes of every token this family has already rotated past — presenting one again is reuse. */
+  usedTokenHashes: Set<string>;
+  revoked: boolean;
+  revokedReason?: RevocationReason;
+}
+
+interface SerializedRefreshTokenFamily {
+  id: string;
+  email: string;
+  issuedAt: number;
+  currentTokenHash: string;
+  usedTokenHashes: string[];
+  revoked: boolean;
+  revokedReason?: RevocationReason;
+}
+
+interface AccessTokenRecord {
+  familyId: string;
+  issuedAt: number;
+}
+
 /** Plain-object mirror of AuthService's internal Maps/Sets, safe to JSON.stringify. */
 export interface AuthServiceSnapshot {
   users: [string, SeedUser][];
@@ -75,7 +138,7 @@ export interface AuthServiceSnapshot {
   auditLog: AuditEvent[];
   resetTokens: [string, ResetTokenRecord][];
   verificationTokens: [string, VerificationTokenRecord][];
-  activeRefreshTokens: [string, string[]][];
+  refreshTokenFamilies: SerializedRefreshTokenFamily[];
   notifications: NotificationEvent[];
 }
 
@@ -92,7 +155,8 @@ export interface AuditEvent {
     | 'account_locked'
     | 'password_reset'
     | 'email_verified'
-    | 'login_blocked_unverified';
+    | 'login_blocked_unverified'
+    | 'refresh_token_reuse_detected';
   /**
    * The attempted email, present on every event regardless of outcome — this is the only
    * identifier available for an account_locked/login_failure event against an unregistered
@@ -125,8 +189,11 @@ export class AuthService {
   private readonly resetTokensByTokenHash = new Map<string, ResetTokenRecord>();
   /** Keyed by the SHA-256 hash of the token, never the raw token — see hashToken. */
   private readonly verificationTokensByTokenHash = new Map<string, VerificationTokenRecord>();
-  /** Every refresh token issued by a successful login, keyed by email, until revoked. */
-  private readonly activeRefreshTokensByEmail = new Map<string, Set<string>>();
+  private readonly familiesById = new Map<string, RefreshTokenFamily>();
+  /** Maps a refresh token's hash — current or already-used — back to its family, so a replayed stale token can still be traced to the family it must revoke. */
+  private readonly familyIdByTokenHash = new Map<string, string>();
+  /** Access tokens are short-lived and never persisted beyond this process, so unlike refresh tokens they're kept raw rather than hashed. */
+  private readonly accessTokensByToken = new Map<string, AccessTokenRecord>();
   private readonly notificationsSent: NotificationEvent[] = [];
 
   constructor(users: SeedUser[] = SEED_USERS) {
@@ -191,21 +258,163 @@ export class AuthService {
 
     this.auditLog.push({ type: 'login_success', userId: user.id, email, ip, timestamp: now });
 
-    const refreshToken = `refresh_${crypto.randomUUID()}`;
-    const activeTokens = this.activeRefreshTokensByEmail.get(key) ?? new Set<string>();
-    activeTokens.add(refreshToken);
-    this.activeRefreshTokensByEmail.set(key, activeTokens);
+    // Computed before minting this login's own family, which is never "other" than itself.
+    const hasOtherActiveSession = this.hasActiveFamily(key);
+    const { accessToken, refreshToken } = await this.createFamily(key, now);
 
-    return {
-      outcome: 'success',
-      accessToken: `access_${crypto.randomUUID()}`,
-      refreshToken,
-    };
+    return { outcome: 'success', accessToken, refreshToken, hasOtherActiveSession };
   }
 
-  /** True if `token` was issued by a successful login for `email` and hasn't since been revoked. */
-  isRefreshTokenActive(email: string, token: string): boolean {
-    return this.activeRefreshTokensByEmail.get(email.toLowerCase())?.has(token) ?? false;
+  /** True if `token` is the current (not yet rotated), unrevoked refresh token for `email`. */
+  async isRefreshTokenActive(email: string, token: string): Promise<boolean> {
+    const family = await this.findFamilyByToken(token);
+    return !!family && family.email === email.toLowerCase() && !family.revoked;
+  }
+
+  /**
+   * Exchanges a refresh token for a fresh access/refresh pair, rotating the family forward.
+   * Reuse of an already-rotated token revokes the entire family and audits a security incident
+   * (AC-02); a family already revoked for any reason reports that reason rather than re-detecting
+   * reuse (AC-06 shares this path — a password change elsewhere revokes the family the same way);
+   * a family past its refresh-token TTL reports 'expired' without being revoked, since natural
+   * expiry isn't a compromise (AC-03).
+   */
+  async refresh(token: string, now: number = Date.now(), ip?: string): Promise<RefreshResult> {
+    const tokenHash = await hashToken(token);
+    const familyId = this.familyIdByTokenHash.get(tokenHash);
+    if (!familyId) {
+      return { outcome: 'invalid' };
+    }
+    const family = this.familiesById.get(familyId)!;
+
+    const classification = classifyRefreshTokenPresentation(
+      {
+        isUsed: family.usedTokenHashes.has(tokenHash),
+        isRevoked: family.revoked,
+        issuedAt: family.issuedAt,
+      },
+      now,
+    );
+
+    if (classification === 'revoked') {
+      return { outcome: 'revoked', reason: family.revokedReason };
+    }
+
+    if (classification === 'reused') {
+      // The presented token was already rotated past — its holder can no longer be trusted to be
+      // the legitimate session, so the whole family dies rather than just this one token.
+      family.revoked = true;
+      family.revokedReason = 'reuse_detected';
+      this.auditLog.push({
+        type: 'refresh_token_reuse_detected',
+        email: family.email,
+        ip,
+        timestamp: now,
+      });
+      return { outcome: 'reused' };
+    }
+
+    if (classification === 'expired') {
+      return { outcome: 'expired' };
+    }
+
+    family.usedTokenHashes.add(tokenHash);
+    const refreshToken = `refresh_${crypto.randomUUID()}`;
+    const newTokenHash = await hashToken(refreshToken);
+    family.currentTokenHash = newTokenHash;
+    this.familyIdByTokenHash.set(newTokenHash, familyId);
+
+    const accessToken = `access_${crypto.randomUUID()}`;
+    this.accessTokensByToken.set(accessToken, { familyId, issuedAt: now });
+
+    return { outcome: 'success', accessToken, refreshToken };
+  }
+
+  /**
+   * Validates an access token against its family's live state — this is what makes AC-06 work:
+   * Device A's access token can still be unexpired, but if Device B's password change revoked its
+   * family in the meantime, the very next call here reports 'revoked' rather than 'active'.
+   */
+  checkSession(accessToken: string, now: number = Date.now()): SessionCheckResult {
+    const record = this.accessTokensByToken.get(accessToken);
+    if (!record) {
+      return { outcome: 'invalid' };
+    }
+
+    const family = this.familiesById.get(record.familyId)!;
+    if (family.revoked) {
+      return { outcome: 'revoked', reason: family.revokedReason };
+    }
+    if (isAccessTokenExpired(record.issuedAt, now)) {
+      return { outcome: 'expired' };
+    }
+
+    const user = this.usersByEmail.get(family.email);
+    return { outcome: 'active', userId: user!.id, email: family.email };
+  }
+
+  /** Revokes the family the presented refresh token belongs to. A no-op (not an error) for a token that doesn't map to any family, matching a real logout endpoint's idempotent 200. */
+  async logout(refreshToken: string): Promise<void> {
+    const family = await this.findFamilyByToken(refreshToken);
+    if (family) family.revoked = true;
+  }
+
+  /**
+   * Test-only: backdates every access token issued under `email`'s active families so the next
+   * checkSession() call reports it expired. Production code never back-dates an already-issued
+   * token — this exists purely so an e2e test can exercise US-CW-002 AC-01's 401-then-refresh
+   * flow without waiting out the real TTL, the same reason issueExpiredResetTokenForE2E exists.
+   */
+  expireAccessTokensForE2E(email: string): void {
+    const key = email.toLowerCase();
+    const activeFamilyIds = new Set(
+      [...this.familiesById.values()]
+        .filter((family) => family.email === key && !family.revoked)
+        .map((family) => family.id),
+    );
+    for (const [token, record] of this.accessTokensByToken) {
+      if (activeFamilyIds.has(record.familyId)) {
+        this.accessTokensByToken.set(token, { ...record, issuedAt: 0 });
+      }
+    }
+  }
+
+  /**
+   * Test-only: backdates `email`'s active refresh-token families past their TTL, and their access
+   * tokens too (a session this stale would naturally have an expired access token as well) — for
+   * US-CW-002 AC-03 e2e coverage. See expireAccessTokensForE2E for the same rationale.
+   */
+  expireRefreshTokenFamiliesForE2E(email: string): void {
+    const key = email.toLowerCase();
+    for (const family of this.familiesById.values()) {
+      if (family.email === key && !family.revoked) family.issuedAt = 0;
+    }
+    this.expireAccessTokensForE2E(email);
+  }
+
+  /**
+   * Test-only: mints a fresh, properly-registered access token against `email`'s most recently
+   * created active family, without requiring a real refresh() call. Exists for browser-based e2e
+   * coverage of US-CW-002 AC-01's "refresh succeeds" outcome, where the real refresh-token cookie
+   * can't round-trip through a Service Worker (see browser.ts's simulateRefreshOutcomeForE2E) — so
+   * the e2e-only override standing in for a successful refresh needs some other way to hand back a
+   * token checkSession() will actually recognize.
+   */
+  mintAccessTokenForE2E(email: string, now: number = Date.now()): string {
+    const key = email.toLowerCase();
+    let latestFamily: RefreshTokenFamily | undefined;
+    for (const family of this.familiesById.values()) {
+      if (family.email === key && !family.revoked) {
+        if (!latestFamily || family.issuedAt >= latestFamily.issuedAt) latestFamily = family;
+      }
+    }
+    if (!latestFamily) {
+      throw new Error(`mintAccessTokenForE2E: no active family for ${email}`);
+    }
+
+    const accessToken = `access_${crypto.randomUUID()}`;
+    this.accessTokensByToken.set(accessToken, { familyId: latestFamily.id, issuedAt: now });
+    return accessToken;
   }
 
   /**
@@ -267,9 +476,15 @@ export class AuthService {
     });
 
     // A changed password must invalidate every session it could otherwise still be reused in —
-    // revoke every refresh token issued for this account, not just the one (if any) tied to
-    // whatever session made this request.
-    this.activeRefreshTokensByEmail.delete(record.email);
+    // revoke every refresh-token family issued for this account (US-CW-002 AC-06), not just
+    // whichever one (if any) made this request. Each device's session dies on its own next
+    // authenticated request via checkSession/refresh, not right now in real time.
+    for (const family of this.familiesById.values()) {
+      if (family.email === record.email && !family.revoked) {
+        family.revoked = true;
+        family.revokedReason = 'password_changed';
+      }
+    }
     this.notificationsSent.push({ type: 'password_changed', email: record.email, timestamp: now });
 
     return { outcome: 'success' };
@@ -352,16 +567,9 @@ export class AuthService {
       timestamp: now,
     });
 
-    const refreshToken = `refresh_${crypto.randomUUID()}`;
-    const activeTokens = this.activeRefreshTokensByEmail.get(record.email) ?? new Set<string>();
-    activeTokens.add(refreshToken);
-    this.activeRefreshTokensByEmail.set(record.email, activeTokens);
+    const { accessToken, refreshToken } = await this.createFamily(record.email, now);
 
-    return {
-      outcome: 'success',
-      accessToken: `access_${crypto.randomUUID()}`,
-      refreshToken,
-    };
+    return { outcome: 'success', accessToken, refreshToken };
   }
 
   async isVerificationTokenValid(token: string, now: number = Date.now()): Promise<boolean> {
@@ -377,7 +585,16 @@ export class AuthService {
     return this.notificationsSent;
   }
 
-  /** Plain-object copy of all internal state, safe to JSON.stringify — see PersistedAuthService. */
+  /**
+   * Plain-object copy of all internal state, safe to JSON.stringify — see PersistedAuthService.
+   * Deliberately excludes accessTokensByToken: PersistedAuthService's whole purpose is surviving
+   * a page reload, but a reload already clears the client's in-memory access token by design (see
+   * access-token-store.ts) — RequireAuth always re-establishes a fresh one via silent refresh on
+   * the next mount regardless, so a stale server-side record would serve no purpose. It would only
+   * cost something: persisting it here would put the raw access-token string in sessionStorage,
+   * which is exactly what US-CW-001 AC-01's "in memory only" contract exists to prevent client-side
+   * — this keeps that guarantee true from the mock server's side too, not just the browser's.
+   */
   snapshot(): AuthServiceSnapshot {
     return {
       users: [...this.usersByEmail],
@@ -385,10 +602,10 @@ export class AuthService {
       auditLog: [...this.auditLog],
       resetTokens: [...this.resetTokensByTokenHash],
       verificationTokens: [...this.verificationTokensByTokenHash],
-      activeRefreshTokens: [...this.activeRefreshTokensByEmail].map(([email, tokens]) => [
-        email,
-        [...tokens],
-      ]),
+      refreshTokenFamilies: [...this.familiesById.values()].map((family) => ({
+        ...family,
+        usedTokenHashes: [...family.usedTokenHashes],
+      })),
       notifications: [...this.notificationsSent],
     };
   }
@@ -414,13 +631,60 @@ export class AuthService {
       this.verificationTokensByTokenHash.set(hash, record),
     );
 
-    this.activeRefreshTokensByEmail.clear();
-    snapshot.activeRefreshTokens.forEach(([email, tokens]) =>
-      this.activeRefreshTokensByEmail.set(email, new Set(tokens)),
-    );
+    this.familiesById.clear();
+    this.familyIdByTokenHash.clear();
+    snapshot.refreshTokenFamilies.forEach((serialized) => {
+      const family: RefreshTokenFamily = {
+        ...serialized,
+        usedTokenHashes: new Set(serialized.usedTokenHashes),
+      };
+      this.familiesById.set(family.id, family);
+      this.familyIdByTokenHash.set(family.currentTokenHash, family.id);
+      family.usedTokenHashes.forEach((hash) => this.familyIdByTokenHash.set(hash, family.id));
+    });
+
+    // Deliberately not restored — see the doc comment on snapshot(). Every access token is void
+    // after a restore; the client always re-establishes a fresh one via silent refresh regardless.
+    this.accessTokensByToken.clear();
 
     this.notificationsSent.length = 0;
     this.notificationsSent.push(...snapshot.notifications);
+  }
+
+  private hasActiveFamily(email: string): boolean {
+    for (const family of this.familiesById.values()) {
+      if (family.email === email && !family.revoked) return true;
+    }
+    return false;
+  }
+
+  private async createFamily(
+    email: string,
+    now: number,
+  ): Promise<{ accessToken: string; refreshToken: string }> {
+    const refreshToken = `refresh_${crypto.randomUUID()}`;
+    const tokenHash = await hashToken(refreshToken);
+    const familyId = `family_${crypto.randomUUID()}`;
+    this.familiesById.set(familyId, {
+      id: familyId,
+      email,
+      issuedAt: now,
+      currentTokenHash: tokenHash,
+      usedTokenHashes: new Set(),
+      revoked: false,
+    });
+    this.familyIdByTokenHash.set(tokenHash, familyId);
+
+    const accessToken = `access_${crypto.randomUUID()}`;
+    this.accessTokensByToken.set(accessToken, { familyId, issuedAt: now });
+
+    return { accessToken, refreshToken };
+  }
+
+  /** Looks up the family a raw refresh token (current or already-used) belongs to. */
+  private async findFamilyByToken(token: string): Promise<RefreshTokenFamily | undefined> {
+    const familyId = this.familyIdByTokenHash.get(await hashToken(token));
+    return familyId ? this.familiesById.get(familyId) : undefined;
   }
 
   private lockOut(email: string, ip: string, now: number): LoginResult {

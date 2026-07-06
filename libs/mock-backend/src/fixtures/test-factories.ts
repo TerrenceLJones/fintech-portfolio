@@ -6,8 +6,12 @@ import type {
   AuthErrorResponse,
   LoginRequest,
   LoginResponse,
+  LogoutResponse,
+  RefreshResponse,
   ResetPasswordErrorResponse,
   ResetPasswordRequest,
+  SessionErrorResponse,
+  SessionResponse,
   SignUpErrorResponse,
   SignUpRequest,
   ValidateResetTokenResponse,
@@ -54,7 +58,7 @@ export function buildLoginRequest(overrides: Partial<LoginRequest> = {}): LoginR
 }
 
 export function buildLoginSuccessResponse(overrides: Partial<LoginResponse> = {}): LoginResponse {
-  return { accessToken: 'access_123', ...overrides };
+  return { accessToken: 'access_123', hasOtherActiveSession: false, ...overrides };
 }
 
 export function buildVerifyEmailSuccessResponse(
@@ -108,6 +112,24 @@ export function buildResetPasswordErrorResponse(
   overrides: Partial<ResetPasswordErrorResponse> = {},
 ): ResetPasswordErrorResponse {
   return { error: 'token_invalid', ...overrides };
+}
+
+export function buildRefreshResponse(overrides: Partial<RefreshResponse> = {}): RefreshResponse {
+  return { accessToken: 'access_123', ...overrides };
+}
+
+export function buildLogoutResponse(): LogoutResponse {
+  return {};
+}
+
+export function buildSessionResponse(overrides: Partial<SessionResponse> = {}): SessionResponse {
+  return { userId: 'user_1', email: 'demo@clearline.dev', ...overrides };
+}
+
+export function buildSessionErrorResponse(
+  overrides: Partial<SessionErrorResponse> = {},
+): SessionErrorResponse {
+  return { error: 'invalid_token', ...overrides };
 }
 
 /**

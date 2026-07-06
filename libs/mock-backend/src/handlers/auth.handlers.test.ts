@@ -38,7 +38,7 @@ describe('POST /api/auth/login', () => {
     const body = await response.json();
 
     expect(response.status).toBe(200);
-    expect(body).toEqual({ accessToken: expect.any(String) });
+    expect(body).toEqual({ accessToken: expect.any(String), hasOtherActiveSession: false });
 
     const setCookie = response.headers.get('set-cookie');
     expect(setCookie).toContain('refreshToken=');

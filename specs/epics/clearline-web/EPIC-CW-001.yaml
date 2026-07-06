@@ -10,7 +10,7 @@ package_location: 'apps/clearline-web/'
 deployment_unit: 'apps/clearline-web/'
 tdr_reference: 'TDR-CW-WEB-001 (not yet created — app baseline TDR pending; inherits TDR-PLATFORM-001 in the interim)'
 depends_on_epics: []
-extends_stories: []
+extends_stories: ['US-CW-007']
 reuses_from: []
 has_ui: true
 ui_library: '@fintech-portfolio/ui'
@@ -25,10 +25,53 @@ changes:
     - story_id: 'US-CW-003'
       story_path: '/specs/user-stories/clearline-web/US-CW-003.yaml'
       title: 'Password Reset'
-  updates: []
+  updates:
+    - story_id: 'US-CW-002'
+      story_path: '/specs/user-stories/clearline-web/US-CW-002.yaml'
+      title: 'Session & Token Lifecycle'
+      change: >
+        Removes original AC-04 (preserving an in-progress vendor-payment submission, with its idempotency key,
+        across a forced re-authentication). Surfaced while planning this story's implementation: no vendor-payment
+        feature exists yet for this epic to build the AC against, and the "New Payment" form and idempotency-key
+        handling it presumes belong to US-CW-007 (EPIC-CW-004), not here. Moved rather than dropped — see the
+        US-CW-007 update below. Remaining ACs renumbered AC-04–AC-07 to stay contiguous.
+    - story_id: 'US-CW-007'
+      story_path: '/specs/user-stories/clearline-web/US-CW-007.yaml'
+      title: 'Vendor Payment Submission & Idempotency'
+      change: >
+        Adds AC-06: session expiry mid-submission preserves the in-flight payment form (amount, recipient, memo)
+        and idempotency key across a forced re-authentication, then resumes the same submission rather than
+        starting a new one. Moved here from US-CW-002 AC-04 (see above) since this story owns the actual payment
+        form and idempotency-key mechanics the AC depends on. Adds a dependency on US-CW-002, since the AC layers
+        on top of that story's forced-logout/redirect-to-/login mechanism.
+    - story_id: 'US-CW-002'
+      story_path: '/specs/user-stories/clearline-web/US-CW-002.yaml'
+      title: 'Session & Token Lifecycle'
+      change: >
+        Clarifies AC-07: the criterion specified what "Continue here" does (does not forcibly log
+        out the other device) but was silent on "Cancel". Surfaced during implementation — the
+        login that surfaces the concurrent-session notice has already established a real session
+        server-side by the time the notice appears, so leaving "Cancel" undefined meant it was up
+        to implementation to decide whether that session gets revoked or left dangling. Clarifies
+        that cancelling revokes only the session just created by this login; the other device's
+        session is unaffected either way.
   deprecates: []
   removes: []
 notes: >
   Establishes the foundational authentication and session management capabilities for clearline-web, covering
   credential-based login, silent token refresh, session expiry, inactivity timeout, security-driven session
   invalidation, and self-service password reset.
+
+  Amended 2026-07-03, while planning US-CW-002's implementation: its original AC-04 (in-flight vendor-payment
+  preservation across forced re-auth) had no payment feature in the codebase to build against — EPIC-CW-004's
+  US-CW-007 owns the "New Payment" form this AC presumes. Rather than build a standalone form just to host it, or
+  implement the underlying mechanism with nothing exercising it end-to-end, the AC moved to US-CW-007 as its own
+  AC-06, where it can be implemented against the real form once that story is picked up. Following the precedent
+  EPIC-CW-016 set for amending an already-APPROVED epic to close a gap found during implementation of a sibling
+  story, rather than opening a new epic for a one-AC relocation.
+
+  Amended 2026-07-05, during US-CW-002's implementation: AC-07 defined "Continue here" but was silent on
+  "Cancel", leaving a real behavioral gap — the concurrent-session notice's own login has already created a
+  session server-side before the user chooses either option. Clarified AC-07 so the criterion itself states
+  cancelling revokes only that just-created session, rather than leaving it as an undocumented implementation
+  decision.

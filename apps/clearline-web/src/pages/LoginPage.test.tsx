@@ -3,7 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { http, HttpResponse } from 'msw';
-import { clearAccessToken } from '@fintech-portfolio/data-access-auth';
+import { clearAccessToken, getAccessToken } from '@fintech-portfolio/data-access-auth';
 import {
   buildAuthErrorResponse,
   buildLoginSuccessResponse,
@@ -263,5 +263,130 @@ describe('LoginPage', () => {
     expect(
       screen.queryByText('Your password was changed. Sign in with your new password.'),
     ).not.toBeInTheDocument();
+  });
+
+  it.each([
+    ['security', 'For your security, we signed you out. Please sign in again.'],
+    ['password_changed', 'Your session ended. Please sign in again.'],
+    ['expired', 'Your session expired. Please sign in again.'],
+    ['inactivity', 'You were signed out due to inactivity. Please sign in again.'],
+  ])('shows the right banner for sessionEndReason %s (US-CW-002)', (reason, message) => {
+    render(
+      withQueryClient(
+        <MemoryRouter
+          initialEntries={[{ pathname: '/login', state: { sessionEndReason: reason } }]}
+        >
+          <Routes>
+            <Route path="/login" element={<LoginPage />} />
+          </Routes>
+        </MemoryRouter>,
+      ),
+    );
+
+    expect(screen.getByText(message)).toBeInTheDocument();
+  });
+
+  it('shows the concurrent-session notice instead of navigating when login succeeds with another active session (AC-07)', async () => {
+    server.use(
+      http.post('*/api/auth/login', () =>
+        HttpResponse.json(buildLoginSuccessResponse({ hasOtherActiveSession: true })),
+      ),
+    );
+    renderLoginPage();
+
+    await fillAndSubmit('demo@clearline.dev', 'correct-password');
+
+    await waitFor(() =>
+      expect(
+        screen.getByText("You're signed in on another device. Continue here?"),
+      ).toBeInTheDocument(),
+    );
+    expect(screen.queryByText('Dashboard stub')).not.toBeInTheDocument();
+  });
+
+  it('commits the session and navigates when "Continue here" is clicked (AC-07)', async () => {
+    server.use(
+      http.post('*/api/auth/login', () =>
+        HttpResponse.json(buildLoginSuccessResponse({ hasOtherActiveSession: true })),
+      ),
+    );
+    renderLoginPage();
+
+    const user = await fillAndSubmit('demo@clearline.dev', 'correct-password');
+    await waitFor(() => screen.getByRole('button', { name: 'Continue here' }));
+    await user.click(screen.getByRole('button', { name: 'Continue here' }));
+
+    await waitFor(() => expect(screen.getByText('Dashboard stub')).toBeInTheDocument());
+    expect(getAccessToken()).toBe('access_123');
+  });
+
+  it('revokes the session and stays on the login page when "Cancel" is clicked (AC-07)', async () => {
+    server.use(
+      http.post('*/api/auth/login', () =>
+        HttpResponse.json(buildLoginSuccessResponse({ hasOtherActiveSession: true })),
+      ),
+      http.post('*/api/auth/logout', () => HttpResponse.json({})),
+    );
+    renderLoginPage();
+
+    const user = await fillAndSubmit('demo@clearline.dev', 'correct-password');
+    await waitFor(() => screen.getByRole('button', { name: 'Cancel' }));
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+
+    await waitFor(() =>
+      expect(
+        screen.queryByText("You're signed in on another device. Continue here?"),
+      ).not.toBeInTheDocument(),
+    );
+    expect(screen.queryByText('Dashboard stub')).not.toBeInTheDocument();
+    expect(getAccessToken()).toBeNull();
+  });
+
+  it('revokes the pending session if the notice is abandoned (unmounted) without confirming or cancelling (AC-07)', async () => {
+    let logoutCallCount = 0;
+    server.use(
+      http.post('*/api/auth/login', () =>
+        HttpResponse.json(buildLoginSuccessResponse({ hasOtherActiveSession: true })),
+      ),
+      http.post('*/api/auth/logout', () => {
+        logoutCallCount++;
+        return HttpResponse.json({});
+      }),
+    );
+    const { unmount } = renderLoginPage();
+
+    await fillAndSubmit('demo@clearline.dev', 'correct-password');
+    await waitFor(() =>
+      expect(
+        screen.getByText("You're signed in on another device. Continue here?"),
+      ).toBeInTheDocument(),
+    );
+
+    unmount();
+
+    await waitFor(() => expect(logoutCallCount).toBe(1));
+  });
+
+  it('does not revoke anything on unmount once the notice has already been resolved (AC-07)', async () => {
+    let logoutCallCount = 0;
+    server.use(
+      http.post('*/api/auth/login', () =>
+        HttpResponse.json(buildLoginSuccessResponse({ hasOtherActiveSession: true })),
+      ),
+      http.post('*/api/auth/logout', () => {
+        logoutCallCount++;
+        return HttpResponse.json({});
+      }),
+    );
+    const { unmount } = renderLoginPage();
+
+    const user = await fillAndSubmit('demo@clearline.dev', 'correct-password');
+    await waitFor(() => screen.getByRole('button', { name: 'Continue here' }));
+    await user.click(screen.getByRole('button', { name: 'Continue here' }));
+    await waitFor(() => expect(screen.getByText('Dashboard stub')).toBeInTheDocument());
+
+    unmount();
+
+    expect(logoutCallCount).toBe(0);
   });
 });

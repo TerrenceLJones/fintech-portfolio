@@ -1,11 +1,21 @@
-import { useState, type SubmitEvent } from 'react';
+import { useEffect, useRef, useState, type SubmitEvent } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router';
-import { Alert, AuthLayout, Button, PasswordField, Text, TextField } from '@fintech-portfolio/ui';
+import {
+  Alert,
+  AuthLayout,
+  Button,
+  Modal,
+  PasswordField,
+  Text,
+  TextField,
+} from '@fintech-portfolio/ui';
 import {
   LoginError,
   setAccessToken,
   useLogin,
+  useLogout,
   useSignUp,
+  type SessionEndedReason,
 } from '@fintech-portfolio/data-access-auth';
 import { usePageTitle } from '../hooks/usePageTitle';
 
@@ -18,6 +28,24 @@ function resolveRedirectTarget(next: string | null): string {
   return '/';
 }
 
+// Extends the canonical SessionEndedReason (api-client.ts) with 'inactivity', the one reason that
+// never comes from the interceptor — same union SessionActivityBoundary builds, kept independent
+// since this only reads the location.state shape it (and RequireAuth) write, same as the existing
+// passwordChanged flag's convention. Tying it to SessionEndedReason means a new reason added
+// upstream is a compile error here instead of a silently-blank banner.
+type SessionEndReason = SessionEndedReason | 'inactivity';
+
+// Copy stays neutral even for the security-incident case (AC-02) — the reuse detection itself is
+// the security response; alarming the user with it here wouldn't help them and reads as an
+// accusation. All four read as calm, expected outcomes of an ended session.
+const SESSION_END_MESSAGES: Record<SessionEndReason, string> = {
+  security: 'For your security, we signed you out. Please sign in again.',
+  password_changed: 'Your session ended. Please sign in again.',
+  expired: 'Your session expired. Please sign in again.',
+  invalid: 'Your session expired. Please sign in again.',
+  inactivity: 'You were signed out due to inactivity. Please sign in again.',
+};
+
 export function LoginPage() {
   usePageTitle('Sign in');
   const navigate = useNavigate();
@@ -27,10 +55,36 @@ export function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const login = useLogin();
+  const logout = useLogout();
   const resendVerification = useSignUp();
   const passwordChanged = Boolean(
     (location.state as { passwordChanged?: boolean } | null)?.passwordChanged,
   );
+  const sessionEndReason = (location.state as { sessionEndReason?: SessionEndReason } | null)
+    ?.sessionEndReason;
+  // Set only when a login succeeds with hasOtherActiveSession — gates committing this device's
+  // session behind the user confirming the concurrent-sign-in notice (AC-07), rather than
+  // finalizing it immediately like every other successful login.
+  const [pendingAccessToken, setPendingAccessToken] = useState<string | null>(null);
+  // Tracks whether an open concurrent-session notice has been explicitly resolved (confirmed or
+  // cancelled) — starts true (nothing pending). If this page unmounts while still false, the user
+  // abandoned the notice (e.g. browser back) without choosing either option: the session it
+  // guards was already established server-side, so it's revoked on the way out rather than left
+  // live and un-reconciled indefinitely.
+  const pendingResolvedRef = useRef(true);
+  const logoutRef = useRef(logout.mutate);
+
+  useEffect(() => {
+    logoutRef.current = logout.mutate;
+  }, [logout.mutate]);
+
+  useEffect(() => {
+    return () => {
+      if (!pendingResolvedRef.current) {
+        logoutRef.current();
+      }
+    };
+  }, []);
 
   function handleSubmit(event: SubmitEvent) {
     event.preventDefault();
@@ -38,6 +92,11 @@ export function LoginPage() {
       { email, password },
       {
         onSuccess: (data) => {
+          if (data.hasOtherActiveSession) {
+            pendingResolvedRef.current = false;
+            setPendingAccessToken(data.accessToken);
+            return;
+          }
           setAccessToken(data.accessToken);
           navigate(redirectTo, { replace: true });
         },
@@ -75,6 +134,10 @@ export function LoginPage() {
       </Text>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        {sessionEndReason && (
+          <Alert tone="neutral" title={SESSION_END_MESSAGES[sessionEndReason]} />
+        )}
+
         {passwordChanged && (
           <Alert
             tone="positive"
@@ -176,6 +239,32 @@ export function LoginPage() {
           Contact support
         </Text>
       </Text>
+
+      <Modal
+        open={pendingAccessToken != null}
+        onOpenChange={(open) => {
+          if (open) return;
+          // Cancelling doesn't just dismiss the notice — the login that triggered it already
+          // established a real session server-side (US-CW-002 AC-07 is explicit that continuing
+          // elsewhere never forces the other device out, but says nothing about leaving this one
+          // dangling on Cancel), so it's revoked rather than left live with nothing using it.
+          pendingResolvedRef.current = true;
+          logout.mutate();
+          setPendingAccessToken(null);
+        }}
+        tone="accent"
+        icon="shield"
+        title="New sign-in detected"
+        body="You're signed in on another device. Continue here?"
+        cancelLabel="Cancel"
+        confirmLabel="Continue here"
+        onConfirm={() => {
+          if (!pendingAccessToken) return;
+          pendingResolvedRef.current = true;
+          setAccessToken(pendingAccessToken);
+          navigate(redirectTo, { replace: true });
+        }}
+      />
     </AuthLayout>
   );
 }

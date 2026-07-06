@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PersistedAuthService } from './shared-auth-service';
+import { DEMO_USER_PASSWORD } from '../fixtures/users.fixture';
 
 const STORAGE_KEY = 'clearline:mock-auth-state';
 const NEW_PASSWORD = 'Brand-New-Password-1!';
@@ -85,5 +86,34 @@ describe('PersistedAuthService', () => {
     const result = await after.verifyEmail(verificationToken!);
 
     expect(result.outcome).toBe('success');
+  });
+
+  it('persists a snapshot to sessionStorage after refresh (US-CW-002)', async () => {
+    const service = new PersistedAuthService();
+    const { refreshToken } = await service.login(
+      'demo@clearline.dev',
+      DEMO_USER_PASSWORD,
+      '127.0.0.1',
+    );
+    const beforeRefresh = storage.getItem(STORAGE_KEY);
+
+    await service.refresh(refreshToken!);
+
+    expect(storage.getItem(STORAGE_KEY)).not.toBe(beforeRefresh);
+  });
+
+  it('persists a snapshot to sessionStorage after logout (US-CW-002)', async () => {
+    const service = new PersistedAuthService();
+    const { refreshToken } = await service.login(
+      'demo@clearline.dev',
+      DEMO_USER_PASSWORD,
+      '127.0.0.1',
+    );
+    const beforeLogout = storage.getItem(STORAGE_KEY);
+
+    await service.logout(refreshToken!);
+
+    expect(storage.getItem(STORAGE_KEY)).not.toBe(beforeLogout);
+    expect(await service.isRefreshTokenActive('demo@clearline.dev', refreshToken!)).toBe(false);
   });
 });

@@ -9,7 +9,7 @@ feature_area: 'core'
 title: 'Session & Token Lifecycle'
 
 # Lifecycle status
-status: 'APPROVED'
+status: 'IMPLEMENTED'
 story_points: 13
 dependencies: ['US-CW-001']
 
@@ -25,22 +25,28 @@ history:
   - epic_id: 'EPIC-CW-001'
     action: 'approved'
     date: '2026-06-30'
+  - epic_id: 'EPIC-CW-001'
+    action: 'updated'
+    date: '2026-07-03'
+  - epic_id: 'EPIC-CW-001'
+    action: 'updated'
+    date: '2026-07-05'
 
 # Status timestamps — set when status transitions occur
 approved_date: '2026-06-30'
-implementation_date: null
+implementation_date: '2026-07-05'
 deprecated_date: null
 removed_date: null
 
 # User Story
 user_story:
   persona: 'logged-in Clearline user'
-  capability: 'have my session and tokens managed transparently — silently refreshed when valid, safely terminated when compromised or expired, and protected from data loss during inactivity or mid-submission expiry'
-  business_value: 'I can work continuously without unexpected interruptions to legitimate activity, while the platform proactively protects my account and in-flight transactions like vendor payments from session-related security incidents or data loss'
+  capability: 'have my session and tokens managed transparently — silently refreshed when valid, safely terminated when compromised or expired, and protected from unexpected sign-outs during inactivity'
+  business_value: 'I can work continuously without unexpected interruptions to legitimate activity, while the platform proactively protects my account from session-related security incidents'
   description: |
     As a logged-in Clearline user
-    I want my access and refresh tokens to be silently refreshed during active use, my session to be invalidated immediately upon signs of compromise (token replay, password change elsewhere) or expiry, and my in-progress work preserved across re-authentication
-    So that I experience uninterrupted, secure sessions and never lose critical in-flight data such as a vendor payment submission due to session or token expiry
+    I want my access and refresh tokens to be silently refreshed during active use, and my session to be invalidated immediately upon signs of compromise (token replay, password change elsewhere), expiry, or prolonged inactivity
+    So that I experience uninterrupted, secure sessions without my legitimate activity being interrupted or my account left exposed by a stale session
 
 # Acceptance Criteria
 acceptance_criteria:
@@ -72,16 +78,6 @@ acceptance_criteria:
     status: 'active'
   - id: 'AC-04'
     description: |
-      Given I am submitting a vendor payment
-      And my session expires before the submission completes
-      When the submission request is sent
-      Then a dialog appears: "Your session timed out. Please sign in again to complete this payment."
-      And my form data (amount, recipient, memo) is preserved
-      And the original idempotency key for this payment intent is preserved
-      And after re-authentication I am returned to the same form with my data intact
-    status: 'active'
-  - id: 'AC-05'
-    description: |
       Given I am logged in
       And I have been inactive for 15 minutes
       When the inactivity threshold is reached
@@ -90,7 +86,7 @@ acceptance_criteria:
       And my in-memory access token is cleared
       And I see "You were signed out due to inactivity. Please sign in again."
     status: 'active'
-  - id: 'AC-06'
+  - id: 'AC-05'
     description: |
       Given the inactivity warning modal is displayed
       When I click "Stay signed in" or interact with the page
@@ -98,7 +94,7 @@ acceptance_criteria:
       And the modal closes
       And my session continues uninterrupted
     status: 'active'
-  - id: 'AC-07'
+  - id: 'AC-06'
     description: |
       Given I am logged in on Device A
       And my password is changed from Device B
@@ -106,12 +102,14 @@ acceptance_criteria:
       Then my session on Device A is invalidated
       And I see "Your session ended. Please sign in again."
     status: 'active'
-  - id: 'AC-08'
+  - id: 'AC-07'
     description: |
       Given I am logged in on my laptop
       When I log in on a new device with the same account
       Then I see a notice: "You're signed in on another device. Continue here?"
       And I may choose to continue, which does not forcibly log out the other device
+      And if I cancel instead, only the session just created by this login is revoked —
+      the other device's session is left untouched either way
     status: 'active'
 
 # Technical Notes
@@ -122,16 +120,19 @@ technical_notes: |
   of a stale token triggers full-family revocation and a forced global logout, with an audit event flagged as a
   potential security incident. Inactivity tracking needs a client-side idle timer (14-minute warning, 60-second
   grace period, 15-minute hard cutoff) plus a server-side session-invalidation check (e.g., on password change) that
-  is enforced on the next authenticated request rather than pushed in real time. In-flight submissions such as
-  vendor payments must preserve their idempotency key and form state across a forced re-authentication so a retried
-  submission cannot create a duplicate payment.
+  is enforced on the next authenticated request rather than pushed in real time.
+
+  This story's original scope also covered preserving an in-flight vendor-payment submission (form data and
+  idempotency key) across a forced re-authentication. That behavior moved to US-CW-007 AC-06 — see EPIC-CW-001's
+  notes for why — since no vendor-payment feature exists for this story to build against; US-CW-007 owns the actual
+  "New Payment" form and its idempotency-key handling, and reuses this story's forced-logout/redirect mechanism to
+  trigger the preserve-and-resume flow.
 
 # Edge Cases
 edge_cases: |
   - Access token expiring mid-session during active dashboard use
   - Reuse/replay of an already-consumed refresh token (signals possible theft)
   - Refresh token fully expired before any further authenticated action
-  - Session expiring at the exact moment of a vendor payment submission
   - User inactive for the full 15-minute threshold without dismissing the warning
   - User dismissing the inactivity warning to keep the session alive
   - Password changed on a different device while another device session is still active
@@ -140,5 +141,25 @@ edge_cases: |
 
 # Implementation Status
 implementation_status: |
-  Not yet implemented. This story is APPROVED and ready for implementation planning, transcribed as part of the initial
-  specification pass for clearline-web — no application code exists yet.
+  ✅ Implemented: 2026-07-05
+  📁 Files created/modified (grouped by area — see PR #9 for the full list):
+    - libs/domain/auth/src/{access-token-policy,refresh-token-policy,inactivity-policy}.ts — pure
+      threshold/classification logic (5-min access-token TTL, 30-day refresh-token TTL, 14-min
+      warning / 15-min inactivity cutoff)
+    - libs/mock-backend/src/services/auth.service.ts — per-login RefreshTokenFamily model;
+      refresh()/checkSession()/logout() methods
+    - libs/mock-backend/src/handlers/session.handlers.ts — POST /api/auth/refresh,
+      GET /api/auth/session, POST /api/auth/logout
+    - libs/data-access/auth/src/api-client.ts — authenticatedFetch() silent-refresh interceptor
+    - libs/data-access/auth/src/use-{refresh-token,logout,session,inactivity-timer}.ts — hooks
+    - libs/ui/src/molecules/InactivityWarningModal/ — new component
+    - apps/clearline-web/src/routes/SessionActivityBoundary.tsx (new),
+      RequireAuth.tsx and pages/LoginPage.tsx (updated)
+  🧪 Test coverage: full unit/component suite green across all 8 Nx projects, plus 31 Playwright
+  e2e tests (6 new in apps/clearline-web/e2e/session.spec.ts covering AC-01/02/03/06/07). AC-04/
+  AC-05 covered only at the fake-timer component level (use-inactivity-timer.test.ts,
+  SessionActivityBoundary.test.tsx), not e2e — a real 14-minute wait per test run wasn't judged
+  worth the added coverage.
+  📖 Storybook story: Molecules/InactivityWarningModal — 4 stories (Interactive,
+  StaySignedInClosesAndResets, SignOutEndsTheSessionImmediately,
+  DismissingViaEscapeCountsAsActivity), all passing via `nx run ui:test-storybook`.

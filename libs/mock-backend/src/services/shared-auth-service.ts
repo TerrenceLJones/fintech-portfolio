@@ -63,6 +63,17 @@ export class PersistedAuthService extends AuthService {
     this.persist();
     return result;
   }
+
+  override async refresh(...args: Parameters<AuthService['refresh']>) {
+    const result = await super.refresh(...args);
+    this.persist();
+    return result;
+  }
+
+  override async logout(...args: Parameters<AuthService['logout']>) {
+    await super.logout(...args);
+    this.persist();
+  }
 }
 
 /**
