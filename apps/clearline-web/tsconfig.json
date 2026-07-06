@@ -10,7 +10,9 @@
     { "path": "../../libs/ui" },
     { "path": "../../libs/contracts" },
     { "path": "../../libs/domain/auth" },
+    { "path": "../../libs/domain/onboarding" },
     { "path": "../../libs/mock-backend" },
-    { "path": "../../libs/data-access/auth" }
+    { "path": "../../libs/data-access/auth" },
+    { "path": "../../libs/data-access/onboarding" }
   ]
 }

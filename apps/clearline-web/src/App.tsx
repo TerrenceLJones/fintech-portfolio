@@ -7,8 +7,14 @@ import { VerifyEmailPage } from './pages/VerifyEmailPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { DashboardPage } from './pages/DashboardPage';
+import { BusinessInfoStepPage } from './pages/onboarding/BusinessInfoStepPage';
+import { BeneficialOwnersStepPage } from './pages/onboarding/BeneficialOwnersStepPage';
+import { DocumentUploadStepPage } from './pages/onboarding/DocumentUploadStepPage';
+import { ReviewStepPage } from './pages/onboarding/ReviewStepPage';
+import { OnboardingStatusPage } from './pages/onboarding/OnboardingStatusPage';
 import { RequireAuth } from './routes/RequireAuth';
 import { SessionActivityBoundary } from './routes/SessionActivityBoundary';
+import { OnboardingProgressBoundary } from './routes/OnboardingProgressBoundary';
 
 // Static stand-in for the Employee item set until US-CW-006 wires up real role/session state
 // and server-enforced authorization — AppShell/NavigationShell just render whatever list they're given.
@@ -28,6 +34,13 @@ export function App() {
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route element={<RequireAuth />}>
           <Route element={<SessionActivityBoundary />}>
+            <Route path="/onboarding/status" element={<OnboardingStatusPage />} />
+            <Route element={<OnboardingProgressBoundary />}>
+              <Route path="/onboarding/business" element={<BusinessInfoStepPage />} />
+              <Route path="/onboarding/owners" element={<BeneficialOwnersStepPage />} />
+              <Route path="/onboarding/documents" element={<DocumentUploadStepPage />} />
+              <Route path="/onboarding/review" element={<ReviewStepPage />} />
+            </Route>
             <Route
               element={
                 <AppShell

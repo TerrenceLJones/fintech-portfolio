@@ -1,0 +1,20 @@
+{
+  "name": "@clearline/domain-onboarding",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Pure, framework-agnostic business-onboarding (KYB) rules — EIN format, beneficial-owner KYC threshold, onboarding inactivity, document retry cap, and client-side document image quality checks. No data-access or UI dependencies, mirrors libs/domain/auth.",
+  "main": "src/index.ts",
+  "scripts": {
+    "lint": "eslint .",
+    "type-check": "tsc --noEmit",
+    "test": "vitest run",
+    "build": "tsc"
+  },
+  "dependencies": {},
+  "devDependencies": {},
+  "metadata": {
+    "package_type": "shared",
+    "app": "clearline-web",
+    "scope": "Domain lib for EPIC-CW-002 (US-CW-004 Business Onboarding Flow, US-CW-005 Identity Document Verification & Compliance Screening)."
+  }
+}

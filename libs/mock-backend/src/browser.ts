@@ -6,6 +6,7 @@ import { authHandlers } from './handlers/auth.handlers';
 import { passwordResetHandlers } from './handlers/password-reset.handlers';
 import { signUpHandlers } from './handlers/signup.handlers';
 import { sessionHandlers } from './handlers/session.handlers';
+import { onboardingHandlers } from './handlers/onboarding.handlers';
 import { sharedAuthService } from './services/shared-auth-service';
 
 export const worker = setupWorker(
@@ -13,6 +14,7 @@ export const worker = setupWorker(
   ...passwordResetHandlers,
   ...signUpHandlers,
   ...sessionHandlers,
+  ...onboardingHandlers,
 );
 
 /**

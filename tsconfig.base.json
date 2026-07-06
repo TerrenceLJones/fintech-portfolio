@@ -35,7 +35,9 @@
       "@clearline/ui": ["libs/ui/src/index.ts"],
       "@clearline/money": ["libs/util/money/src/index.ts"],
       "@clearline/domain-auth": ["libs/domain/auth/src/index.ts"],
-      "@clearline/data-access-auth": ["libs/data-access/auth/src/index.ts"]
+      "@clearline/data-access-auth": ["libs/data-access/auth/src/index.ts"],
+      "@clearline/domain-onboarding": ["libs/domain/onboarding/src/index.ts"],
+      "@clearline/data-access-onboarding": ["libs/data-access/onboarding/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp", "dist"]

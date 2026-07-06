@@ -131,12 +131,18 @@ importers:
       '@clearline/data-access-auth':
         specifier: workspace:*
         version: link:../../libs/data-access/auth
+      '@clearline/data-access-onboarding':
+        specifier: workspace:*
+        version: link:../../libs/data-access/onboarding
       '@clearline/design-tokens':
         specifier: workspace:*
         version: link:../../libs/design-tokens
       '@clearline/domain-auth':
         specifier: workspace:*
         version: link:../../libs/domain/auth
+      '@clearline/domain-onboarding':
+        specifier: workspace:*
+        version: link:../../libs/domain/onboarding
       '@clearline/icons':
         specifier: workspace:*
         version: link:../../libs/icons
@@ -146,6 +152,9 @@ importers:
       '@clearline/ui':
         specifier: workspace:*
         version: link:../../libs/ui
+      '@hookform/resolvers':
+        specifier: ^3.9.1
+        version: 3.10.0(react-hook-form@7.81.0(react@19.2.7))
       '@sentry/cli':
         specifier: ^3.6.0
         version: 3.6.0
@@ -161,12 +170,18 @@ importers:
       react-dom:
         specifier: ^19.2.7
         version: 19.2.7(react@19.2.7)
+      react-hook-form:
+        specifier: ^7.54.2
+        version: 7.81.0(react@19.2.7)
       react-router:
         specifier: ^7.18.1
         version: 7.18.1(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       vercel:
         specifier: ^54.18.6
         version: 54.18.6(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.1)(rollup@4.62.2)
+      zod:
+        specifier: ^3.24.1
+        version: 3.24.4
     devDependencies:
       '@playwright/test':
         specifier: ^1.61.1
@@ -223,6 +238,40 @@ importers:
         specifier: ^2.14.6
         version: 2.14.6(@types/node@24.13.2)(typescript@6.0.3)
 
+  libs/data-access/onboarding:
+    dependencies:
+      '@clearline/contracts':
+        specifier: workspace:*
+        version: link:../../contracts
+      '@clearline/data-access-auth':
+        specifier: workspace:*
+        version: link:../auth
+      '@clearline/domain-onboarding':
+        specifier: workspace:*
+        version: link:../../domain/onboarding
+      '@tanstack/react-query':
+        specifier: ^5.101.2
+        version: 5.101.2(react@19.2.7)
+      react:
+        specifier: ^19.2.0
+        version: 19.2.7
+      react-dom:
+        specifier: ^19.2.0
+        version: 19.2.7(react@19.2.7)
+    devDependencies:
+      '@clearline/mock-backend':
+        specifier: workspace:*
+        version: link:../../mock-backend
+      '@types/react':
+        specifier: ^19.2.17
+        version: 19.2.17
+      '@types/react-dom':
+        specifier: ^19.2.3
+        version: 19.2.3(@types/react@19.2.17)
+      msw:
+        specifier: ^2.14.6
+        version: 2.14.6(@types/node@24.13.2)(typescript@6.0.3)
+
   libs/design-tokens:
     dependencies:
       react:
@@ -238,6 +287,8 @@ importers:
 
   libs/domain/auth: {}
 
+  libs/domain/onboarding: {}
+
   libs/icons: {}
 
   libs/mock-backend:
@@ -248,6 +299,9 @@ importers:
       '@clearline/domain-auth':
         specifier: workspace:*
         version: link:../domain/auth
+      '@clearline/domain-onboarding':
+        specifier: workspace:*
+        version: link:../domain/onboarding
     devDependencies:
       msw:
         specifier: ^2.14.6
@@ -1331,6 +1385,11 @@ packages:
 
   '@floating-ui/utils@0.2.11':
     resolution: {integrity: sha512-RiB/yIh78pcIxl6lLMG0CgBXAZ2Y0eVHqMPYugu+9U0AeT6YBeiJpf7lbdJNIugFP5SIjwNRgo4DhR1Qxi26Gg==}
+
+  '@hookform/resolvers@3.10.0':
+    resolution: {integrity: sha512-79Dv+3mDF7i+2ajj7SkypSKHhl1cbln1OGavqrsF7p6mbUv11xpqpacPsGDCTRvCSjEEIez2ef1NveSVL3b0Ag==}
+    peerDependencies:
+      react-hook-form: ^7.0.0
 
   '@humanfs/core@0.19.2':
     resolution: {integrity: sha512-UhXNm+CFMWcbChXywFwkmhqjs3PRCmcSa/hfBgLIb7oQ5HNb1wS0icWsGtSAUNgefHeI+eBrA8I1fxmbHsGdvA==}
@@ -6169,6 +6228,12 @@ packages:
     peerDependencies:
       react: ^19.2.7
 
+  react-hook-form@7.81.0:
+    resolution: {integrity: sha512-ocbmr2p5KBMoAfj4WCUvped33lVi1Kd5DuDUvQDnB6VEAacOjPI/jMbtDdbhco4y9ct4xUuCmMY0b/C9L0QHjw==}
+    engines: {node: '>=18.0.0'}
+    peerDependencies:
+      react: ^16.8.0 || ^17 || ^18 || ^19
+
   react-is@17.0.2:
     resolution: {integrity: sha512-w2GsyukL62IJnlaff/nRegPQR94C/XXamvMWmSHRJ4y7Ts/4ocGRmTHvOs8PSE6pB3dWOrD/nueuU5sduBsQ4w==}
 
@@ -7257,6 +7322,9 @@ packages:
 
   zod@3.24.4:
     resolution: {integrity: sha512-OdqJE9UDRPwWsrHjLN2F8bPxvwJBK22EHLWtanu0LSYr5YqzsaaW3RMgmjwr8Rypg5k+meEJdSPXJZXE/yqOMg==}
+
+  zod@3.25.76:
+    resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
 
   zod@4.1.11:
     resolution: {integrity: sha512-WPsqwxITS2tzx1bzhIKsEs19ABD5vmCVa4xBo2tq/SrV4RNZtfws1EnCWQXM6yh8bD08a1idvkB5MZSBiZsjwg==}
@@ -8438,6 +8506,10 @@ snapshots:
       react-dom: 19.2.7(react@19.2.7)
 
   '@floating-ui/utils@0.2.11': {}
+
+  '@hookform/resolvers@3.10.0(react-hook-form@7.81.0(react@19.2.7))':
+    dependencies:
+      react-hook-form: 7.81.0(react@19.2.7)
 
   '@humanfs/core@0.19.2':
     dependencies:
@@ -12114,8 +12186,8 @@ snapshots:
       '@babel/parser': 7.29.7
       eslint: 9.39.4(jiti@2.7.0)
       hermes-parser: 0.25.1
-      zod: 4.1.11
-      zod-validation-error: 4.0.2(zod@4.1.11)
+      zod: 3.25.76
+      zod-validation-error: 4.0.2(zod@3.25.76)
     transitivePeerDependencies:
       - supports-color
 
@@ -13734,6 +13806,10 @@ snapshots:
       react: 19.2.7
       scheduler: 0.27.0
 
+  react-hook-form@7.81.0(react@19.2.7):
+    dependencies:
+      react: 19.2.7
+
   react-is@17.0.2: {}
 
   react-refresh@0.17.0: {}
@@ -14822,12 +14898,14 @@ snapshots:
 
   yocto-queue@0.1.0: {}
 
-  zod-validation-error@4.0.2(zod@4.1.11):
+  zod-validation-error@4.0.2(zod@3.25.76):
     dependencies:
-      zod: 4.1.11
+      zod: 3.25.76
 
   zod@3.22.4: {}
 
   zod@3.24.4: {}
+
+  zod@3.25.76: {}
 
   zod@4.1.11: {}
