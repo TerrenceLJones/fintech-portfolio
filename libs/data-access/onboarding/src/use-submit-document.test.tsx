@@ -130,4 +130,34 @@ describe('useSubmitDocument', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(queryClient.getQueryState(ONBOARDING_STATUS_QUERY_KEY)?.isInvalidated).toBe(true);
   });
+
+  it('does not invalidate the cached onboarding status when a capture is rejected client-side', async () => {
+    setAccessToken('access_valid');
+    let serverCalled = false;
+    server.use(
+      http.post('*/api/onboarding/documents', () => {
+        serverCalled = true;
+        return HttpResponse.json({ outcome: 'accepted', attemptCount: 0 });
+      }),
+    );
+    const queryClient = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
+    queryClient.setQueryData(ONBOARDING_STATUS_QUERY_KEY, { documentAttemptCount: 0 });
+
+    const { result } = renderHook(
+      () => useSubmitDocument({ extractImage: () => Promise.resolve(flatImage(255)) }),
+      {
+        wrapper: ({ children }) => (
+          <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+        ),
+      },
+    );
+    result.current.mutate({ file, ownerId: 'owner_1' });
+
+    // A glare/blur rejection never reaches the server and changes no server-side state, so it
+    // must not trigger a needless onboarding-status refetch.
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data).toEqual({ outcome: 'glare' });
+    expect(serverCalled).toBe(false);
+    expect(queryClient.getQueryState(ONBOARDING_STATUS_QUERY_KEY)?.isInvalidated).toBe(false);
+  });
 });

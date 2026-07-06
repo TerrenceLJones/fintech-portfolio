@@ -54,6 +54,11 @@ export function useSubmitDocument(options: UseSubmitDocumentOptions = {}) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (input: SubmitDocumentInput) => postDocument(input, extractImage),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ONBOARDING_STATUS_QUERY_KEY }),
+    onSuccess: (result) => {
+      // A client-side glare/blur rejection never reached the server, so no server-side state
+      // changed — skip the invalidation to avoid a needless onboarding-status refetch.
+      if (result.outcome === 'glare' || result.outcome === 'blurry') return;
+      queryClient.invalidateQueries({ queryKey: ONBOARDING_STATUS_QUERY_KEY });
+    },
   });
 }
