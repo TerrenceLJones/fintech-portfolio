@@ -9,7 +9,7 @@ feature_area: 'core'
 title: 'Sign Up'
 
 # Lifecycle status
-status: 'APPROVED'
+status: 'IMPLEMENTED'
 story_points: 5
 dependencies: []
 
@@ -25,10 +25,13 @@ history:
   - epic_id: 'EPIC-CW-016'
     action: 'approved'
     date: '2026-07-02'
+  - epic_id: 'EPIC-CW-016'
+    action: 'implemented'
+    date: '2026-07-04'
 
 # Status timestamps — set when status transitions occur
 approved_date: '2026-07-02'
-implementation_date: null
+implementation_date: '2026-07-04'
 deprecated_date: null
 removed_date: null
 
@@ -130,4 +133,10 @@ edge_cases: |
 
 # Implementation Status
 implementation_status: |
-  Not yet implemented. This story is APPROVED and ready for implementation planning — no application code exists yet.
+  ✅ Implemented: 2026-07-04 (merged via PR #5, EPIC-CW-016).
+  📁 Files: apps/clearline-web/src/pages/{SignUpPage,VerifyEmailPage}.tsx, libs/mock-backend/src/services/
+  auth.service.ts (signUp()/verifyEmail(), enumeration-safe resend branch, verification-token issuance),
+  libs/mock-backend/src/handlers/signup.handlers.ts.
+  🧪 Test coverage: SignUpPage.test.tsx (AC-01–AC-06, including the enumeration-safe resend and the
+  reciprocal "Log in" link), auth.service.signup.test.ts, auth.service.verify-email.test.ts, and
+  apps/clearline-web/e2e/signup.spec.ts — all green.

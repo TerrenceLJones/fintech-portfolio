@@ -2,7 +2,7 @@ epic_id: 'EPIC-CW-016'
 title: 'Account Sign-Up'
 app: 'clearline-web'
 feature_area: 'core'
-status: 'APPROVED'
+status: 'IMPLEMENTED'
 approved_date: '2026-07-02'
 created_date: '2026-07-02'
 source_reference: >

@@ -9,7 +9,7 @@ feature_area: 'core'
 title: 'Password Reset'
 
 # Lifecycle status
-status: 'APPROVED'
+status: 'IMPLEMENTED'
 story_points: 3
 dependencies: ['US-CW-001']
 
@@ -25,10 +25,13 @@ history:
   - epic_id: 'EPIC-CW-001'
     action: 'approved'
     date: '2026-06-30'
+  - epic_id: 'EPIC-CW-001'
+    action: 'implemented'
+    date: '2026-07-03'
 
 # Status timestamps — set when status transitions occur
 approved_date: '2026-06-30'
-implementation_date: null
+implementation_date: '2026-07-03'
 deprecated_date: null
 removed_date: null
 
@@ -85,8 +88,7 @@ technical_notes: |
   is TLS/HTTPS, not application-layer crypto (see US-CW-001 technical_notes for the full OWASP/NIST rationale).
   Additionally, per the OWASP Forgot Password Cheat Sheet, the reset token itself should be stored hashed
   server-side (not in plaintext) — the emailed link carries the raw token, but only its hash is persisted, so a
-  compromise of the mock backend's in-memory store can't be used to forge valid reset links. Not yet implemented;
-  this note exists so the requirement isn't lost before US-CW-003 implementation begins.
+  compromise of the mock backend's in-memory store can't be used to forge valid reset links.
 
 # Edge Cases
 edge_cases: |
@@ -98,5 +100,10 @@ edge_cases: |
 
 # Implementation Status
 implementation_status: |
-  Not yet implemented. This story is APPROVED and ready for implementation planning, transcribed as part of the initial
-  specification pass for clearline-web — no application code exists yet.
+  ✅ Implemented: 2026-07-03 (merged via PR #4).
+  📁 Files: apps/clearline-web/src/pages/{ForgotPasswordPage,ResetPasswordPage}.tsx, libs/mock-backend/src/
+  services/auth.service.ts (forgotPassword()/resetPassword(), reset-token issuance and revocation),
+  libs/mock-backend/src/handlers/password-reset.handlers.ts.
+  🧪 Test coverage: ForgotPasswordPage.test.tsx and ResetPasswordPage.test.tsx (AC-01–AC-03, including
+  the resend affordance on an expired link), auth.service.password-reset.test.ts (token expiry,
+  refresh-token revocation on reset, password-changed notification) — all green.
