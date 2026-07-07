@@ -42,7 +42,10 @@ describe('useSubmitReview', () => {
     expect(result.current.data).toEqual({ outcome: 'under_review' });
   });
 
-  it('invalidates the cached onboarding status on success', async () => {
+  // Unlike the other onboarding mutations, this hook deliberately does NOT invalidate the status
+  // query itself — the caller invalidates only after navigating off the guarded wizard route, so the
+  // wizard guard can't race the navigation to a terminal status. See useSubmitReview's doc comment.
+  it('does not invalidate the cached onboarding status on its own', async () => {
     setAccessToken('access_valid');
     server.use(
       http.post('*/api/onboarding/review/submit', () => HttpResponse.json({ outcome: 'approved' })),
@@ -58,6 +61,6 @@ describe('useSubmitReview', () => {
     result.current.mutate();
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(queryClient.getQueryState(ONBOARDING_STATUS_QUERY_KEY)?.isInvalidated).toBe(true);
+    expect(queryClient.getQueryState(ONBOARDING_STATUS_QUERY_KEY)?.isInvalidated).toBe(false);
   });
 });

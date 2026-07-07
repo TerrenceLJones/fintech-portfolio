@@ -30,3 +30,10 @@ notes: >
   multi-step wizard for business info, beneficial owner capture (with discrete first- and last-name fields),
   and approval (US-CW-004), and the identity
   document quality checks plus compliance/sanctions screening UX that support that flow (US-CW-005).
+
+  Follow-up (2026-07-07): US-CW-004 extended with onboarding-completion route gating (AC-09..AC-12) so the
+  server-authoritative onboarding status decides where a user belongs — a not-yet-onboarded user is redirected
+  into the wizard instead of a half-usable dashboard, an approved user who reopens a wizard URL is redirected to
+  the dashboard, and the status page/wizard steps stop rendering states that don't apply to the user's status.
+  The app guard permits dashboard access for under_review as well as approved, which is what enforces US-CW-005
+  AC-05 (a pending compliance review must not block non-financial areas of the product).

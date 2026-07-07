@@ -5,6 +5,7 @@ import { MemoryRouter, Route, Routes } from 'react-router';
 import { http, HttpResponse } from 'msw';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { registerMswServer } from '@clearline/mock-backend/test-factories';
+import { ONBOARDING_STATUS_QUERY_KEY } from '@clearline/data-access-onboarding';
 import { setAccessToken, clearAccessToken } from '@clearline/data-access-auth';
 import { OnboardingStatusPage } from './OnboardingStatusPage';
 
@@ -34,6 +35,8 @@ function renderPage() {
         <Routes>
           <Route path="/onboarding/status" element={<OnboardingStatusPage />} />
           <Route path="/" element={<div>Dashboard stub</div>} />
+          <Route path="/onboarding/business" element={<div>Business step</div>} />
+          <Route path="/onboarding/owners" element={<div>Owners step</div>} />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>,
@@ -42,6 +45,52 @@ function renderPage() {
 
 describe('OnboardingStatusPage', () => {
   afterEach(() => clearAccessToken());
+
+  it('redirects an in_progress user back to their current wizard step (AC-12)', async () => {
+    setAccessToken('access_valid');
+    server.use(
+      http.get('*/api/onboarding/status', () =>
+        HttpResponse.json(statusResponse({ status: 'in_progress', currentStep: 'owners' })),
+      ),
+    );
+    renderPage();
+
+    await waitFor(() => expect(screen.getByText('Owners step')).toBeInTheDocument());
+  });
+
+  it('waits for an in-flight refetch instead of bouncing to the wizard on stale in_progress (post-submit AC-08)', async () => {
+    setAccessToken('access_valid');
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    // Mirror the review-submit sequence: the cache still holds the pre-submission in_progress status
+    // while the invalidated query refetches the now-terminal (approved) one. The page must wait, not
+    // bounce back to the wizard on the stale value (which would skip the approval screen).
+    queryClient.setQueryData(
+      ONBOARDING_STATUS_QUERY_KEY,
+      statusResponse({ status: 'in_progress', currentStep: 'review' }),
+    );
+    queryClient.invalidateQueries({ queryKey: ONBOARDING_STATUS_QUERY_KEY });
+    server.use(
+      http.get('*/api/onboarding/status', () =>
+        HttpResponse.json(statusResponse({ status: 'approved' })),
+      ),
+    );
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={['/onboarding/status']}>
+          <Routes>
+            <Route path="/onboarding/status" element={<OnboardingStatusPage />} />
+            <Route path="/onboarding/business" element={<div>Business step</div>} />
+            <Route path="/onboarding/review" element={<div>Review step</div>} />
+            <Route path="/" element={<div>Dashboard stub</div>} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    await waitFor(() => expect(screen.getByText('Your account is approved')).toBeInTheDocument());
+    expect(screen.queryByText('Review step')).not.toBeInTheDocument();
+  });
 
   it('shows the approved message and unlocks the dashboard (AC-08)', async () => {
     setAccessToken('access_valid');

@@ -1,10 +1,12 @@
 import type { Page } from '@playwright/test';
 import { expect, test } from './support/fixtures';
+import type { MockBackend } from './support/fixtures';
 import {
   DEMO_EMAIL,
   DEMO_PASSWORD,
   fillLoginForm,
   navigateSpa,
+  signUp,
   waitForApiResponse,
 } from './support/helpers';
 
@@ -21,11 +23,25 @@ const UNKNOWN_EIN = '00-0000000';
 const SHARP_DOC = 'e2e/fixtures/drivers-license-sharp.png';
 const UNRECOGNIZED_DOC = 'e2e/fixtures/unrecognized-document.png';
 
+const FRESH_PASSWORD = 'Fresh-Owner-Password-1';
+
 async function login(page: Page, email: string, password: string) {
   await page.goto('/login');
   await fillLoginForm(page, email, password);
   await page.getByRole('button', { name: 'Sign in' }).click();
-  await expect(page).toHaveURL(`${new URL(page.url()).origin}/`);
+}
+
+/**
+ * Onboarding is gated: only a not-yet-onboarded account can enter the KYB wizard (US-CW-004
+ * AC-09/AC-10), and the demo seed user is already approved. So every wizard test drives a freshly
+ * signed-up-and-verified account, which — being in_progress — lands directly in the wizard when
+ * its verification completes on the dashboard route (AC-09 for the sign-up funnel).
+ */
+async function startOnboardingAsFreshUser(page: Page, mockBackend: MockBackend, email: string) {
+  await signUp(page, email, FRESH_PASSWORD);
+  const token = await mockBackend.issueVerificationTokenForE2E(email, FRESH_PASSWORD);
+  await navigateSpa(page, `/verify?token=${token}`);
+  await expect(page).toHaveURL(/\/onboarding\/business/);
 }
 
 async function fillBusinessInfo(page: Page, overrides: { ein?: string; legalName?: string } = {}) {
@@ -61,9 +77,9 @@ async function addOwner(
 test.describe('Business onboarding & KYB (US-CW-004, US-CW-005)', () => {
   test('happy path: business info → owner → document upload → review → approved (AC-01, AC-03, AC-05, AC-08)', async ({
     page,
+    mockBackend,
   }) => {
-    await login(page, DEMO_EMAIL, DEMO_PASSWORD);
-    await navigateSpa(page, '/onboarding/business');
+    await startOnboardingAsFreshUser(page, mockBackend, 'happy-path@clearline.dev');
 
     await fillBusinessInfo(page);
     let response = waitForApiResponse(page, '/api/onboarding/business');
@@ -102,9 +118,35 @@ test.describe('Business onboarding & KYB (US-CW-004, US-CW-005)', () => {
     await expect(page).toHaveURL(`${new URL(page.url()).origin}/`);
   });
 
-  test("shows the inline EIN error when the registry can't verify it (AC-04)", async ({ page }) => {
+  test('routes a not-yet-onboarded user who lands on the dashboard into the wizard (AC-09)', async ({
+    page,
+    mockBackend,
+  }) => {
+    await startOnboardingAsFreshUser(page, mockBackend, 'gated-owner@clearline.dev');
+
+    // Already in the wizard from sign-up; a direct hit on the dashboard bounces straight back into
+    // it because onboarding isn't complete.
+    await navigateSpa(page, '/');
+    await expect(page).toHaveURL(/\/onboarding\/business/);
+  });
+
+  test('routes an already-approved user who opens a wizard URL to the dashboard (AC-10)', async ({
+    page,
+  }) => {
+    // The demo seed user is an established, already-onboarded business (approved), so it lands on
+    // the dashboard and can never re-enter the wizard.
     await login(page, DEMO_EMAIL, DEMO_PASSWORD);
+    await expect(page).toHaveURL(`${new URL(page.url()).origin}/`);
+
     await navigateSpa(page, '/onboarding/business');
+    await expect(page).toHaveURL(`${new URL(page.url()).origin}/`);
+  });
+
+  test("shows the inline EIN error when the registry can't verify it (AC-04)", async ({
+    page,
+    mockBackend,
+  }) => {
+    await startOnboardingAsFreshUser(page, mockBackend, 'ein-error@clearline.dev');
 
     await fillBusinessInfo(page, { ein: UNKNOWN_EIN });
     const response = waitForApiResponse(page, '/api/onboarding/business');
@@ -127,9 +169,9 @@ test.describe('Business onboarding & KYB (US-CW-004, US-CW-005)', () => {
   // resumed session would.
   test('redirects to the true current step when navigating ahead of it (AC-01, AC-02)', async ({
     page,
+    mockBackend,
   }) => {
-    await login(page, DEMO_EMAIL, DEMO_PASSWORD);
-    await navigateSpa(page, '/onboarding/business');
+    await startOnboardingAsFreshUser(page, mockBackend, 'resume-step@clearline.dev');
 
     await fillBusinessInfo(page);
     const response = waitForApiResponse(page, '/api/onboarding/business');
@@ -145,35 +187,16 @@ test.describe('Business onboarding & KYB (US-CW-004, US-CW-005)', () => {
     page,
     mockBackend,
   }) => {
-    // A different account onboards first, claiming OTHER_KNOWN_EIN.
-    await page.goto('/signup');
-    const signUpResponse = waitForApiResponse(page, '/api/auth/signup');
-    await page.getByLabel('Work email').fill('second-owner@clearline.dev');
-    await page.getByLabel('Password', { exact: true }).fill('Second-Owner-Password-1');
-    await page.getByRole('button', { name: 'Create account' }).click();
-    await signUpResponse;
-
-    const verificationToken = await mockBackend.issueVerificationTokenForE2E(
-      'second-owner@clearline.dev',
-      'Second-Owner-Password-1',
-    );
-    await navigateSpa(page, `/verify?token=${verificationToken}`);
-    await expect(page).toHaveURL(`${new URL(page.url()).origin}/`);
-
-    await navigateSpa(page, '/onboarding/business');
+    // A first account onboards, claiming OTHER_KNOWN_EIN.
+    await startOnboardingAsFreshUser(page, mockBackend, 'first-owner@clearline.dev');
     await fillBusinessInfo(page, { ein: OTHER_KNOWN_EIN, legalName: 'Second Owner Co' });
     let response = waitForApiResponse(page, '/api/onboarding/business');
     await page.getByRole('button', { name: 'Continue' }).click();
     await response;
     await expect(page).toHaveURL(/\/onboarding\/owners/);
 
-    // Now the demo user attempts to onboard a business with the same EIN.
-    await page.goto('/login');
-    await fillLoginForm(page, DEMO_EMAIL, DEMO_PASSWORD);
-    await page.getByRole('button', { name: 'Sign in' }).click();
-    await expect(page).toHaveURL(`${new URL(page.url()).origin}/`);
-
-    await navigateSpa(page, '/onboarding/business');
+    // Now a second account attempts to onboard a business with the same EIN.
+    await startOnboardingAsFreshUser(page, mockBackend, 'dup-owner@clearline.dev');
     await fillBusinessInfo(page, { ein: OTHER_KNOWN_EIN });
     response = waitForApiResponse(page, '/api/onboarding/business');
     await page.getByRole('button', { name: 'Continue' }).click();
@@ -187,9 +210,9 @@ test.describe('Business onboarding & KYB (US-CW-004, US-CW-005)', () => {
 
   test('blocks further attempts and shows a support reference after 3 failed document uploads (AC-04)', async ({
     page,
+    mockBackend,
   }) => {
-    await login(page, DEMO_EMAIL, DEMO_PASSWORD);
-    await navigateSpa(page, '/onboarding/business');
+    await startOnboardingAsFreshUser(page, mockBackend, 'doc-blocked@clearline.dev');
     await fillBusinessInfo(page);
     let response = waitForApiResponse(page, '/api/onboarding/business');
     await page.getByRole('button', { name: 'Continue' }).click();
@@ -237,9 +260,9 @@ test.describe('Business onboarding & KYB (US-CW-004, US-CW-005)', () => {
 
   test('routes a watchlist-matching business to the neutral under-review status without restricted terms (AC-05)', async ({
     page,
+    mockBackend,
   }) => {
-    await login(page, DEMO_EMAIL, DEMO_PASSWORD);
-    await navigateSpa(page, '/onboarding/business');
+    await startOnboardingAsFreshUser(page, mockBackend, 'under-review@clearline.dev');
     // 'vostok trading' is a mock watchlist fixture — see libs/mock-backend/src/fixtures/onboarding.fixture.ts.
     await fillBusinessInfo(page, { ein: OTHER_KNOWN_EIN, legalName: 'Vostok Trading LLC' });
     let response = waitForApiResponse(page, '/api/onboarding/business');

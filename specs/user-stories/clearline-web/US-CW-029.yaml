@@ -140,3 +140,9 @@ implementation_status: |
   🧪 Test coverage: SignUpPage.test.tsx (AC-01–AC-06, including the enumeration-safe resend and the
   reciprocal "Log in" link), auth.service.signup.test.ts, auth.service.verify-email.test.ts, and
   apps/clearline-web/e2e/signup.spec.ts — all green.
+
+  🔁 Updated: 2026-07-07 (EPIC-CW-002) — AC-03's "redirected into business onboarding" is now
+  realized concretely: VerifyEmailPage still navigates to the app root, but US-CW-004's onboarding
+  route guard (AC-09) now funnels a not-yet-onboarded account from there into the KYB wizard instead
+  of the dashboard stub it previously landed on. signup.spec.ts's post-verification assertions were
+  updated to expect the wizard's "Tell us about your business" step accordingly.

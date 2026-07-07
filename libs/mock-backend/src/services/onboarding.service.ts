@@ -253,6 +253,32 @@ export class OnboardingService {
     return { outcome: matchesWatchlist ? 'under_review' : 'approved' };
   }
 
+  /**
+   * Seeds an already-approved, fully-onboarded record — the mock stand-in for an established
+   * business account (e.g. the demo seed user) so that signing in lands on the app rather than the
+   * onboarding wizard (US-CW-004 AC-09/AC-10). The EIN is claimed for duplicate-account detection
+   * exactly as a real submission would (AC-07). No-op if the user already has a record, so it can
+   * be applied unconditionally at browser bootstrap without clobbering in-progress state rehydrated
+   * from a dev-server reload.
+   */
+  seedApprovedAccount(userId: string, business: BusinessInfo, now: number = Date.now()): void {
+    if (this.recordsByUserId.has(userId)) return;
+
+    this.recordsByUserId.set(userId, {
+      businessId: `business_${crypto.randomUUID()}`,
+      userId,
+      status: 'approved',
+      currentStep: 'review',
+      lastCompletedStep: 'review',
+      business,
+      owners: [],
+      documents: [],
+      documentAttemptCount: 0,
+      lastActivityAt: now,
+    });
+    this.userIdByEin.set(business.ein, userId);
+  }
+
   getSentNotifications(): readonly NotificationEvent[] {
     return this.notificationsSent;
   }

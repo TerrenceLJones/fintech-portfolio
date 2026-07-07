@@ -1,17 +1,32 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
-import { useOnboardingStatus, useSubmitReview } from '@clearline/data-access-onboarding';
+import { useQueryClient } from '@tanstack/react-query';
+import {
+  ONBOARDING_STATUS_QUERY_KEY,
+  useOnboardingStatus,
+  useSubmitReview,
+} from '@clearline/data-access-onboarding';
 import { Alert, AuthLayout, Button, Checkbox, Stepper, Text } from '@clearline/ui';
 import { WIZARD_STEP_LABELS } from './wizard-steps';
 
 export function ReviewStepPage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const status = useOnboardingStatus();
   const submitReview = useSubmitReview();
   const [certified, setCertified] = useState(false);
 
   function handleSubmit() {
-    submitReview.mutate(undefined, { onSuccess: () => navigate('/onboarding/status') });
+    submitReview.mutate(undefined, {
+      onSuccess: () => {
+        // Order matters: leave the guarded wizard route for the status screen BEFORE invalidating,
+        // so the freshly-terminal status is refetched while we're already on /onboarding/status
+        // (which waits out the in-flight fetch) rather than on this step, where the wizard guard
+        // would redirect approved straight to the dashboard and skip the approval screen (AC-08).
+        navigate('/onboarding/status');
+        queryClient.invalidateQueries({ queryKey: ONBOARDING_STATUS_QUERY_KEY });
+      },
+    });
   }
 
   const business = status.data?.business;

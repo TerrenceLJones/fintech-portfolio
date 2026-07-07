@@ -1,6 +1,8 @@
-import { useNavigate } from 'react-router';
+import { Navigate, useNavigate } from 'react-router';
 import { useOnboardingStatus } from '@clearline/data-access-onboarding';
 import { EmptyState, Text } from '@clearline/ui';
+import { onboardingDestination } from './onboarding-routing';
+import { stepPath } from './wizard-steps';
 
 /**
  * Terminal onboarding screens share one shape (icon + title + body + single CTA), so they're one
@@ -14,6 +16,16 @@ export function OnboardingStatusPage() {
   const status = useOnboardingStatus();
 
   if (!status.data) return null;
+
+  // A user who hasn't submitted yet has no terminal status to show — send them back into the
+  // wizard at their current step rather than rendering an empty screen (US-CW-004 AC-12). But only
+  // once a fetch has settled: right after a review submission the cached status is still the stale
+  // 'in_progress' while the invalidated query refetches the terminal status, and bouncing to the
+  // wizard on that stale value would skip the approval/under-review screen (AC-08) entirely.
+  if (onboardingDestination(status.data.status) === 'wizard') {
+    if (status.isFetching) return null;
+    return <Navigate to={stepPath(status.data.currentStep)} replace />;
+  }
 
   if (status.data.status === 'approved') {
     return (

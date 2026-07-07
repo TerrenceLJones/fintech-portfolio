@@ -8,6 +8,8 @@ import { signUpHandlers } from './handlers/signup.handlers';
 import { sessionHandlers } from './handlers/session.handlers';
 import { onboardingHandlers } from './handlers/onboarding.handlers';
 import { sharedAuthService } from './services/shared-auth-service';
+import { sharedOnboardingService } from './services/shared-onboarding-service';
+import { DEMO_ONBOARDED_BUSINESS, DEMO_ONBOARDED_USER_ID } from './fixtures/onboarding.fixture';
 
 export const worker = setupWorker(
   ...authHandlers,
@@ -16,6 +18,13 @@ export const worker = setupWorker(
   ...sessionHandlers,
   ...onboardingHandlers,
 );
+
+// Seed the demo user as an already-approved, fully-onboarded business so signing in as it lands on
+// the dashboard rather than the onboarding wizard (US-CW-004 AC-09/AC-10). This lives in the
+// browser (dev/e2e) entry point only — the Node MSW server (server.ts) never loads it, so unit and
+// component tests keep constructing fresh, seed-free OnboardingService instances. No-op if a record
+// already exists, e.g. one rehydrated from sessionStorage after a dev-server reload.
+sharedOnboardingService.seedApprovedAccount(DEMO_ONBOARDED_USER_ID, DEMO_ONBOARDED_BUSINESS);
 
 /**
  * Test-only override for e2e coverage of AC-05 (auth-service-unreachable retry/backoff) — see

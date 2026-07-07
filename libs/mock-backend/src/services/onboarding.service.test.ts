@@ -45,6 +45,37 @@ describe('OnboardingService.getStatus', () => {
   });
 });
 
+describe('OnboardingService.seedApprovedAccount', () => {
+  it('seeds an already-approved, fully-onboarded record so the user lands in the app', () => {
+    const service = newService();
+    service.seedApprovedAccount('user_1', business(), NOW);
+
+    const status = service.getStatus('user_1', NOW);
+    expect(status.status).toBe('approved');
+    expect(status.currentStep).toBe('review');
+    expect(status.lastCompletedStep).toBe('review');
+    expect(status.business).toEqual(business());
+  });
+
+  it('claims the seeded EIN so a different user onboarding it is flagged as a duplicate (AC-07)', async () => {
+    const service = newService();
+    service.seedApprovedAccount('user_1', business(), NOW);
+
+    const result = await service.submitBusinessInfo('user_2', business(), NOW);
+    expect(result.outcome).toBe('duplicate_business');
+  });
+
+  it('does not overwrite an existing record for the same user', async () => {
+    const service = newService();
+    await service.submitBusinessInfo('user_1', business({ ein: OTHER_KNOWN_EIN }), NOW);
+    service.seedApprovedAccount('user_1', business(), NOW);
+
+    const status = service.getStatus('user_1', NOW);
+    expect(status.status).toBe('in_progress');
+    expect(status.business?.ein).toBe(OTHER_KNOWN_EIN);
+  });
+});
+
 describe('OnboardingService.submitBusinessInfo', () => {
   it('verifies a registry-known EIN and advances to the Owners step', async () => {
     const service = newService();

@@ -25,6 +25,9 @@ history:
   - epic_id: 'EPIC-CW-002'
     action: 'approved'
     date: '2026-06-30'
+  - epic_id: 'EPIC-CW-002'
+    action: 'updated'
+    date: '2026-07-07'
 
 # Status timestamps — set when status transitions occur
 approved_date: '2026-06-30'
@@ -103,6 +106,35 @@ acceptance_criteria:
       Then I receive an email and in-app notification "Your account is approved"
       And full transacting capability (payments, card issuance) is unlocked
     status: 'active'
+  - id: 'AC-09'
+    description: |
+      Given I have created a Clearline account and have not yet completed onboarding
+      When I navigate directly to the dashboard or any other main application page
+      Then I am redirected to my current step in the KYB onboarding wizard
+      And I cannot reach the dashboard until onboarding is complete
+    status: 'active'
+  - id: 'AC-10'
+    description: |
+      Given my onboarding is complete and my account is approved
+      When I navigate directly to any KYB wizard step URL (e.g. /onboarding/business)
+      Then I am redirected to the dashboard
+      And I am not shown the onboarding wizard again
+    status: 'active'
+  - id: 'AC-11'
+    description: |
+      Given I have submitted my application and it is under review
+      When I navigate directly to a KYB wizard step URL
+      Then I am redirected to the onboarding status page, not an editable wizard step
+      And I can still reach non-financial areas of the product, including the dashboard,
+      while my review is pending (see US-CW-005 AC-05)
+    status: 'active'
+  - id: 'AC-12'
+    description: |
+      Given I have not yet submitted my application
+      When I navigate directly to the onboarding status page
+      Then I am redirected to my current step in the KYB onboarding wizard
+      And I am not shown an empty or terminal status screen
+    status: 'active'
 
 # Technical Notes
 technical_notes: |
@@ -116,6 +148,20 @@ technical_notes: |
   a 30-minute inactivity
   timeout that invalidates the in-progress step without discarding previously saved steps. EIN uniqueness must
   be enforced at submission time to detect duplicate business accounts before a new onboarding record is created.
+
+  Onboarding-completion routing (AC-09..AC-12) is gated entirely off the server-authoritative onboarding
+  status — never client-side flags — so it stays correct across devices and reloads exactly like save-and-resume.
+  A single pure resolver maps a status to where that user belongs (in_progress -> wizard, under_review /
+  documents_blocked -> status page, approved -> app), and three route guards read it: (1) the dashboard/app routes
+  gain an onboarding guard that redirects anyone who has not completed onboarding to their current wizard step
+  (AC-09) — the same guard is what makes a not-yet-onboarded user who lands on "/" after login end up in the
+  wizard rather than a half-usable dashboard; (2) the existing wizard-step guard redirects an approved user to the
+  dashboard instead of the status page (AC-10) and still routes under_review / documents_blocked to the status page
+  (AC-11); (3) the status page redirects an in_progress user to their current wizard step instead of rendering an
+  empty screen (AC-12). Dashboard access is deliberately permitted for both approved AND under_review so a pending
+  compliance review never blocks non-financial areas of the product (US-CW-005 AC-05); only in_progress (not yet
+  submitted) and documents_blocked (hard stop, contact support) are kept out of the app. All redirects use replace
+  navigation so the browser back button cannot re-enter a route the user was just redirected out of.
 
   Form library decision deferred to this story: clearline-web's login screen (US-CW-001) hand-rolled its form
   state with plain useState, which was fine for a 2-field form with no client-side validation beyond HTML5
@@ -134,6 +180,13 @@ edge_cases: |
   - Beneficial owner added at or above the 25% ownership threshold requiring additional KYC data collection
   - (inferred) Network or registry-service outage during Business Info submission preventing entity verification
   - (inferred) Concurrent onboarding attempts for the same EIN from two different sessions
+  - Not-yet-onboarded user lands on or deep-links to the dashboard (e.g. immediately after login) and must be
+    routed into the wizard at their current step (AC-09)
+  - Approved user returns to a bookmarked or back-button wizard step URL and must be routed to the dashboard (AC-10)
+  - Under-review or documents-blocked user opens a wizard step URL and must be routed to the status page, not an
+    editable step (AC-11)
+  - In-progress user deep-links to the onboarding status page before submitting and must be routed back into the
+    wizard rather than shown a blank terminal screen (AC-12)
 
 # Implementation Status
 implementation_status: |
@@ -173,3 +226,33 @@ implementation_status: |
   (addOwner), and the corresponding unit/component/e2e tests. Design: BATCH 03 of
   specs/designs/Clearline Design System - Consolidated.dc.html gains an expanded "Add owner" form
   showing the First name / Last name fields.
+
+  🔁 Updated: 2026-07-07 (EPIC-CW-002 follow-up) — onboarding-completion route gating (AC-09..AC-12),
+  all keyed off the server-authoritative onboarding status.
+    - apps/clearline-web/src/pages/onboarding/onboarding-routing.ts (new) — pure onboardingDestination
+      (in_progress→wizard, under_review/documents_blocked→status, approved→app) + canAccessApp
+      (approved || under_review, so a pending review never blocks non-financial areas — US-CW-005 AC-05).
+    - apps/clearline-web/src/routes/RequireOnboarded.tsx (new) — guard on the dashboard/app routes:
+      admits approved/under_review, redirects in_progress to the current wizard step (AC-09) and
+      documents_blocked to the status page. This is also what lands a freshly signed-up/verified user
+      (US-CW-029 AC-03) in the wizard rather than a half-usable dashboard. App.tsx wraps "/" with it.
+    - OnboardingProgressBoundary.tsx — approved now redirects to "/" (dashboard, AC-10) instead of the
+      status page; under_review/documents_blocked still route to the status page (AC-11).
+    - OnboardingStatusPage.tsx — an in_progress user is redirected to their current wizard step (AC-12);
+      that redirect waits out an in-flight refetch (status.isFetching) so the post-submit approval/
+      under-review screen (AC-08) isn't skipped on stale in_progress data.
+    - ReviewStepPage.tsx + use-submit-review.ts — the review mutation no longer self-invalidates; the
+      page navigates to the status route BEFORE invalidating, so the freshly-terminal status is
+      refetched off the guarded wizard route (otherwise the wizard guard redirects approved straight to
+      the dashboard and skips the approval screen).
+    - use-onboarding-status.ts — a 30s staleTime + refetchOnWindowFocus:false keep this query out of
+      useSession's cross-device-revocation choreography (US-CW-002 AC-01/AC-06) while still refetching
+      after the 30-minute inactivity window so the server-side currentStep rollback is observed.
+    - libs/mock-backend: OnboardingService.seedApprovedAccount + browser.ts seed the demo user as an
+      already-approved business (so auth/session e2e still land on the dashboard); onboarding.fixture.ts
+      gains DEMO_ONBOARDED_BUSINESS.
+  🧪 Test coverage: new onboarding-routing.test.ts (9) and RequireOnboarded.test.tsx (6); updated
+  OnboardingProgressBoundary / OnboardingStatusPage / onboarding.service / use-submit-review specs; and
+  apps/clearline-web/e2e/onboarding.spec.ts now drives fresh signed-up users per test (the demo user is
+  approved) with dedicated AC-09/AC-10 e2e. signup.spec.ts asserts the post-verify wizard landing. Full
+  unit/component suite, lint, type-check, and all 39 Playwright e2e green.

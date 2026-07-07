@@ -90,7 +90,10 @@ technical_notes: |
   retries at 3 attempts, after which further automated submission is blocked and a support reference ID is
   generated and surfaced. Compliance/sanctions screening results must never leak restricted terminology
   ("sanctions," "watchlist," "flagged") into any user-facing copy, and a pending-review state must not gate
-  access to non-financial areas of the product.
+  access to non-financial areas of the product. The "not blocked while pending" guarantee (AC-05) is enforced
+  concretely by US-CW-004's onboarding route guard (AC-09..AC-12): it admits an under_review user to the
+  dashboard and other non-financial app routes, redirecting only not-yet-submitted (in_progress) and hard-blocked
+  (documents_blocked) users away from the app.
 
 # Edge Cases
 edge_cases: |
