@@ -25,7 +25,16 @@ function statusResponse() {
       state: 'CA',
       postalCode: '94105',
     },
-    owners: [{ id: 'owner_1', fullName: 'Dara Reyes', ownershipPercent: 60, requiresKyc: true }],
+    owners: [
+      {
+        id: 'owner_1',
+        firstName: 'Dara',
+        lastName: 'Reyes',
+        fullName: 'Dara Reyes',
+        ownershipPercent: 60,
+        requiresKyc: true,
+      },
+    ],
     documents: [{ ownerId: 'owner_1', documentType: 'drivers_license' }],
     documentAttemptCount: 0,
     lastActivityAt: 0,

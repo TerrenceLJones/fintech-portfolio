@@ -20,7 +20,8 @@ export interface BusinessInfo {
 }
 
 export interface BeneficialOwnerInput {
-  fullName: string;
+  firstName: string;
+  lastName: string;
   ownershipPercent: number;
   dateOfBirth?: string;
   /** Full value, only ever sent once on submission — never echoed back by the server. See BeneficialOwner.ssnItinLast4. */
@@ -29,6 +30,9 @@ export interface BeneficialOwnerInput {
 
 export interface BeneficialOwner {
   id: string;
+  firstName: string;
+  lastName: string;
+  /** Server-derived from `${firstName} ${lastName}` — the combined value display and screening code read. */
   fullName: string;
   ownershipPercent: number;
   requiresKyc: boolean;

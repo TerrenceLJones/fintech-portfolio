@@ -90,7 +90,8 @@ describe('OnboardingService.addOwner', () => {
     const result = await service.addOwner(
       'user_1',
       {
-        fullName: 'Dara Reyes',
+        firstName: 'Dara',
+        lastName: 'Reyes',
         ownershipPercent: 60,
         dateOfBirth: '1986-04-12',
         ssnItin: '123-45-4417',
@@ -103,11 +104,24 @@ describe('OnboardingService.addOwner', () => {
     expect((result.owner as { ssnItin?: string }).ssnItin).toBeUndefined();
   });
 
+  it('derives fullName from the first and last name parts', async () => {
+    const service = newService();
+    const result = await service.addOwner(
+      'user_1',
+      { firstName: 'Dara', lastName: 'Reyes', ownershipPercent: 60 },
+      NOW,
+    );
+
+    expect(result.owner.firstName).toBe('Dara');
+    expect(result.owner.lastName).toBe('Reyes');
+    expect(result.owner.fullName).toBe('Dara Reyes');
+  });
+
   it('does not require KYC below 25% ownership', async () => {
     const service = newService();
     const result = await service.addOwner(
       'user_1',
-      { fullName: 'Marcus Okafor', ownershipPercent: 24 },
+      { firstName: 'Marcus', lastName: 'Okafor', ownershipPercent: 24 },
       NOW,
     );
     expect(result.owner.requiresKyc).toBe(false);
@@ -280,7 +294,11 @@ describe('OnboardingService.snapshot / restore', () => {
   it('round-trips all state through a plain-object snapshot', async () => {
     const service = newService();
     await service.submitBusinessInfo('user_1', business(), NOW);
-    await service.addOwner('user_1', { fullName: 'Dara Reyes', ownershipPercent: 60 }, NOW);
+    await service.addOwner(
+      'user_1',
+      { firstName: 'Dara', lastName: 'Reyes', ownershipPercent: 60 },
+      NOW,
+    );
 
     const snapshot = service.snapshot();
     const restored = new OnboardingService();

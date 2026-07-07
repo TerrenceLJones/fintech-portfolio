@@ -29,13 +29,27 @@ describe('businessInfoSchema', () => {
 
 describe('ownerSchema', () => {
   it('accepts a low-ownership owner without DOB or SSN/ITIN', () => {
-    const result = ownerSchema.safeParse({ fullName: 'Marcus Okafor', ownershipPercent: 10 });
+    const result = ownerSchema.safeParse({
+      firstName: 'Marcus',
+      lastName: 'Okafor',
+      ownershipPercent: 10,
+    });
     expect(result.success).toBe(true);
+  });
+
+  it('requires a first and last name', () => {
+    expect(
+      ownerSchema.safeParse({ firstName: '', lastName: 'Okafor', ownershipPercent: 10 }).success,
+    ).toBe(false);
+    expect(
+      ownerSchema.safeParse({ firstName: 'Marcus', lastName: '', ownershipPercent: 10 }).success,
+    ).toBe(false);
   });
 
   it('requires a date of birth once ownership reaches the 25% KYC threshold', () => {
     const result = ownerSchema.safeParse({
-      fullName: 'Dara Reyes',
+      firstName: 'Dara',
+      lastName: 'Reyes',
       ownershipPercent: 60,
       ssnItin: '123-45-4417',
     });
@@ -44,7 +58,8 @@ describe('ownerSchema', () => {
 
   it('requires an SSN/ITIN once ownership reaches the 25% KYC threshold', () => {
     const result = ownerSchema.safeParse({
-      fullName: 'Dara Reyes',
+      firstName: 'Dara',
+      lastName: 'Reyes',
       ownershipPercent: 60,
       dateOfBirth: '1986-04-12',
     });
@@ -53,7 +68,8 @@ describe('ownerSchema', () => {
 
   it('accepts a KYC-required owner once DOB and SSN/ITIN are both present', () => {
     const result = ownerSchema.safeParse({
-      fullName: 'Dara Reyes',
+      firstName: 'Dara',
+      lastName: 'Reyes',
       ownershipPercent: 60,
       dateOfBirth: '1986-04-12',
       ssnItin: '123-45-4417',
@@ -62,7 +78,11 @@ describe('ownerSchema', () => {
   });
 
   it('rejects an ownership percent above 100', () => {
-    const result = ownerSchema.safeParse({ fullName: 'Dara Reyes', ownershipPercent: 150 });
+    const result = ownerSchema.safeParse({
+      firstName: 'Dara',
+      lastName: 'Reyes',
+      ownershipPercent: 150,
+    });
     expect(result.success).toBe(false);
   });
 });

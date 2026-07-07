@@ -36,6 +36,8 @@ describe('BeneficialOwnersStepPage', () => {
         HttpResponse.json({
           owner: {
             id: 'owner_1',
+            firstName: 'Dara',
+            lastName: 'Reyes',
             fullName: 'Dara Reyes',
             ownershipPercent: 60,
             requiresKyc: true,
@@ -47,7 +49,8 @@ describe('BeneficialOwnersStepPage', () => {
     const user = userEvent.setup();
     renderPage();
 
-    await user.type(screen.getByLabelText(/owner name/i), 'Dara Reyes');
+    await user.type(screen.getByLabelText(/first name/i), 'Dara');
+    await user.type(screen.getByLabelText(/last name/i), 'Reyes');
     await user.type(screen.getByLabelText(/ownership/i), '60');
     await user.type(screen.getByLabelText(/date of birth/i), '1986-04-12');
     await user.type(screen.getByLabelText(/ssn/i), '123-45-4417');
@@ -72,7 +75,14 @@ describe('BeneficialOwnersStepPage', () => {
     server.use(
       http.post('*/api/onboarding/owners', () =>
         HttpResponse.json({
-          owner: { id: 'owner_1', fullName: 'Dara Reyes', ownershipPercent: 60, requiresKyc: true },
+          owner: {
+            id: 'owner_1',
+            firstName: 'Dara',
+            lastName: 'Reyes',
+            fullName: 'Dara Reyes',
+            ownershipPercent: 60,
+            requiresKyc: true,
+          },
         }),
       ),
       http.post('*/api/onboarding/steps/:step/complete', () => HttpResponse.json({})),
@@ -80,7 +90,8 @@ describe('BeneficialOwnersStepPage', () => {
     const user = userEvent.setup();
     renderPage();
 
-    await user.type(screen.getByLabelText(/owner name/i), 'Dara Reyes');
+    await user.type(screen.getByLabelText(/first name/i), 'Dara');
+    await user.type(screen.getByLabelText(/last name/i), 'Reyes');
     await user.type(screen.getByLabelText(/ownership/i), '60');
     await user.type(screen.getByLabelText(/date of birth/i), '1986-04-12');
     await user.type(screen.getByLabelText(/ssn/i), '123-45-4417');
@@ -97,7 +108,8 @@ describe('BeneficialOwnersStepPage', () => {
     const user = userEvent.setup();
     renderPage();
 
-    await user.type(screen.getByLabelText(/owner name/i), 'Dara Reyes');
+    await user.type(screen.getByLabelText(/first name/i), 'Dara');
+    await user.type(screen.getByLabelText(/last name/i), 'Reyes');
     await user.type(screen.getByLabelText(/ownership/i), '60');
     await user.click(screen.getByRole('button', { name: /add owner/i }));
 
@@ -114,7 +126,8 @@ describe('BeneficialOwnersStepPage', () => {
     const user = userEvent.setup();
     renderPage();
 
-    await user.type(screen.getByLabelText(/owner name/i), 'Dara Reyes');
+    await user.type(screen.getByLabelText(/first name/i), 'Dara');
+    await user.type(screen.getByLabelText(/last name/i), 'Reyes');
     await user.type(screen.getByLabelText(/ownership/i), '10');
     await user.click(screen.getByRole('button', { name: /add owner/i }));
 

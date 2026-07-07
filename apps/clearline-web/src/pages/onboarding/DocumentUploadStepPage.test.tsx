@@ -29,8 +29,22 @@ function statusResponse(overrides: Record<string, unknown> = {}) {
     lastCompletedStep: 'owners',
     business: null,
     owners: [
-      { id: 'owner_1', fullName: 'Dara Reyes', ownershipPercent: 60, requiresKyc: true },
-      { id: 'owner_2', fullName: 'Marcus Okafor', ownershipPercent: 10, requiresKyc: false },
+      {
+        id: 'owner_1',
+        firstName: 'Dara',
+        lastName: 'Reyes',
+        fullName: 'Dara Reyes',
+        ownershipPercent: 60,
+        requiresKyc: true,
+      },
+      {
+        id: 'owner_2',
+        firstName: 'Marcus',
+        lastName: 'Okafor',
+        fullName: 'Marcus Okafor',
+        ownershipPercent: 10,
+        requiresKyc: false,
+      },
     ],
     documents: [],
     documentAttemptCount: 0,
@@ -128,6 +142,8 @@ describe('DocumentUploadStepPage', () => {
             owners: [
               {
                 id: 'owner_2',
+                firstName: 'Marcus',
+                lastName: 'Okafor',
                 fullName: 'Marcus Okafor',
                 ownershipPercent: 10,
                 requiresKyc: false,

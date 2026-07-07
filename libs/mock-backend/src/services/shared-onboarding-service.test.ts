@@ -65,7 +65,11 @@ describe('PersistedOnboardingService', () => {
 
   it('persists a snapshot to sessionStorage after addOwner', async () => {
     const service = new PersistedOnboardingService();
-    await service.addOwner('user_1', { fullName: 'Dara Reyes', ownershipPercent: 60 });
+    await service.addOwner('user_1', {
+      firstName: 'Dara',
+      lastName: 'Reyes',
+      ownershipPercent: 60,
+    });
 
     expect(storage.getItem(STORAGE_KEY)).not.toBeNull();
   });

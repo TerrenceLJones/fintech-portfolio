@@ -161,7 +161,9 @@ export class OnboardingService {
 
     const owner: BeneficialOwner = {
       id: `owner_${crypto.randomUUID()}`,
-      fullName: input.fullName,
+      firstName: input.firstName,
+      lastName: input.lastName,
+      fullName: `${input.firstName} ${input.lastName}`,
       ownershipPercent: input.ownershipPercent,
       requiresKyc: requiresKyc(input.ownershipPercent),
       dateOfBirth: input.dateOfBirth,

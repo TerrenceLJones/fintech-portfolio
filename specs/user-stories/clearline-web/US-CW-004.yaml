@@ -80,7 +80,7 @@ acceptance_criteria:
       Given I am on the Beneficial Owners step
       When I add an owner with 25% or greater ownership
       Then that owner is flagged as requiring individual identity verification (KYC)
-      And I must provide their name, date of birth, and SSN/ITIN
+      And I must provide their first name, last name, date of birth, and SSN/ITIN
     status: 'active'
   - id: 'AC-06'
     description: |
@@ -110,7 +110,10 @@ technical_notes: |
   sessions and devices, with resumption always routing to the last successfully completed step. Business Info
   submission requires a synchronous integration with a business registry / EIN verification service, and
   beneficial owner records with ownership >= 25% must trigger a downstream individual KYC verification workflow
-  capturing name, date of birth, and SSN/ITIN. Session activity must be tracked with a 30-minute inactivity
+  capturing first name, last name, date of birth, and SSN/ITIN. Beneficial owner names are captured as discrete
+  first-name and last-name fields (not a single free-text full-name input) for every owner, with a full name
+  derived from the two parts wherever a combined display value is needed. Session activity must be tracked with
+  a 30-minute inactivity
   timeout that invalidates the in-progress step without discarding previously saved steps. EIN uniqueness must
   be enforced at submission time to detect duplicate business accounts before a new onboarding record is created.
 
@@ -159,3 +162,14 @@ implementation_status: |
   (OnboardingProgressBoundary.test.tsx sets sessionTimedOut and asserts the timeout banner),
   not e2e — a real 30-minute wait per run wasn't judged worth the added coverage, mirroring
   US-CW-002's AC-04/05 rationale.
+
+  🔁 Updated: 2026-07-06 (EPIC-CW-002 follow-up) — beneficial owner name is now captured as
+  discrete firstName/lastName fields instead of a single "Owner name" input (AC-05). The server
+  derives fullName = `${firstName} ${lastName}` on BeneficialOwner, so all combined-name displays
+  (owner cards + avatar initials, review summary, per-owner document labels) and the sanctions
+  screening are unchanged. Touched libs/contracts/src/onboarding.ts (BeneficialOwnerInput +
+  BeneficialOwner), apps/clearline-web/src/pages/onboarding/{schemas.ts,BeneficialOwnersStepPage.tsx}
+  (two "First name"/"Last name" TextFields), libs/mock-backend/src/services/onboarding.service.ts
+  (addOwner), and the corresponding unit/component/e2e tests. Design: BATCH 03 of
+  specs/designs/Clearline Design System - Consolidated.dc.html gains an expanded "Add owner" form
+  showing the First name / Last name fields.

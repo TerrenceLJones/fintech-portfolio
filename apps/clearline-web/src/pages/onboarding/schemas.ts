@@ -15,7 +15,8 @@ export type BusinessInfoFormValues = z.infer<typeof businessInfoSchema>;
 
 export const ownerSchema = z
   .object({
-    fullName: z.string().min(1, 'Owner name is required'),
+    firstName: z.string().min(1, 'First name is required'),
+    lastName: z.string().min(1, 'Last name is required'),
     ownershipPercent: z.coerce
       .number()
       .min(0, 'Enter a valid percentage')

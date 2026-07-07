@@ -27,5 +27,6 @@ changes:
   removes: []
 notes: >
   Covers the end-to-end business onboarding and KYB verification experience for Clearline: a save-and-resume
-  multi-step wizard for business info, beneficial owner capture, and approval (US-CW-004), and the identity
+  multi-step wizard for business info, beneficial owner capture (with discrete first- and last-name fields),
+  and approval (US-CW-004), and the identity
   document quality checks plus compliance/sanctions screening UX that support that flow (US-CW-005).

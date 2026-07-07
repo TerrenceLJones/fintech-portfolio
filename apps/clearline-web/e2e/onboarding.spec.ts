@@ -40,9 +40,16 @@ async function fillBusinessInfo(page: Page, overrides: { ein?: string; legalName
 
 async function addOwner(
   page: Page,
-  owner: { fullName: string; ownershipPercent: string; dateOfBirth?: string; ssnItin?: string },
+  owner: {
+    firstName: string;
+    lastName: string;
+    ownershipPercent: string;
+    dateOfBirth?: string;
+    ssnItin?: string;
+  },
 ) {
-  await page.getByLabel('Owner name').fill(owner.fullName);
+  await page.getByLabel('First name').fill(owner.firstName);
+  await page.getByLabel('Last name').fill(owner.lastName);
   await page.getByLabel('Ownership percent').fill(owner.ownershipPercent);
   if (owner.dateOfBirth) await page.getByLabel('Date of birth').fill(owner.dateOfBirth);
   if (owner.ssnItin) await page.getByLabel('SSN / ITIN').fill(owner.ssnItin);
@@ -65,7 +72,8 @@ test.describe('Business onboarding & KYB (US-CW-004, US-CW-005)', () => {
     await expect(page).toHaveURL(/\/onboarding\/owners/);
 
     await addOwner(page, {
-      fullName: 'Dara Reyes',
+      firstName: 'Dara',
+      lastName: 'Reyes',
       ownershipPercent: '60',
       dateOfBirth: '1986-04-12',
       ssnItin: '123-45-4417',
@@ -188,7 +196,8 @@ test.describe('Business onboarding & KYB (US-CW-004, US-CW-005)', () => {
     await response;
 
     await addOwner(page, {
-      fullName: 'Dara Reyes',
+      firstName: 'Dara',
+      lastName: 'Reyes',
       ownershipPercent: '60',
       dateOfBirth: '1986-04-12',
       ssnItin: '123-45-4417',
@@ -237,7 +246,7 @@ test.describe('Business onboarding & KYB (US-CW-004, US-CW-005)', () => {
     await page.getByRole('button', { name: 'Continue' }).click();
     await response;
 
-    await addOwner(page, { fullName: 'Marcus Okafor', ownershipPercent: '10' });
+    await addOwner(page, { firstName: 'Marcus', lastName: 'Okafor', ownershipPercent: '10' });
     await page.getByRole('button', { name: 'Continue' }).click();
     await expect(page).toHaveURL(/\/onboarding\/documents/);
     // No owner requires KYC, so Continue is immediately available.

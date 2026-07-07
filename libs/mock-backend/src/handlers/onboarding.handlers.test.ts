@@ -86,7 +86,8 @@ describe('onboarding handlers', () => {
       method: 'POST',
       headers: { ...authHeaders(token), 'content-type': 'application/json' },
       body: JSON.stringify({
-        fullName: 'Dara Reyes',
+        firstName: 'Dara',
+        lastName: 'Reyes',
         ownershipPercent: 60,
         ssnItin: '123-45-4417',
       }),
@@ -95,6 +96,8 @@ describe('onboarding handlers', () => {
 
     expect(response.status).toBe(200);
     expect(body.owner).toMatchObject({
+      firstName: 'Dara',
+      lastName: 'Reyes',
       fullName: 'Dara Reyes',
       requiresKyc: true,
       ssnItinLast4: '4417',

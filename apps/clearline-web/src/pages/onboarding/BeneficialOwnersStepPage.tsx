@@ -78,12 +78,20 @@ export function BeneficialOwnersStepPage() {
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4 mb-5">
-        <TextField
-          label="Owner name"
-          {...register('fullName')}
-          state={errors.fullName ? 'error' : undefined}
-          error={errors.fullName?.message}
-        />
+        <div className="flex gap-3">
+          <TextField
+            label="First name"
+            {...register('firstName')}
+            state={errors.firstName ? 'error' : undefined}
+            error={errors.firstName?.message}
+          />
+          <TextField
+            label="Last name"
+            {...register('lastName')}
+            state={errors.lastName ? 'error' : undefined}
+            error={errors.lastName?.message}
+          />
+        </div>
         <TextField
           label="Ownership percent"
           {...register('ownershipPercent')}

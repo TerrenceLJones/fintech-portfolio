@@ -21,6 +21,8 @@ describe('useAddOwner', () => {
         HttpResponse.json({
           owner: {
             id: 'owner_1',
+            firstName: 'Dara',
+            lastName: 'Reyes',
             fullName: 'Dara Reyes',
             ownershipPercent: 60,
             requiresKyc: true,
@@ -31,7 +33,12 @@ describe('useAddOwner', () => {
     );
 
     const { result } = renderHook(() => useAddOwner(), { wrapper });
-    result.current.mutate({ fullName: 'Dara Reyes', ownershipPercent: 60, ssnItin: '123-45-4417' });
+    result.current.mutate({
+      firstName: 'Dara',
+      lastName: 'Reyes',
+      ownershipPercent: 60,
+      ssnItin: '123-45-4417',
+    });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data?.owner).toMatchObject({ fullName: 'Dara Reyes', requiresKyc: true });
@@ -42,7 +49,14 @@ describe('useAddOwner', () => {
     server.use(
       http.post('*/api/onboarding/owners', () =>
         HttpResponse.json({
-          owner: { id: 'owner_1', fullName: 'Dara Reyes', ownershipPercent: 60, requiresKyc: true },
+          owner: {
+            id: 'owner_1',
+            firstName: 'Dara',
+            lastName: 'Reyes',
+            fullName: 'Dara Reyes',
+            ownershipPercent: 60,
+            requiresKyc: true,
+          },
         }),
       ),
     );
@@ -54,7 +68,7 @@ describe('useAddOwner', () => {
         <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
       ),
     });
-    result.current.mutate({ fullName: 'Dara Reyes', ownershipPercent: 60 });
+    result.current.mutate({ firstName: 'Dara', lastName: 'Reyes', ownershipPercent: 60 });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(queryClient.getQueryState(ONBOARDING_STATUS_QUERY_KEY)?.isInvalidated).toBe(true);
