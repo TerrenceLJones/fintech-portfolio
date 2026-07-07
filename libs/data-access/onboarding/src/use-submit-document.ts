@@ -1,8 +1,10 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { SubmitDocumentResponse } from '@clearline/contracts';
-import { evaluateDocumentQuality, type GrayscaleImage } from '@clearline/domain-onboarding';
+import type { GrayscaleImage } from '@clearline/domain-onboarding';
 import { authenticatedFetch } from '@clearline/data-access-auth';
 import { extractGrayscaleImage } from './extract-grayscale-image';
+import { assessDocumentQuality } from './assess-document-quality';
+import { recognizeDocumentText } from './recognize-document-text';
 import { ONBOARDING_STATUS_QUERY_KEY } from './onboarding-status-query-key';
 
 export interface SubmitDocumentInput {
@@ -16,24 +18,31 @@ export type SubmitDocumentClientOutcome = { outcome: 'glare' | 'blurry' } | Subm
 export interface UseSubmitDocumentOptions {
   /** Overridable for tests — production uses real canvas-based pixel extraction. */
   extractImage?: (file: File) => Promise<GrayscaleImage>;
+  /** Overridable for tests — production uses real browser OCR (Tesseract.js). */
+  recognizeText?: (file: File) => Promise<string>;
 }
 
 async function postDocument(
   input: SubmitDocumentInput,
   extractImage: (file: File) => Promise<GrayscaleImage>,
+  recognizeText: (file: File) => Promise<string>,
 ): Promise<SubmitDocumentClientOutcome> {
-  const image = await extractImage(input.file);
-  const issue = evaluateDocumentQuality(image);
+  const issue = await assessDocumentQuality(input.file, extractImage);
   if (issue) {
     return { outcome: issue };
   }
+
+  // Only a quality-passing capture is OCR'd — the recognized text (not the raw image) is what the
+  // server classifies by, so document-type detection stays server-side while the image bytes never
+  // leave the browser.
+  const ocrText = await recognizeText(input.file);
 
   const response = await authenticatedFetch('/api/onboarding/documents', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
       ownerId: input.ownerId,
-      fileName: input.file.name,
+      ocrText,
       mimeType: input.file.type,
     }),
   });
@@ -45,15 +54,16 @@ async function postDocument(
 
 /**
  * Runs the client-side quality gate (glare/blur pixel analysis) before ever calling the backend —
- * a capture that fails quality is never submitted for document-type verification, per US-CW-005's
- * technical notes. Only a quality-passing capture reaches the server, where type classification
- * (wrong_type) and the 3-attempt cap (blocked) are decided.
+ * a capture that fails quality is never OCR'd or submitted for document-type verification, per
+ * US-CW-005's technical notes. Only a quality-passing capture is OCR'd and reaches the server,
+ * where type classification (wrong_type) and the 3-attempt cap (blocked) are decided.
  */
 export function useSubmitDocument(options: UseSubmitDocumentOptions = {}) {
   const extractImage = options.extractImage ?? extractGrayscaleImage;
+  const recognizeText = options.recognizeText ?? recognizeDocumentText;
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: SubmitDocumentInput) => postDocument(input, extractImage),
+    mutationFn: (input: SubmitDocumentInput) => postDocument(input, extractImage, recognizeText),
     onSuccess: (result) => {
       // A client-side glare/blur rejection never reached the server, so no server-side state
       // changed — skip the invalidation to avoid a needless onboarding-status refetch.

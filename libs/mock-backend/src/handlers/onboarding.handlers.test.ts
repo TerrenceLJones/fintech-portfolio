@@ -121,7 +121,7 @@ describe('onboarding handlers', () => {
       headers: { ...authHeaders(token), 'content-type': 'application/json' },
       body: JSON.stringify({
         ownerId: 'owner_1',
-        fileName: 'drivers-license-front.jpg',
+        ocrText: 'CALIFORNIA DRIVER LICENSE DL I1234562',
         mimeType: 'image/jpeg',
       }),
     });

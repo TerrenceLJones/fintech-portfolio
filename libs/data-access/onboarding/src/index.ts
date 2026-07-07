@@ -6,3 +6,5 @@ export * from './use-complete-step';
 export * from './use-submit-document';
 export * from './use-submit-review';
 export * from './extract-grayscale-image';
+export * from './assess-document-quality';
+export * from './recognize-document-text';

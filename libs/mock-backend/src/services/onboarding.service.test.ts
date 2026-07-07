@@ -174,18 +174,37 @@ describe('OnboardingService.submitDocument', () => {
   it('accepts a recognized document type without incrementing the attempt counter', () => {
     const result = service().submitDocument(
       'user_1',
-      { ownerId: 'owner_1', fileName: 'drivers-license-front.jpg', mimeType: 'image/jpeg' },
+      {
+        ownerId: 'owner_1',
+        ocrText: 'CALIFORNIA DRIVER LICENSE DL I1234562 EXP 08/31/2029',
+        mimeType: 'image/jpeg',
+      },
       NOW,
     );
     expect(result.outcome).toBe('accepted');
     expect(result.attemptCount).toBe(0);
   });
 
+  it('classifies a passport and a state ID card by their recognized text', () => {
+    const passport = service().submitDocument(
+      'user_1',
+      { ownerId: 'owner_1', ocrText: 'PASSPORT UNITED STATES OF AMERICA', mimeType: 'image/jpeg' },
+      NOW,
+    );
+    const stateId = service().submitDocument(
+      'user_2',
+      { ownerId: 'owner_1', ocrText: 'IDENTIFICATION CARD NEW YORK', mimeType: 'image/jpeg' },
+      NOW,
+    );
+    expect(passport.outcome).toBe('accepted');
+    expect(stateId.outcome).toBe('accepted');
+  });
+
   it('reports wrong_type for an unrecognized document and increments the attempt counter', () => {
     const svc = service();
     const result = svc.submitDocument(
       'user_1',
-      { ownerId: 'owner_1', fileName: 'lunch-receipt.jpg', mimeType: 'image/jpeg' },
+      { ownerId: 'owner_1', ocrText: 'WHOLE FOODS MARKET TOTAL $42.17', mimeType: 'image/jpeg' },
       NOW,
     );
     expect(result.outcome).toBe('wrong_type');
@@ -196,17 +215,17 @@ describe('OnboardingService.submitDocument', () => {
     const svc = service();
     svc.submitDocument(
       'user_1',
-      { ownerId: 'owner_1', fileName: 'a.jpg', mimeType: 'image/jpeg' },
+      { ownerId: 'owner_1', ocrText: 'receipt a', mimeType: 'image/jpeg' },
       NOW,
     );
     svc.submitDocument(
       'user_1',
-      { ownerId: 'owner_1', fileName: 'b.jpg', mimeType: 'image/jpeg' },
+      { ownerId: 'owner_1', ocrText: 'receipt b', mimeType: 'image/jpeg' },
       NOW,
     );
     const third = svc.submitDocument(
       'user_1',
-      { ownerId: 'owner_1', fileName: 'c.jpg', mimeType: 'image/jpeg' },
+      { ownerId: 'owner_1', ocrText: 'receipt c', mimeType: 'image/jpeg' },
       NOW,
     );
 
@@ -220,23 +239,23 @@ describe('OnboardingService.submitDocument', () => {
     const svc = service();
     svc.submitDocument(
       'user_1',
-      { ownerId: 'owner_1', fileName: 'a.jpg', mimeType: 'image/jpeg' },
+      { ownerId: 'owner_1', ocrText: 'receipt a', mimeType: 'image/jpeg' },
       NOW,
     );
     svc.submitDocument(
       'user_1',
-      { ownerId: 'owner_1', fileName: 'b.jpg', mimeType: 'image/jpeg' },
+      { ownerId: 'owner_1', ocrText: 'receipt b', mimeType: 'image/jpeg' },
       NOW,
     );
     svc.submitDocument(
       'user_1',
-      { ownerId: 'owner_1', fileName: 'c.jpg', mimeType: 'image/jpeg' },
+      { ownerId: 'owner_1', ocrText: 'receipt c', mimeType: 'image/jpeg' },
       NOW,
     );
 
     const fourth = svc.submitDocument(
       'user_1',
-      { ownerId: 'owner_1', fileName: 'passport.jpg', mimeType: 'image/jpeg' },
+      { ownerId: 'owner_1', ocrText: 'PASSPORT UNITED STATES OF AMERICA', mimeType: 'image/jpeg' },
       NOW,
     );
     expect(fourth.outcome).toBe('blocked');

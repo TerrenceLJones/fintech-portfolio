@@ -78,7 +78,11 @@ export interface AddOwnerResponse {
 
 export interface SubmitDocumentRequest {
   ownerId: string;
-  fileName: string;
+  /**
+   * Text extracted client-side (browser OCR) from the captured document. The server classifies the
+   * document type by matching keywords in this text — the raw image bytes never leave the browser.
+   */
+  ocrText: string;
   mimeType: string;
 }
 

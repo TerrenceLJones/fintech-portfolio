@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { http, HttpResponse } from 'msw';
@@ -24,14 +24,18 @@ function checkerboardImage(): GrayscaleImage {
   return { width: 6, height: 6, pixels };
 }
 
-const file = new File(['fake-bytes'], 'drivers-license-front.jpg', { type: 'image/jpeg' });
+/** Canned OCR text — production runs Tesseract.js in the browser; tests inject deterministic text. */
+const recognizeLicense = () => Promise.resolve('CALIFORNIA DRIVER LICENSE DL I1234562');
+
+const file = new File(['fake-bytes'], 'capture.jpg', { type: 'image/jpeg' });
 
 describe('useSubmitDocument', () => {
   afterEach(() => clearAccessToken());
 
-  it('rejects a glare-affected capture client-side without calling the server', async () => {
+  it('rejects a glare-affected capture client-side without calling the server or OCR', async () => {
     setAccessToken('access_valid');
     let serverCalled = false;
+    const recognizeText = vi.fn(recognizeLicense);
     server.use(
       http.post('*/api/onboarding/documents', () => {
         serverCalled = true;
@@ -40,7 +44,8 @@ describe('useSubmitDocument', () => {
     );
 
     const { result } = renderHook(
-      () => useSubmitDocument({ extractImage: () => Promise.resolve(flatImage(255)) }),
+      () =>
+        useSubmitDocument({ extractImage: () => Promise.resolve(flatImage(255)), recognizeText }),
       { wrapper },
     );
     result.current.mutate({ file, ownerId: 'owner_1' });
@@ -48,6 +53,8 @@ describe('useSubmitDocument', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data).toEqual({ outcome: 'glare' });
     expect(serverCalled).toBe(false);
+    // A capture that fails the quality gate is never OCR'd.
+    expect(recognizeText).not.toHaveBeenCalled();
   });
 
   it('rejects a blurry capture client-side without calling the server', async () => {
@@ -61,7 +68,11 @@ describe('useSubmitDocument', () => {
     );
 
     const { result } = renderHook(
-      () => useSubmitDocument({ extractImage: () => Promise.resolve(flatImage(128)) }),
+      () =>
+        useSubmitDocument({
+          extractImage: () => Promise.resolve(flatImage(128)),
+          recognizeText: recognizeLicense,
+        }),
       { wrapper },
     );
     result.current.mutate({ file, ownerId: 'owner_1' });
@@ -71,22 +82,33 @@ describe('useSubmitDocument', () => {
     expect(serverCalled).toBe(false);
   });
 
-  it('submits a sharp, well-exposed capture to the server', async () => {
+  it('OCRs a sharp capture and submits the recognized text to the server', async () => {
     setAccessToken('access_valid');
+    let submittedBody: unknown;
     server.use(
-      http.post('*/api/onboarding/documents', () =>
-        HttpResponse.json({ outcome: 'accepted', attemptCount: 0 }),
-      ),
+      http.post('*/api/onboarding/documents', async ({ request }) => {
+        submittedBody = await request.json();
+        return HttpResponse.json({ outcome: 'accepted', attemptCount: 0 });
+      }),
     );
 
     const { result } = renderHook(
-      () => useSubmitDocument({ extractImage: () => Promise.resolve(checkerboardImage()) }),
+      () =>
+        useSubmitDocument({
+          extractImage: () => Promise.resolve(checkerboardImage()),
+          recognizeText: recognizeLicense,
+        }),
       { wrapper },
     );
     result.current.mutate({ file, ownerId: 'owner_1' });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data).toEqual({ outcome: 'accepted', attemptCount: 0 });
+    expect(submittedBody).toEqual({
+      ownerId: 'owner_1',
+      ocrText: 'CALIFORNIA DRIVER LICENSE DL I1234562',
+      mimeType: 'image/jpeg',
+    });
   });
 
   it('surfaces the server-reported wrong_type outcome for a quality-passing but unrecognized document', async () => {
@@ -98,7 +120,11 @@ describe('useSubmitDocument', () => {
     );
 
     const { result } = renderHook(
-      () => useSubmitDocument({ extractImage: () => Promise.resolve(checkerboardImage()) }),
+      () =>
+        useSubmitDocument({
+          extractImage: () => Promise.resolve(checkerboardImage()),
+          recognizeText: () => Promise.resolve('WHOLE FOODS MARKET RECEIPT'),
+        }),
       { wrapper },
     );
     result.current.mutate({ file, ownerId: 'owner_1' });
@@ -118,7 +144,11 @@ describe('useSubmitDocument', () => {
     queryClient.setQueryData(ONBOARDING_STATUS_QUERY_KEY, { documentAttemptCount: 0 });
 
     const { result } = renderHook(
-      () => useSubmitDocument({ extractImage: () => Promise.resolve(checkerboardImage()) }),
+      () =>
+        useSubmitDocument({
+          extractImage: () => Promise.resolve(checkerboardImage()),
+          recognizeText: recognizeLicense,
+        }),
       {
         wrapper: ({ children }) => (
           <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
@@ -144,7 +174,11 @@ describe('useSubmitDocument', () => {
     queryClient.setQueryData(ONBOARDING_STATUS_QUERY_KEY, { documentAttemptCount: 0 });
 
     const { result } = renderHook(
-      () => useSubmitDocument({ extractImage: () => Promise.resolve(flatImage(255)) }),
+      () =>
+        useSubmitDocument({
+          extractImage: () => Promise.resolve(flatImage(255)),
+          recognizeText: recognizeLicense,
+        }),
       {
         wrapper: ({ children }) => (
           <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>

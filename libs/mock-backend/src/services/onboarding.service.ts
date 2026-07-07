@@ -73,17 +73,21 @@ export interface OnboardingServiceSnapshot {
 }
 
 /**
- * Document-type classification can't be real computer vision in a mock backend, so it's a
- * deterministic filename heuristic — the same "mocked lookup" approach REGISTRY_EINS takes for
- * business-registry verification. Test/e2e fixtures name files accordingly (e.g.
- * 'drivers-license-front.jpg'); anything else is treated as an unrecognized document type.
+ * Classifies the document from the text the client OCR'd out of the capture (Tesseract.js runs in
+ * the browser; the raw image never reaches this mock backend). Real ID documents carry
+ * unambiguous headings, so keyword-matching the recognized text is a faithful stand-in for the
+ * vendor's document-type detection — anything without a known heading is treated as unrecognized.
  */
-function classifyDocumentType(fileName: string): DocumentType {
-  const lower = fileName.toLowerCase();
-  if (lower.includes('drivers-license') || lower.includes('drivers_license'))
-    return 'drivers_license';
+function classifyDocumentType(ocrText: string): DocumentType {
+  const lower = ocrText.toLowerCase();
+  if (lower.includes('driver') && lower.includes('licen')) return 'drivers_license';
   if (lower.includes('passport')) return 'passport';
-  if (lower.includes('state-id') || lower.includes('state_id')) return 'state_id';
+  if (
+    lower.includes('identification card') ||
+    lower.includes('identity card') ||
+    lower.includes('state id')
+  )
+    return 'state_id';
   return 'unrecognized';
 }
 
@@ -185,7 +189,7 @@ export class OnboardingService {
 
   submitDocument(
     userId: string,
-    document: { ownerId: string; fileName: string; mimeType: string },
+    document: { ownerId: string; ocrText: string; mimeType: string },
     now: number = Date.now(),
   ): SubmitDocumentResult {
     const record = this.getOrCreateRecord(userId, now);
@@ -199,7 +203,7 @@ export class OnboardingService {
       };
     }
 
-    const documentType = classifyDocumentType(document.fileName);
+    const documentType = classifyDocumentType(document.ocrText);
     if (documentType === 'unrecognized') {
       record.documentAttemptCount += 1;
 

@@ -85,7 +85,7 @@ describe('PersistedOnboardingService', () => {
     const service = new PersistedOnboardingService();
     service.submitDocument('user_1', {
       ownerId: 'owner_1',
-      fileName: 'drivers-license.jpg',
+      ocrText: 'CALIFORNIA DRIVER LICENSE',
       mimeType: 'image/jpeg',
     });
 

@@ -2,7 +2,9 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { setDocumentTextRecognizer } from '@clearline/data-access-onboarding';
 import { App } from './App';
+import { mockDocumentOcr } from './dev/mock-document-ocr';
 
 // Window.__e2eMockBackend's type lives in e2e/global.d.ts, shared with login.spec.ts's AC-05 test
 // and password-reset.spec.ts.
@@ -21,6 +23,9 @@ async function bootstrap() {
       simulateRefreshOutcomeForE2E,
     } = await import('@clearline/mock-backend/browser');
     await worker.start({ onUnhandledRequest: 'bypass' });
+    // With the mock backend in play there's no real ID-verification vendor, so swap the browser
+    // Tesseract.js recognizer for a deterministic double — keeps e2e fast and offline.
+    setDocumentTextRecognizer(mockDocumentOcr);
     // e2e-only control surface (apps/clearline-web/e2e/login.spec.ts AC-05,
     // apps/clearline-web/e2e/password-reset.spec.ts, apps/clearline-web/e2e/signup.spec.ts,
     // apps/clearline-web/e2e/session.spec.ts) — Playwright drives this via page.evaluate() since
