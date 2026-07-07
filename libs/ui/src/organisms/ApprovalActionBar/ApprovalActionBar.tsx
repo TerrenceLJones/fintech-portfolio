@@ -1,5 +1,5 @@
 import { useId } from 'react';
-import { Icon } from '@clearline/icons';
+import { Icon } from '../../foundations/Icon';
 import { Button } from '../../atoms/Button';
 import { Text } from '../../atoms/Text';
 

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Icon } from '@clearline/icons';
+import { Icon } from '../../foundations/Icon';
 import { TextField, type TextFieldProps } from '../TextField';
 
 export type PasswordFieldProps = Omit<TextFieldProps, 'type' | 'suffix'>;

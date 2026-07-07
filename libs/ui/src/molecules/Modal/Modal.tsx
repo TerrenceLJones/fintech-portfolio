@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Dialog } from 'radix-ui';
-import { Icon, type IconName } from '@clearline/icons';
+import { Icon } from '../../foundations/Icon';
+import type { IconName } from '@clearline/icons';
 import { Text } from '../../atoms/Text';
 
 export type ModalTone = 'accent' | 'negative' | 'warning';

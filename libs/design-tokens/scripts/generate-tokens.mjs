@@ -45,7 +45,8 @@ const theme = `/*
  * Regenerate with: pnpm --filter @clearline/design-tokens generate
  */
 
-:root {
+:root,
+[data-theme='light'] {
 ${cssBlock('light')}
 }
 

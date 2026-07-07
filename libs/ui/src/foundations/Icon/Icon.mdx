@@ -1,0 +1,53 @@
+import { Meta, Stories } from '@storybook/addon-docs/blocks';
+import * as IconStories from './Icon.stories';
+
+<Meta of={IconStories} />
+
+# Icon
+
+Renders a single named glyph from the framework-agnostic `@clearline/icons` registry as an inline
+SVG. The registry ships pure data (`viewBox`, canonical stroke-width, and `body` markup) with no
+React or DOM dependency; this foundation is the React renderer for it, so the same glyph data can
+later back a `react-native-svg` renderer. Every glyph draws with `stroke="currentColor"`, so an
+`<Icon>` inherits its surrounding text color unless `color` is set, and `name` is validated at
+compile time against the generated `IconName` union.
+
+## User story
+
+**US-CW-022 — Design tokens & icon registry**
+
+As a clearline-web engineer
+I want the Clearline `--cl-*` semantic tokens and 45 named icons generated from their JSON sources
+into a Tailwind v4 theme and a typed React `<Icon>` component
+So that every component I build afterward consumes one visual source of truth, themes correctly in
+light/dark via a single ThemeProvider, and never hardcodes a hex value or a raw inline SVG.
+
+## Acceptance criteria
+
+Two of this story's five criteria govern `<Icon>` directly; AC-01, AC-02, and AC-04 cover the
+`--cl-*` tokens and `ThemeProvider` and are documented alongside `@clearline/design-tokens`.
+
+- **AC-03 — Registry & compile-time names.** Given `icons.source.json` (a copy of
+  `clearline-icons.json`) as the input, when I run `pnpm --filter @clearline/icons generate`, then
+  `libs/icons/src/icon-registry.ts` is regenerated with all 45 icon definitions and an `IconName`
+  union, and `<Icon name="…" />` only accepts a name from that union at compile time.
+- **AC-05 — Defensive missing name.** Given `<Icon name="unknown-name" />` is never reachable
+  (TypeScript rejects it at compile time), when an icon name is nonetheless missing from the
+  registry at runtime (defensive case), then the Icon component reserves the requested size as
+  empty space rather than throwing.
+
+## Where each AC is verified
+
+- **AC-03** —
+  - `@clearline/icons` › `src/icon-registry.test.ts` asserts the generated registry ships all 45
+    well-formed glyph definitions (framework-agnostic, runs in a plain Node environment).
+  - `Icon.test.tsx` › _“Icon — registry parity”_ iterates `Object.keys(iconRegistry)` and proves
+    the React render reproduces each glyph's `viewBox`, stroke-width, and `body` markup — so the
+    renderer can never drift from the registry.
+  - The compile-time half is the `IconName`-typed `name` prop itself: the missing-name test has to
+    cast `'not-a-real-icon' as IconName` precisely because TypeScript rejects it otherwise.
+- **AC-05** — `Icon.test.tsx` › _“reserves the requested size as empty space for an unknown name
+  (never throws)”_ renders an unknown name and asserts a correctly-sized but empty `<svg>` is
+  produced (and a dev-time `console.error` logged) instead of a throw.
+
+<Stories />

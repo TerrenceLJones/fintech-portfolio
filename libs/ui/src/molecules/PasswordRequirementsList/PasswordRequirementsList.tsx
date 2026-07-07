@@ -1,4 +1,4 @@
-import { Icon } from '@clearline/icons';
+import { Icon } from '../../foundations/Icon';
 
 export interface PasswordRequirementItem {
   label: string;

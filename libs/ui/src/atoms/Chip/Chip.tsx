@@ -1,4 +1,5 @@
-import { Icon, type IconName } from '@clearline/icons';
+import { Icon } from '../../foundations/Icon';
+import type { IconName } from '@clearline/icons';
 import { Text } from '../Text';
 
 export interface ChipProps {

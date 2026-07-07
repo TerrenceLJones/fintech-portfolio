@@ -3,6 +3,8 @@ import './styles.css';
 export { Text } from './atoms/Text';
 export type { TextProps, TextSize, TextWeight, TextTone, TextElement } from './atoms/Text';
 
+export { Icon } from './foundations/Icon';
+export type { IconProps } from './foundations/Icon';
 export { StatusBadge } from './foundations/StatusBadge';
 export type { StatusBadgeProps, StatusKey } from './foundations/StatusBadge';
 export { MoneyDisplay } from './foundations/MoneyDisplay';

@@ -1,4 +1,4 @@
-import { Icon } from '@clearline/icons';
+import { Icon } from '../../foundations/Icon';
 import { Text } from '../../atoms/Text';
 
 export type TimelineTone = 'positive' | 'accent' | 'neutral' | 'warning' | 'negative';

@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react';
-import { iconRegistry, type IconName } from './icon-registry';
+import { iconRegistry, type IconName } from '@clearline/icons';
 
 export interface IconProps {
   name: IconName;
@@ -13,9 +13,12 @@ export interface IconProps {
 }
 
 /**
- * Renders a single named glyph from the Clearline icon registry with
- * `stroke="currentColor"` so it inherits text color unless `color` is set.
- * `name` is validated at compile time against the generated `IconName` union.
+ * Renders a single named glyph from the framework-agnostic @clearline/icons
+ * registry with `stroke="currentColor"` so it inherits text color unless
+ * `color` is set. `name` is validated at compile time against the generated
+ * `IconName` union. A name absent from the registry at runtime (defensive
+ * case only — TypeScript rejects it) reserves the requested size as empty
+ * space rather than throwing (US-CW-022 AC-05).
  */
 export function Icon({ name, size = 16, stroke, color, className }: IconProps) {
   const def = iconRegistry[name];
@@ -25,7 +28,16 @@ export function Icon({ name, size = 16, stroke, color, className }: IconProps) {
     if (import.meta.env.DEV) {
       console.error(`Icon: no definition found for name "${name}"`);
     }
-    return null;
+    return (
+      <svg
+        width={size}
+        height={size}
+        style={style}
+        className={className}
+        role="img"
+        aria-hidden="true"
+      />
+    );
   }
 
   return (

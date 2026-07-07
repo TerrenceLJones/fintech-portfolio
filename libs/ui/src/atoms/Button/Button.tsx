@@ -1,5 +1,6 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
-import { Icon, type IconName } from '@clearline/icons';
+import { Icon } from '../../foundations/Icon';
+import type { IconName } from '@clearline/icons';
 import { useDisabledGuard } from '../../utils/useDisabledGuard';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'link';

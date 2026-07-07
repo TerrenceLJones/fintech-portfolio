@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Icon } from '@clearline/icons';
+import { Icon } from '../../foundations/Icon';
 import { Container } from '../../atoms/Container';
 import { Text } from '../../atoms/Text';
 

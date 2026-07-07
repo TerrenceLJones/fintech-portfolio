@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Icon } from '@clearline/icons';
+import { Icon } from '../../foundations/Icon';
 import { Checkbox } from '../../atoms/Checkbox';
 import { Text } from '../../atoms/Text';
 import { StatusBadge, type StatusKey } from '../../foundations/StatusBadge';
