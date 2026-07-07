@@ -1,4 +1,5 @@
-import { Icon, type IconName } from '@clearline/icons';
+import { Icon } from '../../foundations/Icon';
+import type { IconName } from '@clearline/icons';
 import { Button } from '../../atoms/Button';
 import { Text } from '../../atoms/Text';
 

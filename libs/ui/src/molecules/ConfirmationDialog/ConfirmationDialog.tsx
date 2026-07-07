@@ -1,6 +1,6 @@
 import { useEffect, useId, useState } from 'react';
 import { Dialog } from 'radix-ui';
-import { Icon } from '@clearline/icons';
+import { Icon } from '../../foundations/Icon';
 import { Text } from '../../atoms/Text';
 import { useDisabledGuard } from '../../utils/useDisabledGuard';
 

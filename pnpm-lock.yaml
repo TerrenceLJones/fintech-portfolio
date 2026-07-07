@@ -238,15 +238,7 @@ importers:
 
   libs/domain/auth: {}
 
-  libs/icons:
-    dependencies:
-      react:
-        specifier: ^19.2.0
-        version: 19.2.7
-    devDependencies:
-      '@types/react':
-        specifier: ^19.2.17
-        version: 19.2.17
+  libs/icons: {}
 
   libs/mock-backend:
     dependencies:

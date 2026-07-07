@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
-import { Icon, type IconName } from '@clearline/icons';
+import { Icon } from '../../foundations/Icon';
+import type { IconName } from '@clearline/icons';
 import { Button, type ButtonTone } from '../Button';
 import { Text } from '../Text';
 

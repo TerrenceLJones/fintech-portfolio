@@ -2,7 +2,7 @@
   "name": "@clearline/icons",
   "version": "0.1.0",
   "private": true,
-  "description": "Clearline design system icon registry — 45 named glyphs rendered by a single tree-shakeable <Icon name /> component. Generated from icons.source.json (a copy of clearline-icons.json).",
+  "description": "Clearline design system icon registry — 45 named glyphs as framework-agnostic data (viewBox/stroke-width/body), generated from icons.source.json (a copy of clearline-icons.json). Rendered by @clearline/ui's <Icon> foundation; carries no React or DOM dependency.",
   "main": "src/index.ts",
   "scripts": {
     "generate": "node scripts/generate-icons.mjs",
@@ -11,13 +11,8 @@
     "test": "vitest run",
     "build": "vite build"
   },
-  "peerDependencies": {
-    "react": "^19.2.0"
-  },
   "dependencies": {},
-  "devDependencies": {
-    "@types/react": "^19.2.17"
-  },
+  "devDependencies": {},
   "metadata": {
     "package_type": "shared",
     "app": "clearline-web",

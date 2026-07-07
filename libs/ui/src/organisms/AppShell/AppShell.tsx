@@ -1,5 +1,5 @@
 import { useTheme } from '@clearline/design-tokens';
-import { Icon } from '@clearline/icons';
+import { Icon } from '../../foundations/Icon';
 import { Outlet } from 'react-router';
 import { Container } from '../../atoms/Container';
 import { SegmentedControl } from '../../atoms/SegmentedControl';

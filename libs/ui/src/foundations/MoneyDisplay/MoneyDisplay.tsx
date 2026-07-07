@@ -1,4 +1,4 @@
-import { Icon } from '@clearline/icons';
+import { Icon } from '../Icon';
 import { formatMoney } from '../../utils/formatMoney';
 import { Text } from '../../atoms/Text';
 

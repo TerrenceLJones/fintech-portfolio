@@ -4,7 +4,8 @@
  * Regenerate with: pnpm --filter @clearline/design-tokens generate
  */
 
-:root {
+:root,
+[data-theme='light'] {
   --cl-bg: #f5f6f8;
   --cl-surface: #ffffff;
   --cl-surface-2: #f0f2f5;

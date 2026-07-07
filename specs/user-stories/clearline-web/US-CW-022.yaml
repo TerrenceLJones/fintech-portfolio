@@ -51,7 +51,7 @@ acceptance_criteria:
     description: |
       Given tokens.source.json (a copy of clearline-tokens.json) as the input
       When I run `pnpm --filter @clearline/design-tokens generate`
-      Then libs/design-tokens/src/theme.css is regenerated with `:root`/`[data-theme='dark']` `--cl-*` variables and a `@theme inline` block aliasing each as a Tailwind color token
+      Then libs/design-tokens/src/theme.css is regenerated with light `--cl-*` variables under `:root`/`[data-theme='light']` and dark ones under `[data-theme='dark']`, plus a `@theme inline` block aliasing each as a Tailwind color token
       And libs/design-tokens/src/tokens.ts is regenerated with a typed `semanticTokens`/`primitiveTokens` export and a `SemanticToken` union
     status: 'active'
   - id: 'AC-02'
@@ -89,6 +89,9 @@ technical_notes: |
   on its own output so regenerated files always pass `format:check`. ThemeProvider mirrors the
   `applyTheme()` mechanism every source `.dc.html` file used (toggling a `data-theme` attribute the
   `--cl-*` variables key off of), but is now a real React context instead of imperative DOM writes.
+  Light `--cl-*` values are emitted under both `:root` and `[data-theme='light']` so a nested
+  subtree can force the light theme even inside a dark ancestor (there is no `[data-theme='light']`
+  fallback otherwise) — used by @clearline/ui's Icon "Both Themes" story to render both side by side.
   Both libs are real Vite library-mode builds (`vite build`, `vite-plugin-dts`) — not just
   TypeScript passthrough like the pre-existing mock-backend/contracts libs — since they're meant
   to be genuinely reusable/publishable, unlike those lower-level packages.

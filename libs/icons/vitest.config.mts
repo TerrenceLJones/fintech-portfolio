@@ -1,12 +1,11 @@
 import { defineConfig } from 'vitest/config';
-import react from '@vitejs/plugin-react';
 
 export default defineConfig({
-  plugins: [react()],
+  // Framework-agnostic data package — tests run in plain Node, with no React
+  // plugin and no DOM/jest-dom setup.
   test: {
-    environment: 'happy-dom',
-    setupFiles: ['../../vitest.setup.ts'],
-    include: ['src/**/*.test.{ts,tsx}'],
+    environment: 'node',
+    include: ['src/**/*.test.ts'],
     coverage: {
       reporter: ['text', 'html'],
       reportsDirectory: 'coverage',
