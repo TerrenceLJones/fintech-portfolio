@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
-import { useForm } from 'react-hook-form';
+import { useForm, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { BeneficialOwner } from '@clearline/contracts';
 import { Alert, AuthLayout, Avatar, Button, Stepper, Text, TextField } from '@clearline/ui';
@@ -28,7 +28,12 @@ export function BeneficialOwnersStepPage() {
     handleSubmit,
     reset,
     formState: { errors },
-  } = useForm<OwnerFormValues>({ resolver: zodResolver(ownerSchema) });
+    // zodResolver's inferred type is too deep for the checker to instantiate here (TS2589) once the
+    // data-access-onboarding barrel pulls in the OCR recognizer's heavy types; assert the resolver's
+    // type — it genuinely produces OwnerFormValues — rather than restructure that shared barrel.
+  } = useForm<OwnerFormValues>({
+    resolver: zodResolver(ownerSchema) as Resolver<OwnerFormValues>,
+  });
 
   function onSubmit(values: OwnerFormValues) {
     addOwner.mutate(values, {

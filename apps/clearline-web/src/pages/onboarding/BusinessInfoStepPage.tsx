@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router';
 import { Link } from 'react-router';
-import { useForm } from 'react-hook-form';
+import { useForm, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Alert, AuthLayout, Button, Stepper, Text, TextField } from '@clearline/ui';
 import { useSubmitBusinessInfo, useCompleteStep } from '@clearline/data-access-onboarding';
@@ -15,7 +15,12 @@ export function BusinessInfoStepPage() {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<BusinessInfoFormValues>({ resolver: zodResolver(businessInfoSchema) });
+    // zodResolver's inferred type is too deep for the checker to instantiate here (TS2589) once the
+    // data-access-onboarding barrel pulls in the OCR recognizer's heavy types; assert the resolver's
+    // type — it genuinely produces BusinessInfoFormValues — rather than restructure that shared barrel.
+  } = useForm<BusinessInfoFormValues>({
+    resolver: zodResolver(businessInfoSchema) as Resolver<BusinessInfoFormValues>,
+  });
 
   function onSubmit(values: BusinessInfoFormValues) {
     submitBusinessInfo.mutate(values, {
