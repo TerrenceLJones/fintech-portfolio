@@ -18,7 +18,8 @@
   },
   "dependencies": {
     "@clearline/contracts": "workspace:*",
-    "@clearline/domain-auth": "workspace:*"
+    "@clearline/domain-auth": "workspace:*",
+    "@clearline/domain-onboarding": "workspace:*"
   },
   "devDependencies": {
     "msw": "^2.14.6"

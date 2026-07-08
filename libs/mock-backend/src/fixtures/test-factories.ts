@@ -4,6 +4,8 @@ import { setupServer } from 'msw/node';
 import { hashPassword } from '@clearline/domain-auth';
 import type {
   AuthErrorResponse,
+  BeneficialOwner,
+  BeneficialOwnerInput,
   LoginRequest,
   LoginResponse,
   LogoutResponse,
@@ -130,6 +132,33 @@ export function buildSessionErrorResponse(
   overrides: Partial<SessionErrorResponse> = {},
 ): SessionErrorResponse {
   return { error: 'invalid_token', ...overrides };
+}
+
+/** Builds a `BeneficialOwnerInput` (the add-owner request body), replacing the
+ * `{ firstName, lastName, ownershipPercent }` literal repeated across the onboarding tests. */
+export function buildBeneficialOwnerInput(
+  overrides: Partial<BeneficialOwnerInput> = {},
+): BeneficialOwnerInput {
+  return { firstName: 'Dara', lastName: 'Reyes', ownershipPercent: 60, ...overrides };
+}
+
+/**
+ * Builds a `BeneficialOwner` (the masked server record), replacing the owner-object literal
+ * duplicated across the onboarding page/hook tests. `fullName` defaults to the server-derived
+ * `${firstName} ${lastName}`, so overriding either name part keeps the combined value in sync;
+ * pass `fullName` explicitly to override it.
+ */
+export function buildBeneficialOwner(overrides: Partial<BeneficialOwner> = {}): BeneficialOwner {
+  const { firstName = 'Dara', lastName = 'Reyes', ...rest } = overrides;
+  return {
+    id: 'owner_1',
+    firstName,
+    lastName,
+    fullName: `${firstName} ${lastName}`,
+    ownershipPercent: 60,
+    requiresKyc: true,
+    ...rest,
+  };
 }
 
 /**

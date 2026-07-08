@@ -104,8 +104,10 @@ test.describe('Sign up', () => {
     await signUp(page, NEW_OWNER_EMAIL, VALID_PASSWORD);
     await goToVerifyLink(page, NEW_OWNER_EMAIL, VALID_PASSWORD);
 
-    await expect(page).toHaveURL(`${new URL(page.url()).origin}/`);
-    await expect(page.getByText('Welcome back.')).toBeVisible();
+    // A newly verified account has not onboarded yet, so it lands in the KYB wizard rather than the
+    // dashboard (US-CW-004 AC-09).
+    await expect(page).toHaveURL(/\/onboarding\/business/);
+    await expect(page.getByText('Tell us about your business')).toBeVisible();
   });
 
   test('a verification link older than 24 hours shows the expired-link notice (AC-05)', async ({
@@ -147,7 +149,8 @@ test.describe('Sign up', () => {
   }) => {
     await signUp(page, NEW_OWNER_EMAIL, VALID_PASSWORD);
     const usedToken = await goToVerifyLink(page, NEW_OWNER_EMAIL, VALID_PASSWORD);
-    await expect(page).toHaveURL(`${new URL(page.url()).origin}/`);
+    // A newly verified account lands in the KYB wizard, not the dashboard (US-CW-004 AC-09).
+    await expect(page).toHaveURL(/\/onboarding\/business/);
 
     await navigateSpa(page, `/verify?token=${usedToken}`);
     await expect(page.getByText('This link has expired')).toBeVisible();
@@ -160,7 +163,7 @@ test.describe('Sign up', () => {
     await signUp(page, NEW_OWNER_EMAIL, VALID_PASSWORD);
 
     await goToVerifyLink(page, NEW_OWNER_EMAIL, VALID_PASSWORD);
-    await expect(page).toHaveURL(`${new URL(page.url()).origin}/`);
+    await expect(page).toHaveURL(/\/onboarding\/business/);
 
     // logging in afterward proves exactly one account exists with the submitted password. The
     // email-verification link above already auto-logged in (its own session is still active), so
@@ -172,7 +175,8 @@ test.describe('Sign up', () => {
     await page.getByLabel('Password', { exact: true }).fill(VALID_PASSWORD);
     await page.getByRole('button', { name: 'Sign in' }).click();
     await page.getByRole('button', { name: 'Continue here' }).click();
-    await expect(page).toHaveURL(`${new URL(page.url()).origin}/`);
-    await expect(page.getByText('Welcome back.')).toBeVisible();
+    // Still not onboarded, so the second sign-in also lands in the wizard (US-CW-004 AC-09).
+    await expect(page).toHaveURL(/\/onboarding\/business/);
+    await expect(page.getByText('Tell us about your business')).toBeVisible();
   });
 });

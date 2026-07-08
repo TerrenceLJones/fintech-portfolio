@@ -4,10 +4,12 @@ import { authHandlers } from './handlers/auth.handlers';
 import { passwordResetHandlers } from './handlers/password-reset.handlers';
 import { signUpHandlers } from './handlers/signup.handlers';
 import { sessionHandlers } from './handlers/session.handlers';
+import { onboardingHandlers } from './handlers/onboarding.handlers';
 
 export const server = setupServer(
   ...authHandlers,
   ...passwordResetHandlers,
   ...signUpHandlers,
   ...sessionHandlers,
+  ...onboardingHandlers,
 );

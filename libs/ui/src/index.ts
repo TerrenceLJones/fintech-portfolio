@@ -50,6 +50,8 @@ export { ConfirmationDialog } from './molecules/ConfirmationDialog';
 export type { ConfirmationDialogProps } from './molecules/ConfirmationDialog';
 export { InactivityWarningModal } from './molecules/InactivityWarningModal';
 export type { InactivityWarningModalProps } from './molecules/InactivityWarningModal';
+export { DocumentDropzone } from './molecules/DocumentDropzone';
+export type { DocumentDropzoneProps, DocumentDropzoneStatus } from './molecules/DocumentDropzone';
 export { Timeline } from './molecules/Timeline';
 export type { TimelineProps, TimelineEntry, TimelineTone } from './molecules/Timeline';
 export { Stepper } from './molecules/Stepper';

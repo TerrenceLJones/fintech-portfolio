@@ -1,0 +1,29 @@
+import { Meta, Stories } from '@storybook/addon-docs/blocks';
+import * as DocumentDropzoneStories from './DocumentDropzone.stories';
+
+<Meta of={DocumentDropzoneStories} />
+
+# DocumentDropzone
+
+A drag-and-drop / browse file picker for identity-document capture during onboarding. Purely
+presentational — the client-side glare/blur quality analysis and the server's document-type
+verdict both live upstream (`useSubmitDocument` in `@clearline/data-access-onboarding`);
+this component only reflects whatever `status` its caller passes and reports the selected `File`.
+
+## User story
+
+**US-CW-005 — Identity Document Verification & Compliance Screening** (part of EPIC-CW-002 —
+Onboarding & KYB)
+
+As a business owner or beneficial owner completing identity verification, I want clear, specific
+feedback when my document photo fails quality or type checks, so I can correct the issue quickly.
+
+## Acceptance criteria
+
+- **AC-01.** A glare-affected capture shows "We couldn't read your document. Make sure it's
+  well-lit, in focus, and fully in frame." with a "Retake photo" affordance.
+- **AC-02.** A blurry capture shows "Hold the camera steady and try again."
+- **AC-03.** An unrecognized document type shows "This doesn't look like a valid ID. Please upload
+  a driver's license, passport, or state ID." with a "Choose a different file" affordance.
+
+<Stories />

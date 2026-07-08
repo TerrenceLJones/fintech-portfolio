@@ -1,0 +1,35 @@
+{
+  "name": "@clearline/data-access-onboarding",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Business-onboarding (KYB) data-access layer for clearline-web: React Query hooks over /api/onboarding/*, plus the client-side document image quality-check pipeline (US-CW-004, US-CW-005). No UI, no business rules — those live in libs/ui and libs/domain/onboarding respectively.",
+  "main": "src/index.ts",
+  "scripts": {
+    "lint": "eslint .",
+    "type-check": "tsc --noEmit",
+    "test": "vitest run",
+    "build": "tsc"
+  },
+  "peerDependencies": {
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "dependencies": {
+    "@clearline/contracts": "workspace:*",
+    "@clearline/data-access-auth": "workspace:*",
+    "@clearline/domain-onboarding": "workspace:*",
+    "@tanstack/react-query": "^5.101.2",
+    "tesseract.js": "^7.0.0"
+  },
+  "devDependencies": {
+    "@clearline/mock-backend": "workspace:*",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "msw": "^2.14.6"
+  },
+  "metadata": {
+    "package_type": "shared",
+    "app": "clearline-web",
+    "scope": "Data-access lib for EPIC-CW-002 (US-CW-004 Business Onboarding Flow, US-CW-005 Identity Document Verification & Compliance Screening)."
+  }
+}

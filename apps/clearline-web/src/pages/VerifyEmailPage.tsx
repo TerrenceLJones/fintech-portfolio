@@ -14,8 +14,9 @@ export function VerifyEmailPage() {
   useEffect(() => {
     if (verify.data) {
       setAccessToken(verify.data.accessToken);
-      // /onboarding (US-CW-004) doesn't exist yet — land on the dashboard in the meantime, same
-      // stand-in LoginPage's redirectTo already defaults to.
+      // Land on the app root; the onboarding route guard (US-CW-004 AC-09) funnels a not-yet-
+      // onboarded account straight into the KYB wizard, which is what realizes US-CW-029 AC-03's
+      // "redirected into business onboarding". LoginPage's redirectTo defaults to the same root.
       navigate('/', { replace: true });
     }
   }, [verify.data, navigate]);
