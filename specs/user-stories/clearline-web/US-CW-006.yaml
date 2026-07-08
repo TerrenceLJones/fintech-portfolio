@@ -9,7 +9,7 @@ feature_area: 'core'
 title: 'Role-Based Navigation & Approval Authority'
 
 # Lifecycle status
-status: 'APPROVED'
+status: 'IMPLEMENTED'
 story_points: 8
 dependencies: ['US-CW-001']
 
@@ -25,10 +25,13 @@ history:
   - epic_id: 'EPIC-CW-003'
     action: 'approved'
     date: '2026-06-30'
+  - epic_id: 'EPIC-CW-003'
+    action: 'implemented'
+    date: '2026-07-08'
 
 # Status timestamps — set when status transitions occur
 approved_date: '2026-06-30'
-implementation_date: null
+implementation_date: '2026-07-08'
 deprecated_date: null
 removed_date: null
 
@@ -119,3 +122,32 @@ edge_cases: |
   - Finance Manager attempting to approve an expense they personally submitted (conflict of interest)
   - Server-side enforcement of self-approval restriction even if the client-side disabled state is bypassed (e.g. direct API call)
   - Role with no approval limit configured attempting any approval action (inferred)
+
+# Implementation Status
+implementation_status: |
+  ✅ Implemented: 2026-07-08 (EPIC-CW-003)
+  📁 Files created/modified (grouped by area):
+    - libs/contracts/src/rbac.ts, session.ts — Permission vocabulary, role→permission/approval-limit
+      shape shared by client and server (the single contract both authorization halves read).
+    - libs/domain/auth/src/authorization-policy.ts (hasPermission / role→permission mapping) and
+      approval-authority-policy.ts (canApprove: forbidden_role → self_approval_blocked →
+      approval_limit_exceeded, in priority order) — the pure gate backing BOTH the client pre-check
+      and the server 403, so the client is never the security boundary (AC-04/06/07).
+    - libs/mock-backend/src/services/approvals.service.ts + handlers/approvals.handlers.ts,
+      session.handlers.ts — server-authoritative queue: /api/approvals returns 403 without
+      approvals:view (AC-04); every approve runs canApprove server-side (AC-06/07); escalate routes
+      to pending_l2. shared-approvals-service.ts binds the app to one singleton.
+    - libs/data-access/auth/src/use-authorization.ts (per-request role/permission re-evaluation off
+      the live session) and use-access-changed.ts (detects a mid-session permission shrink → AC-05
+      banner signal); libs/data-access/approvals/src/use-{approval-queue,approve-expense,
+      reject-approval,escalate-approval}.ts — React Query hooks.
+    - apps/clearline-web/src/rbac/nav-items.ts — the nav catalogue + navItemsForPermissions predicate
+      (AC-01/02/03); routes/RequirePermission.tsx — client route guard rendering AccessDenied in place
+      (AC-04); AppChrome.tsx — role-scoped AppShell + "Your access changed" banner (AC-05);
+      pages/ApprovalsPage.tsx — over-limit/self-submitted rows disabled with stated reason + one-click
+      Escalate (AC-06/07). App.tsx wires RequirePermission around each gated section.
+    - libs/ui/src/organisms/AccessDenied/ — the access-denied surface ("Ask an admin if you need it").
+  🧪 Test coverage: unit/component/domain suites green across all Nx projects (domain-auth,
+  data-access-auth, data-access-approvals, mock-backend, ui, clearline-web), plus 6 Playwright e2e
+  in apps/clearline-web/e2e/rbac.spec.ts — one per acceptance criterion (AC-01, AC-03, AC-04, AC-05,
+  AC-06, AC-07); AC-02's Finance Manager nav is asserted at the component/unit level.

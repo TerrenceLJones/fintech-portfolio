@@ -9,7 +9,7 @@ feature_area: 'core'
 title: 'Role-Aware Navigation Shell'
 
 # Lifecycle status
-status: 'APPROVED'
+status: 'IMPLEMENTED'
 story_points: 5
 dependencies: ['US-CW-006', 'US-CW-025']
 
@@ -25,10 +25,13 @@ history:
   - epic_id: 'EPIC-CW-003'
     action: 'approved'
     date: '2026-07-01'
+  - epic_id: 'EPIC-CW-003'
+    action: 'implemented'
+    date: '2026-07-08'
 
 # Status timestamps — set when status transitions occur
 approved_date: '2026-07-01'
-implementation_date: null
+implementation_date: '2026-07-08'
 deprecated_date: null
 removed_date: null
 
@@ -98,3 +101,26 @@ edge_cases: |
   - Navigation shell rendered before role/session data has loaded (loading state, not a crash or flash of all links)
   - Mid-session role downgrade removes the currently active/focused nav item
   - Navigation shell must render correctly with no AppShell or ThemeProvider ancestor, per AC-04
+
+# Implementation Status
+implementation_status: |
+  ✅ Implemented: 2026-07-08 (EPIC-CW-003)
+  📁 Files created/modified:
+    - libs/ui/src/organisms/NavigationShell/NavigationShell.tsx — the presentational nav organism:
+      renders exactly the NavigationShellItem[] it's given, marks activeId, calls onNavigate(id).
+      No auth, routing, ThemeProvider, or AppShell dependency — composes NavItem (molecule) only, so
+      it drops into any layout and Storybook's/tests standalone (AC-04/AC-06). Empty list renders an
+      empty <nav> without crashing (zero-authorized-items edge case).
+    - libs/ui/src/organisms/NavigationShell/{NavigationShell.stories.tsx,NavigationShell.test.tsx,
+      index.ts} — Storybook story with a fixed item list and no live session (AC-06); 6 unit tests
+      covering the Employee/Finance Manager/Controller item sets (AC-01/02/03, mirroring US-CW-006),
+      no-ThemeProvider/AppShell render (AC-04), active/onNavigate behaviour, and item removal on
+      re-render with a smaller list (mid-session downgrade, AC-05).
+    - libs/ui/src/organisms/AppShell/AppShell.tsx — composes NavigationShell alongside the theme
+      toggle by consuming useTheme() (US-CW-025 AC-05 correction), passing role-scoped items straight
+      through as props rather than owning the role decision.
+  🔗 Role→item mapping and mid-session re-evaluation stay upstream in the app layer
+  (apps/clearline-web/src/rbac/nav-items.ts + AppChrome.tsx from US-CW-006), which feeds this
+  component its item list; the shell itself remains purely presentational.
+  🧪 Test coverage: ui suite green (`nx run ui:test`), story renders in `nx run ui:storybook`; the
+  role-scoped filtering that feeds it is additionally exercised by US-CW-006's e2e (rbac.spec.ts).
