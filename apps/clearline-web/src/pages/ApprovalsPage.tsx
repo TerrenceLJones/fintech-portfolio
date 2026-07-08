@@ -10,8 +10,6 @@ import {
   useEscalateApproval,
   useRejectApproval,
 } from '@clearline/data-access-approvals';
-import { usePageTitle } from '../hooks/usePageTitle';
-
 /** Adapts a minor-units Money to the shared major-units formatter, so currency/locale rules stay in one place. */
 function formatMoneyAmount(money: Money): string {
   return formatMoney(toMajorUnits(money), money.currency);
@@ -38,7 +36,6 @@ function reasonText(reason: ApprovalErrorCode, approvalLimit: number | null): st
  * is still the authority: it independently 403s these, and the action bar surfaces that too.
  */
 export function ApprovalsPage() {
-  usePageTitle('Approvals');
   const { permissions, approvalLimit } = useAuthorization();
   const { data: session } = useSession();
   const queue = useApprovalQueue();

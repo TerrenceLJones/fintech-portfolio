@@ -1,5 +1,6 @@
+import type { ReactNode } from 'react';
 import { afterEach, describe, expect, it } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { QueryClient } from '@tanstack/react-query';
 import { http, HttpResponse } from 'msw';
@@ -8,6 +9,7 @@ import { ThemeProvider } from '@clearline/design-tokens';
 import { registerMswServer } from '@clearline/mock-backend/test-factories';
 import { clearAccessToken, setAccessToken } from '@clearline/data-access-auth';
 import { AppChrome } from './AppChrome';
+import { usePageTitle } from './hooks/usePageTitle';
 import { withQueryClient } from './test/with-query-client';
 
 const server = registerMswServer();
@@ -30,14 +32,15 @@ function mockRole(role: Role, isAdmin = false) {
   );
 }
 
-function renderChrome(initialEntry = '/') {
+function renderChrome(initialEntry = '/', home: ReactNode = <div>Home content</div>) {
   return render(
     withQueryClient(
       <ThemeProvider>
         <MemoryRouter initialEntries={[initialEntry]}>
           <Routes>
             <Route element={<AppChrome />}>
-              <Route path="/" element={<div>Home content</div>} />
+              <Route path="/" element={home} />
+              <Route path="/approvals" element={<div>Approvals content</div>} />
             </Route>
           </Routes>
         </MemoryRouter>
@@ -82,5 +85,57 @@ describe('AppChrome role-scoped navigation', () => {
 
     await waitFor(() => expect(screen.getByText('Team')).toBeInTheDocument());
     expect(screen.queryByText('Approvals')).not.toBeInTheDocument();
+  });
+});
+
+function TitledHome() {
+  usePageTitle('Spend Analytics');
+  return <div>Home content</div>;
+}
+
+describe('AppChrome page title', () => {
+  it('defaults the heading and browser tab to the active section nav label', async () => {
+    mockRole('employee');
+    renderChrome();
+
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: 'My Expenses' })).toBeInTheDocument(),
+    );
+    expect(document.title).toBe('My Expenses · Clearline');
+  });
+
+  it('lets a page override the heading and tab via usePageTitle', async () => {
+    mockRole('employee');
+    renderChrome('/', <TitledHome />);
+
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: 'Spend Analytics' })).toBeInTheDocument(),
+    );
+    expect(document.title).toBe('Spend Analytics · Clearline');
+    // The nav label is not used as the heading while a page overrides it.
+    expect(screen.queryByRole('heading', { name: 'My Expenses' })).not.toBeInTheDocument();
+  });
+
+  it('falls back to the nav label once the overriding page unmounts (navigates away)', async () => {
+    mockRole('finance_manager');
+    renderChrome('/', <TitledHome />);
+
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: 'Spend Analytics' })).toBeInTheDocument(),
+    );
+
+    // Navigating to Approvals unmounts TitledHome, clearing its override; the heading and tab return
+    // to the new section's nav label rather than sticking on the prior page's title. Wait for the
+    // session-driven nav to populate, and target the nav *button* (not the heading, which also reads
+    // "Approvals" post-navigation).
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Approvals' })).toBeInTheDocument(),
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Approvals' }));
+
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: 'Approvals' })).toBeInTheDocument(),
+    );
+    expect(document.title).toBe('Approvals · Clearline');
   });
 });
