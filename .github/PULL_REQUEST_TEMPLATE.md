@@ -4,10 +4,9 @@
 
 ## Ticket
 
-<!-- Link the epic/user story, e.g. US-CW-001. Link the TDR/IDR record under records/ if this introduces or changes architecture/infra decisions. -->
+<!-- Link the epic/user story, e.g. US-CW-001.
 
 - Ticket:
-- Related TDR/IDR:
 
 ## Type of change
 
@@ -56,5 +55,5 @@
 - [ ] Self-reviewed the diff
 - [ ] No secrets, tokens, or credentials committed
 - [ ] Tests added/updated for the behavior change
-- [ ] Docs/records updated if this changes architecture or infra (`records/tdr`, `records/idr`)
+- [ ] Specs updated if this changes (`specs/designs`, `specs/epics`, `spec/user-stories`)
 - [ ] No unrelated changes bundled in
