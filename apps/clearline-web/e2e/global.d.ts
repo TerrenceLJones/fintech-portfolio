@@ -39,6 +39,8 @@ declare global {
           isOwner?: boolean;
         },
       ) => void;
+      /** Posts an additive reversing ledger entry against a payment and flips it to "Reversed", standing in for the bank's reversal webhook (US-CW-009 AC-02). */
+      simulatePaymentReversalForE2E: (intentId: string) => void;
     };
   }
 }

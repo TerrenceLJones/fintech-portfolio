@@ -7,6 +7,8 @@ import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { ApprovalsPage } from './pages/ApprovalsPage';
+import { NewPaymentPage } from './pages/payments/NewPaymentPage';
+import { PaymentStatusPage } from './pages/payments/PaymentStatusPage';
 import { PlaceholderPage } from './pages/PlaceholderPage';
 import { BusinessInfoStepPage } from './pages/onboarding/BusinessInfoStepPage';
 import { BeneficialOwnersStepPage } from './pages/onboarding/BeneficialOwnersStepPage';
@@ -59,9 +61,22 @@ export function App() {
                   }
                 />
                 <Route
-                  element={<RequirePermission permission="approvals:view" apiPath="/api/approvals" />}
+                  element={
+                    <RequirePermission permission="approvals:view" apiPath="/api/approvals" />
+                  }
                 >
                   <Route path="/approvals" element={<ApprovalsPage />} />
+                </Route>
+                <Route
+                  element={
+                    <RequirePermission
+                      permission="payments:create"
+                      apiPath="/api/payments/context"
+                    />
+                  }
+                >
+                  <Route path="/payments/new" element={<NewPaymentPage />} />
+                  <Route path="/payments/:intentId" element={<PaymentStatusPage />} />
                 </Route>
                 <Route
                   element={

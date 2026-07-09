@@ -33,6 +33,13 @@ export const NAV_ITEMS: NavItemDef[] = [
     path: '/approvals',
   },
   {
+    id: 'payments',
+    permission: 'payments:create',
+    label: 'Payments',
+    icon: 'arrow-right-circle',
+    path: '/payments/new',
+  },
+  {
     id: 'reconciliation',
     permission: 'reconciliation:view',
     label: 'Reconciliation',

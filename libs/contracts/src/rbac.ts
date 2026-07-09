@@ -20,7 +20,8 @@ export type Permission =
   | 'reconciliation:view'
   | 'budget:view'
   | 'audit:view'
-  | 'team:view';
+  | 'team:view'
+  | 'payments:create';
 
 /** L1 awaits a first approver; L2 is an escalation routed to a Controller (over a manager's limit). */
 export type ApprovalStatus = 'pending_l1' | 'pending_l2';

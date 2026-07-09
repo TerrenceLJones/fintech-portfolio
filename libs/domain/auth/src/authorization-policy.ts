@@ -14,6 +14,7 @@ const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'approvals:view',
     'approvals:act',
     'reconciliation:view',
+    'payments:create',
   ],
   controller: [
     'expenses:view',
@@ -21,6 +22,7 @@ const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'approvals:view',
     'approvals:act',
     'reconciliation:view',
+    'payments:create',
     'budget:view',
     'audit:view',
   ],
