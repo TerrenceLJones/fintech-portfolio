@@ -47,6 +47,8 @@ export const test = base.extend<{ mockBackend: MockBackend }>({
           ({ email, patch }) => window.__e2eMockBackend!.simulateRoleChangeForE2E(email, patch),
           { email, patch },
         ),
+      simulatePaymentReversalForE2E: (intentId) =>
+        page.evaluate((id) => window.__e2eMockBackend!.simulatePaymentReversalForE2E(id), intentId),
     });
   },
 });

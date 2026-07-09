@@ -8,8 +8,10 @@ import { signUpHandlers } from './handlers/signup.handlers';
 import { sessionHandlers } from './handlers/session.handlers';
 import { onboardingHandlers } from './handlers/onboarding.handlers';
 import { approvalsHandlers } from './handlers/approvals.handlers';
+import { paymentsHandlers } from './handlers/payments.handlers';
 import { sharedAuthService } from './services/shared-auth-service';
 import { sharedOnboardingService } from './services/shared-onboarding-service';
+import { sharedPaymentsService } from './services/shared-payments-service';
 import { DEMO_ONBOARDED_BUSINESS, DEMO_ONBOARDED_USER_ID } from './fixtures/onboarding.fixture';
 
 export const worker = setupWorker(
@@ -19,6 +21,7 @@ export const worker = setupWorker(
   ...sessionHandlers,
   ...onboardingHandlers,
   ...approvalsHandlers,
+  ...paymentsHandlers,
 );
 
 // Seed the demo user as an already-approved, fully-onboarded business so signing in as it lands on
@@ -181,4 +184,15 @@ export function simulateRoleChangeForE2E(
   patch: { role?: Role; approvalLimit?: number | null; isAdmin?: boolean; isOwner?: boolean },
 ): void {
   sharedAuthService.setUserRole(email, patch);
+}
+
+/**
+ * Dev/e2e control for US-CW-009 AC-02: stands in for the bank's reversal webhook, which has no real
+ * sender here. Posts an additive reversing ledger entry against the given intent (the original entry
+ * is never edited) and flips its status to "Reversed", so the transaction-detail view can be driven
+ * to the reversed state. Reachable only via the window hook main.tsx wires up behind
+ * import.meta.env.DEV, so it never ships.
+ */
+export function simulatePaymentReversalForE2E(intentId: string): void {
+  sharedPaymentsService.reverse(intentId);
 }

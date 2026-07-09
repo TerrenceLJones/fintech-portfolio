@@ -1,0 +1,22 @@
+{
+  "name": "@clearline/domain-payments",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Pure, framework-agnostic vendor-payment rules — the single validatePayment gate (balance, daily limit, self-transfer, recipient status), payment-status normalization (unrecognized → neutral 'processing'), client-side idempotency-key minting (UUID v4), and full-jitter retry backoff. No data-access or UI dependencies, mirrors libs/domain/auth.",
+  "main": "src/index.ts",
+  "scripts": {
+    "lint": "eslint .",
+    "type-check": "tsc --noEmit",
+    "test": "vitest run",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@clearline/contracts": "workspace:*"
+  },
+  "devDependencies": {},
+  "metadata": {
+    "package_type": "shared",
+    "app": "clearline-web",
+    "scope": "Domain lib for EPIC-CW-004 (US-CW-007 Vendor Payment Submission & Idempotency, US-CW-008 Payment Validation, Limits & Recipient Checks, US-CW-009 Payment Compliance Holds, Reversals & Status Handling)."
+  }
+}

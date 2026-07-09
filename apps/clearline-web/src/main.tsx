@@ -10,6 +10,8 @@ import { mockDocumentOcr } from './dev/mock-document-ocr';
 // and password-reset.spec.ts.
 
 async function bootstrap() {
+  const queryClient = new QueryClient();
+
   if (import.meta.env.DEV) {
     // Dynamic import so the MSW browser-worker code never ships in a production build.
     const {
@@ -22,6 +24,7 @@ async function bootstrap() {
       expireAccessTokenForE2E,
       simulateRefreshOutcomeForE2E,
       simulateRoleChangeForE2E,
+      simulatePaymentReversalForE2E,
     } = await import('@clearline/mock-backend/browser');
     await worker.start({ onUnhandledRequest: 'bypass' });
     // With the mock backend in play there's no real ID-verification vendor, so swap the browser
@@ -40,10 +43,16 @@ async function bootstrap() {
       expireAccessTokenForE2E,
       simulateRefreshOutcomeForE2E,
       simulateRoleChangeForE2E,
+      // Reverse server-side, then invalidate every payments query so an open status page reflects
+      // the reversal at once — the client stand-in for the reversal webhook's push (US-CW-009 AC-02),
+      // rather than waiting for the next poll (a settled payment isn't polling at all).
+      simulatePaymentReversalForE2E: (intentId: string) => {
+        simulatePaymentReversalForE2E(intentId);
+        void queryClient.invalidateQueries({ queryKey: ['payments'] });
+      },
     };
   }
 
-  const queryClient = new QueryClient();
   const rootElement = document.getElementById('root');
   if (!rootElement) throw new Error('Missing #root element');
 

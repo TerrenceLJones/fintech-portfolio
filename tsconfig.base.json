@@ -38,7 +38,9 @@
       "@clearline/data-access-auth": ["libs/data-access/auth/src/index.ts"],
       "@clearline/data-access-approvals": ["libs/data-access/approvals/src/index.ts"],
       "@clearline/domain-onboarding": ["libs/domain/onboarding/src/index.ts"],
-      "@clearline/data-access-onboarding": ["libs/data-access/onboarding/src/index.ts"]
+      "@clearline/data-access-onboarding": ["libs/data-access/onboarding/src/index.ts"],
+      "@clearline/domain-payments": ["libs/domain/payments/src/index.ts"],
+      "@clearline/data-access-payments": ["libs/data-access/payments/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp", "dist"]

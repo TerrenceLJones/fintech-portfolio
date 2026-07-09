@@ -11,10 +11,12 @@
     { "path": "../../libs/contracts" },
     { "path": "../../libs/domain/auth" },
     { "path": "../../libs/domain/onboarding" },
+    { "path": "../../libs/domain/payments" },
     { "path": "../../libs/mock-backend" },
     { "path": "../../libs/util/money" },
     { "path": "../../libs/data-access/auth" },
     { "path": "../../libs/data-access/approvals" },
-    { "path": "../../libs/data-access/onboarding" }
+    { "path": "../../libs/data-access/onboarding" },
+    { "path": "../../libs/data-access/payments" }
   ]
 }
