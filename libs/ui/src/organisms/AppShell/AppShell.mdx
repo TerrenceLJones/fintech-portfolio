@@ -14,7 +14,7 @@ role-scoped navigation, and the Light/Dark toggle) and the content area in one p
 
 **US-CW-025 — Component library — organisms & decorators**
 
-As a clearline-web engineer, I want DataTable/ApprovalActionBar/BulkActionResult/EmptyState and
+As a clearline-web engineer, I want DataTable/BulkActionResult/EmptyState and
 the AppShell decorators available as typed React components, so that I
 can assemble a full screen (selection, sorting, approval flows, partial-failure summaries) by
 composing already-built pieces instead of writing table selection/sort logic or approval-limit
@@ -23,7 +23,6 @@ disabling logic from scratch in each feature epic.
 ## Acceptance criteria
 
 - AC-01 — AC-02 — DataTable's select-all toggle and vendor-column sort.
-- AC-03 — ApprovalActionBar disables Approve with a stated reason when `canApprove` is unset.
 - AC-04 — BulkActionResult excludes failures from the committed count and lists each reason.
 - **AC-05 — AppShell.** Given `<AppShell>` wrapping any page content, with a `<ThemeProvider>`
   mounted once at the app root, when rendered, then it renders the sticky header with a Light/Dark

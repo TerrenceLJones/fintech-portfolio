@@ -31,6 +31,10 @@ history:
   - epic_id: 'EPIC-CW-003'
     action: 'updated'
     date: '2026-07-01'
+  - epic_id: 'EPIC-CW-020'
+    action: 'updated'
+    date: '2026-07-10'
+    note: 'Removed AC-03 (ApprovalActionBar) — organism deleted; approval actions render inline in the queue table per US-CW-006 redesign.'
 
 # Status timestamps — set when status transitions occur
 approved_date: '2026-06-30'
@@ -67,7 +71,13 @@ acceptance_criteria:
       Given ApprovalActionBar with a `reason` prop set (e.g. separation-of-duties) and no explicit `canApprove`
       When it renders
       Then Approve is disabled and the reason is shown in text beneath the buttons — never silently missing
-    status: 'active'
+    status: 'removed'
+    removed_date: '2026-07-10'
+    removal_reason: |
+      The ApprovalActionBar organism was deleted after its only consumer (the approvals queue)
+      was redesigned to render approval actions inline within a DataTable to match the approved
+      designs (US-CW-006). The "disabled Approve with a stated reason" behavior this AC guaranteed
+      is now satisfied inline on ApprovalsPage rather than by a standalone organism.
   - id: 'AC-04'
     description: |
       Given BulkActionResult with `total=10` and 2 `failures`
