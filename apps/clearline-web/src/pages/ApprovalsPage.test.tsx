@@ -82,7 +82,7 @@ describe('ApprovalsPage', () => {
         /This exceeds your approval limit of \$10,000\.00\. Route it to a Controller/,
       ),
     ).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Escalate' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Escalate to Controller' })).toBeInTheDocument();
   });
 
   it('blocks self-approval with the separation-of-duties message (AC-07)', async () => {
@@ -101,7 +101,7 @@ describe('ApprovalsPage', () => {
     renderPage();
 
     await waitFor(() => expect(screen.getByText('Priya Nair')).toBeInTheDocument());
-    const priyaRow = screen.getByText('Priya Nair').closest('li') as HTMLElement;
+    const priyaRow = screen.getByText('Priya Nair').closest('[data-approval-row]') as HTMLElement;
     const approve = within(priyaRow).getByRole('button', { name: 'Approve' });
     expect(approve).toBeEnabled();
   });
@@ -121,9 +121,9 @@ describe('ApprovalsPage', () => {
     renderPage();
 
     await waitFor(() =>
-      expect(screen.getByRole('button', { name: 'Escalate' })).toBeInTheDocument(),
+      expect(screen.getByRole('button', { name: 'Escalate to Controller' })).toBeInTheDocument(),
     );
-    await user.click(screen.getByRole('button', { name: 'Escalate' }));
+    await user.click(screen.getByRole('button', { name: 'Escalate to Controller' }));
 
     await waitFor(() => expect(escalatedId).toBe('exp_4471'));
   });
