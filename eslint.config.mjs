@@ -12,6 +12,10 @@ export default tseslint.config(
       '**/node_modules',
       '**/.nx',
       '**/storybook-static',
+      // Generated test artifacts — minified bundles that must never be linted (mirrors .gitignore).
+      '**/playwright-report',
+      '**/test-results',
+      '**/blob-report',
       'specs/designs/**',
     ],
   },
@@ -46,7 +50,11 @@ export default tseslint.config(
     // files (e.g. use-*.ts), which the component-only glob below would otherwise miss.
     // The stricter react-compiler rules (refs/purity) stay scoped to component files, so
     // this doesn't newly fail existing `.ts` hooks on rules the team hasn't adopted there.
-    files: ['**/*.{js,jsx,ts,tsx}'],
+    // Scoped to TS/JSX (not plain `.js`) so hook rules never fire on stray/generated bundles.
+    files: ['**/*.{jsx,ts,tsx}'],
+    // Playwright e2e isn't React — its fixture callback is named `use`, which rules-of-hooks
+    // would otherwise mistake for the React `use` hook.
+    ignores: ['**/e2e/**'],
     plugins: {
       'react-hooks': reactHooks,
     },
