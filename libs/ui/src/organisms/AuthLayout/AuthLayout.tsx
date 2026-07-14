@@ -29,7 +29,12 @@ export function AuthLayout({
   children,
 }: AuthLayoutProps) {
   return (
-    <div className="flex min-h-screen">
+    // Pin auth to the light theme. The app's ThemeProvider writes `data-theme` to <html> from the
+    // user's persisted preference, so a logged-out user who last used dark mode would otherwise
+    // inherit dark surface tokens here — rendering the form inputs near-black. Re-declaring
+    // `data-theme="light"` on this shell re-scopes every `--cl-*` token to its light value for the
+    // whole auth subtree, independent of what <html> carries.
+    <div data-theme="light" className="flex min-h-screen">
       <div
         className="hidden overflow-hidden p-10 lg:flex lg:w-1/2 lg:flex-col lg:justify-between lg:text-white"
         style={{
