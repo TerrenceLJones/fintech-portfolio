@@ -9,7 +9,9 @@ import {
   useSignUp,
   type SessionEndedReason,
 } from '@clearline/data-access-auth';
+import { useDemoBeacon } from '@clearline/demo-beacon';
 import { usePageTitle } from '../hooks/usePageTitle';
+import { loginBeacon } from './LoginPage.beacon';
 
 // Only redirect to a same-origin path carried in `next` — anything else (an absolute URL, or a
 // `//host` protocol-relative one) could send a just-authenticated user off Clearline entirely.
@@ -40,6 +42,7 @@ const SESSION_END_MESSAGES: Record<SessionEndReason, string> = {
 
 export function LoginPage() {
   usePageTitle('Sign in');
+  useDemoBeacon(loginBeacon);
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();

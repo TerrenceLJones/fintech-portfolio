@@ -14,9 +14,12 @@ import {
   Text,
   type DocumentDropzoneStatus,
 } from '@clearline/ui';
+import { useDemoBeacon } from '@clearline/demo-beacon';
 import { WIZARD_STEP_LABELS } from './wizard-steps';
+import { documentUploadBeacon } from './onboarding.beacon';
 
 export function DocumentUploadStepPage() {
+  useDemoBeacon(documentUploadBeacon);
   const navigate = useNavigate();
   const status = useOnboardingStatus();
   const submitDocument = useSubmitDocument();

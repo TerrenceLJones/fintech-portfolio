@@ -12,7 +12,9 @@ import {
 } from '@clearline/ui';
 import { evaluateSignUpPassword, isValidSignUpPassword } from '@clearline/domain-auth';
 import { useSignUp } from '@clearline/data-access-auth';
+import { useDemoBeacon } from '@clearline/demo-beacon';
 import { usePageTitle } from '../hooks/usePageTitle';
+import { signUpBeacon } from './SignUpPage.beacon';
 
 const SIGNUP_HEADLINE = 'Set up your business account in minutes.';
 const SIGNUP_SUBCOPY =
@@ -20,6 +22,7 @@ const SIGNUP_SUBCOPY =
 
 export function SignUpPage() {
   usePageTitle('Sign up');
+  useDemoBeacon(signUpBeacon);
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

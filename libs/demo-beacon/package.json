@@ -1,0 +1,30 @@
+{
+  "name": "@clearline/demo-beacon",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Project-agnostic, page-aware demo helper: a Help Scout Beacon-style floating launcher + panel that tells testers/reviewers what the mock backend supports on the page they're on, and lets them act on it (copy test inputs, walk guided flows, run app-supplied actions). Router-, backend-, and design-system-agnostic — pages self-register config via useDemoBeacon; all side effects cross the boundary as callbacks. Extractable into any React POC.",
+  "main": "src/index.ts",
+  "scripts": {
+    "lint": "eslint .",
+    "type-check": "tsc --noEmit",
+    "test": "vitest run",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "@radix-ui/react-dialog": "^1.1.18"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {},
+  "metadata": {
+    "package_type": "shared",
+    "tags": [
+      "scope:shared",
+      "type:ui"
+    ],
+    "extractable": "Runtime deps: React + @radix-ui/react-dialog only. Themes via --beacon-* CSS custom properties (with fallbacks). No app/feature-lib imports; enforced by Nx lint boundaries.",
+    "adr": "specs (or docs)/adr — hook-registration over route-mapping; static config over live MSW introspection."
+  }
+}

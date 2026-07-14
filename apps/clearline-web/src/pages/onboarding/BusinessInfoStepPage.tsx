@@ -4,10 +4,13 @@ import { useForm, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Alert, AuthLayout, Button, Stepper, Text, TextField } from '@clearline/ui';
 import { useSubmitBusinessInfo, useCompleteStep } from '@clearline/data-access-onboarding';
+import { useDemoBeacon } from '@clearline/demo-beacon';
 import { businessInfoSchema, type BusinessInfoFormValues } from './schemas';
 import { WIZARD_STEP_LABELS } from './wizard-steps';
+import { businessInfoBeacon } from './onboarding.beacon';
 
 export function BusinessInfoStepPage() {
+  useDemoBeacon(businessInfoBeacon);
   const navigate = useNavigate();
   const submitBusinessInfo = useSubmitBusinessInfo();
   const completeStep = useCompleteStep();

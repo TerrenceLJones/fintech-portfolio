@@ -8,6 +8,7 @@
     ".": "./src/index.ts",
     "./browser": "./src/browser.ts",
     "./server": "./src/server.ts",
+    "./fixtures": "./src/fixtures/index.ts",
     "./test-factories": "./src/fixtures/test-factories.ts"
   },
   "scripts": {

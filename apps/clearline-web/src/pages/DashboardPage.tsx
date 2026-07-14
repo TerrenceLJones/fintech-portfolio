@@ -1,4 +1,8 @@
+import { useMemo } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { useDemoBeacon } from '@clearline/demo-beacon';
 import { useSession } from '@clearline/data-access-auth';
+import { buildDashboardBeacon } from './DashboardPage.beacon';
 
 /**
  * Stub landing target for US-CW-001's post-login navigation — the "My Expenses" section at "/", so its
@@ -10,6 +14,9 @@ import { useSession } from '@clearline/data-access-auth';
  */
 export function DashboardPage() {
   const session = useSession();
+
+  const queryClient = useQueryClient();
+  useDemoBeacon(useMemo(() => buildDashboardBeacon(queryClient), [queryClient]));
 
   return (
     <div>

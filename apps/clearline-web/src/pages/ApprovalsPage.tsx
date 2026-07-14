@@ -10,6 +10,8 @@ import {
   useReassignApproval,
   useRejectApproval,
 } from '@clearline/data-access-approvals';
+import { useDemoBeacon } from '@clearline/demo-beacon';
+import { approvalsBeacon } from './ApprovalsPage.beacon';
 /** Queue table columns: Employee · category | Date | Amount | Action. */
 const COLS = '1.7fr 0.8fr 0.9fr 1.6fr';
 
@@ -41,6 +43,7 @@ function reasonText(reason: ApprovalErrorCode, approvalLimit: number | null): st
  * is still the authority: it independently 403s these, and the action bar surfaces that too.
  */
 export function ApprovalsPage() {
+  useDemoBeacon(approvalsBeacon);
   const { permissions, approvalLimit } = useAuthorization();
   const { data: session } = useSession();
   const queue = useApprovalQueue();

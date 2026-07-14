@@ -32,18 +32,39 @@ export const worker = setupWorker(
 sharedOnboardingService.seedApprovedAccount(DEMO_ONBOARDED_USER_ID, DEMO_ONBOARDED_BUSINESS);
 
 /**
- * Test-only override for e2e coverage of AC-05 (auth-service-unreachable retry/backoff) — see
- * apps/clearline-web/e2e/login.spec.ts. Only reachable via the window hook main.tsx wires up
- * behind import.meta.env.DEV, so it never ships to production. Playwright's page.route() can't
- * intercept /api/auth/login itself: MSW's Service Worker answers it in-process without a real
- * network transaction, so there's nothing for CDP-level route interception to catch.
+ * Test/demo override for AC-05 (auth-service-unreachable retry/backoff) — see
+ * apps/clearline-web/e2e/login.spec.ts and the login Beacon's "auth outage" toggle. Only reachable
+ * via the window hook main.tsx wires up (e2e) or the dev-only Beacon (demo), so it never ships to
+ * production. Playwright's page.route() can't intercept /api/auth/login itself: MSW's Service Worker
+ * answers it in-process without a real network transaction, so there's nothing for CDP-level route
+ * interception to catch.
+ *
+ * A single persistent runtime handler (registered once, below) reads this flag on each login: when
+ * armed it returns a 500, and when disarmed it returns nothing so the request falls through to the
+ * real auth handler. That flip-a-flag design is what lets the Beacon toggle the outage back OFF —
+ * the previous one-shot `worker.use(...)` override could only ever be added, never removed.
  */
-export function simulateLoginFailure() {
-  worker.use(
-    http.post('*/api/auth/login', () =>
-      HttpResponse.json({ error: 'internal_error' }, { status: 500 }),
-    ),
-  );
+let loginFailureArmed = false;
+
+worker.use(
+  http.post('*/api/auth/login', () =>
+    loginFailureArmed ? HttpResponse.json({ error: 'internal_error' }, { status: 500 }) : undefined,
+  ),
+);
+
+/** Arm or disarm the simulated auth outage. */
+export function setLoginFailure(armed: boolean): void {
+  loginFailureArmed = armed;
+}
+
+/** Current auth-outage state — lets the Beacon toggle reflect reality when the panel reopens. */
+export function isLoginFailureArmed(): boolean {
+  return loginFailureArmed;
+}
+
+/** Back-compat one-shot arm for the AC-05 e2e test, which only ever needs to turn the outage on. */
+export function simulateLoginFailure(): void {
+  setLoginFailure(true);
 }
 
 /**

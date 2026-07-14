@@ -8,6 +8,8 @@ import { PaymentFormAlerts } from './new-payment/PaymentFormAlerts';
 import { RecipientPicker } from './new-payment/RecipientPicker';
 import { ReviewSummary } from './new-payment/ReviewSummary';
 import { useNewPaymentForm } from './new-payment/use-new-payment-form';
+import { useDemoBeacon } from '@clearline/demo-beacon';
+import { newPaymentBeacon } from './NewPaymentPage.beacon';
 
 /**
  * The New Payment form (US-CW-007/008/009). All state, validation and submission wiring lives in
@@ -17,6 +19,7 @@ import { useNewPaymentForm } from './new-payment/use-new-payment-form';
 export function NewPaymentPage() {
   usePageTitle('New payment');
   const form = useNewPaymentForm();
+  useDemoBeacon(newPaymentBeacon);
 
   if (form.forbidden) {
     return <AccessDenied requestLine="403 Forbidden · GET /api/payments/context" />;

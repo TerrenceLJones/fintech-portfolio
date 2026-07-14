@@ -1,11 +1,14 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useParams } from 'react-router';
+import { useQueryClient } from '@tanstack/react-query';
 import { normalizePaymentStatus } from '@clearline/domain-payments';
 import { toMajorUnits } from '@clearline/money';
 import { EmptyState, StatusBadge, Text, formatMoney } from '@clearline/ui';
 import { usePaymentIntent } from '@clearline/data-access-payments';
+import { useDemoBeacon } from '@clearline/demo-beacon';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import { paymentStatusDisplay } from './payment-status-display';
+import { buildPaymentStatusBeacon } from './PaymentStatusPage.beacon';
 
 /** Formats an ISO date (or an already-friendly string) to a readable "Jul 8, 2026". */
 function formatDate(value: string): string {
@@ -25,6 +28,11 @@ function formatDate(value: string): string {
 export function PaymentStatusPage() {
   usePageTitle('Payment');
   const { intentId = '' } = useParams();
+
+  const queryClient = useQueryClient();
+  useDemoBeacon(
+    useMemo(() => buildPaymentStatusBeacon(intentId, queryClient), [intentId, queryClient]),
+  );
 
   const query = usePaymentIntent(intentId, {
     enabled: !!intentId,

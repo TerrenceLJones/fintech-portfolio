@@ -7,9 +7,12 @@ import {
   useSubmitReview,
 } from '@clearline/data-access-onboarding';
 import { Alert, AuthLayout, Button, Checkbox, Stepper, Text } from '@clearline/ui';
+import { useDemoBeacon } from '@clearline/demo-beacon';
 import { WIZARD_STEP_LABELS } from './wizard-steps';
+import { reviewStepBeacon } from './onboarding.beacon';
 
 export function ReviewStepPage() {
+  useDemoBeacon(reviewStepBeacon);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const status = useOnboardingStatus();

@@ -18,6 +18,7 @@
     "@clearline/data-access-auth": "workspace:*",
     "@clearline/data-access-onboarding": "workspace:*",
     "@clearline/data-access-payments": "workspace:*",
+    "@clearline/demo-beacon": "workspace:*",
     "@clearline/design-tokens": "workspace:*",
     "@clearline/domain-auth": "workspace:*",
     "@clearline/domain-onboarding": "workspace:*",

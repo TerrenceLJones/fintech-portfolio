@@ -5,8 +5,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import type { BeneficialOwner } from '@clearline/contracts';
 import { Alert, AuthLayout, Avatar, Button, Stepper, Text, TextField } from '@clearline/ui';
 import { useAddOwner, useCompleteStep } from '@clearline/data-access-onboarding';
+import { useDemoBeacon } from '@clearline/demo-beacon';
 import { ownerSchema, type OwnerFormValues } from './schemas';
 import { WIZARD_STEP_LABELS } from './wizard-steps';
+import { beneficialOwnersBeacon } from './onboarding.beacon';
 
 function initials(fullName: string): string {
   return fullName
@@ -19,6 +21,7 @@ function initials(fullName: string): string {
 }
 
 export function BeneficialOwnersStepPage() {
+  useDemoBeacon(beneficialOwnersBeacon);
   const navigate = useNavigate();
   const addOwner = useAddOwner();
   const completeStep = useCompleteStep();

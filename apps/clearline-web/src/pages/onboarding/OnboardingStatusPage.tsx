@@ -1,8 +1,10 @@
 import { Navigate, useNavigate } from 'react-router';
 import { useOnboardingStatus } from '@clearline/data-access-onboarding';
 import { EmptyState, Text } from '@clearline/ui';
+import { useDemoBeacon } from '@clearline/demo-beacon';
 import { onboardingDestination } from './onboarding-routing';
 import { stepPath } from './wizard-steps';
+import { onboardingStatusBeacon } from './onboarding.beacon';
 
 /**
  * Terminal onboarding screens share one shape (icon + title + body + single CTA), so they're one
@@ -12,6 +14,7 @@ import { stepPath } from './wizard-steps';
  * OnboardingService.submitReview), so there's nothing here that could leak it even by accident.
  */
 export function OnboardingStatusPage() {
+  useDemoBeacon(onboardingStatusBeacon);
   const navigate = useNavigate();
   const status = useOnboardingStatus();
 

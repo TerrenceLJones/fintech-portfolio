@@ -1,5 +1,7 @@
+import { useMemo } from 'react';
 import type { IconName } from '@clearline/icons';
 import { EmptyState } from '@clearline/ui';
+import { useDemoBeacon, type DemoBeaconPageConfig } from '@clearline/demo-beacon';
 
 export interface PlaceholderPageProps {
   title: string;
@@ -15,5 +17,20 @@ export interface PlaceholderPageProps {
  * via AppChrome (US-CW-006); this only supplies the empty-state copy for the section body.
  */
 export function PlaceholderPage({ title, icon, body }: PlaceholderPageProps) {
+  // One registration serves every placeholder route — the config is derived from the page's own
+  // props, so the Beacon explains that this section is an intentional stub for the demo.
+  useDemoBeacon(
+    useMemo<DemoBeaconPageConfig>(
+      () => ({
+        pageId: `placeholder:${title}`,
+        title,
+        summary:
+          'This section is a placeholder in the demo — the nav link and access guard are real, the content isn’t built yet.',
+        sections: [{ kind: 'text', title: 'About this page', body }],
+      }),
+      [title, body],
+    ),
+  );
+
   return <EmptyState icon={icon} title={title} body={body} />;
 }

@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { setDocumentTextRecognizer } from '@clearline/data-access-onboarding';
 import { App } from './App';
 import { mockDocumentOcr } from './dev/mock-document-ocr';
+import { demoModeEnabled } from './dev/demo-mode';
 
 // Window.__e2eMockBackend's type lives in e2e/global.d.ts, shared with login.spec.ts's AC-05 test
 // and password-reset.spec.ts.
@@ -12,8 +13,10 @@ import { mockDocumentOcr } from './dev/mock-document-ocr';
 async function bootstrap() {
   const queryClient = new QueryClient();
 
-  if (import.meta.env.DEV) {
-    // Dynamic import so the MSW browser-worker code never ships in a production build.
+  // True in local dev, and in a hosted demo build that sets VITE_ENABLE_MOCKS=true so
+  // stakeholders/viewers get the same backend-free experience (see dev/demo-mode.ts).
+  if (demoModeEnabled()) {
+    // Dynamic import so the MSW browser-worker code never ships in a real production build.
     const {
       worker,
       simulateLoginFailure,
