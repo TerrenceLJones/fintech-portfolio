@@ -35,6 +35,28 @@ test('an unauthenticated visitor is redirected to /login and back after signing 
   expect(storageDump).not.toContain(accessToken);
 });
 
+test('the login screen ignores a persisted dark-theme preference and renders its inputs light', async ({
+  page,
+}) => {
+  // A logged-out user carries whatever theme they last chose while signed in — persisted by
+  // ThemeProvider under localStorage `cl-theme`. Seed dark before any app code runs so <html>
+  // gets data-theme="dark" on boot; the auth shell must re-scope itself to light regardless, or
+  // the form inputs render with the dark surface token (near-black).
+  await page.addInitScript(() => window.localStorage.setItem('cl-theme', 'dark'));
+  await page.goto('/login');
+
+  // Sanity-check the precondition actually took: <html> really is in dark mode.
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+
+  // The TextField's colored box is the input's parent; it carries `bg-cl-surface`. Light surface
+  // is #ffffff (rgb(255, 255, 255)); the dark leak this guards against would be #14171d
+  // (rgb(20, 23, 29)).
+  const inputBoxBackground = await page
+    .getByLabel('Work email')
+    .evaluate((input) => getComputedStyle(input.parentElement as HTMLElement).backgroundColor);
+  expect(inputBoxBackground).toBe('rgb(255, 255, 255)');
+});
+
 test('invalid credentials show an inline error and clear the password field (AC-02)', async ({
   page,
 }) => {
