@@ -9,7 +9,7 @@ feature_area: 'payments'
 title: 'Payment Validation, Limits & Recipient Checks'
 
 # Lifecycle status
-status: 'APPROVED'
+status: 'IMPLEMENTED'
 story_points: 8
 dependencies: ['US-CW-006']
 
@@ -25,10 +25,13 @@ history:
   - epic_id: 'EPIC-CW-004'
     action: 'approved'
     date: '2026-06-30'
+  - epic_id: 'EPIC-CW-004'
+    action: 'implemented'
+    date: '2026-07-14'
 
 # Status timestamps — set when status transitions occur
 approved_date: '2026-06-30'
-implementation_date: null
+implementation_date: '2026-07-14'
 deprecated_date: null
 removed_date: null
 
@@ -121,5 +124,24 @@ edge_cases: |
 
 # Implementation Status
 implementation_status: |
-  Not yet implemented. This story is APPROVED and ready for implementation planning, transcribed as part of the initial
-  specification pass for clearline-web — no application code exists yet.
+  ✅ Implemented: 2026-07-14 (EPIC-CW-004)
+  📁 Files created/modified (grouped by area):
+    - libs/domain/payments/src/payment-validation-policy.ts — pure validatePayment gate returning a typed
+      reason in priority order: invalid_amount → insufficient_balance → daily_limit_exceeded → recipient_closed
+      → self_transfer. Shared verbatim by the client pre-check and the server, so the UI is never the security
+      boundary (AC-01/02/04/05).
+    - apps/clearline-web/src/pages/payments/new-payment/use-new-payment-form.ts — runs validatePayment against
+      the ledger-derived available balance, daily limit and daily-spent before any network call, blocking
+      doomed submissions client-side (AC-01/02); flags self-transfer and closed recipients (AC-04/05); a
+      cross-currency recipient gates submit until the converted amount is acknowledged (AC-06).
+    - .../new-payment/new-payment-form.ts (messageForPaymentError) — exact design copy per reason, folding in
+      the server-echoed available balance ("Available: $3,000.00.") and daily limit; daily_limit_exceeded
+      surfaces the "Request limit increase" CTA (AC-01/02); recipient_not_found highlights the field (AC-03).
+    - .../new-payment/CrossCurrencyPanel.tsx + libs/data-access/payments/src/use-exchange-rate.ts — live rate
+      lookup showing the converted amount and rate, with an explicit acknowledge-before-send step; a failed/
+      stale lookup blocks send with a retry prompt (AC-06).
+    - libs/mock-backend/src/services/payments.service.ts — server re-runs validatePayment and resolveRecipient,
+      distinguishing recipient_not_found from recipient_closed from self_transfer as distinct 422 reasons
+      (AC-03/04/05); getExchangeRate backs the FX panel (AC-06).
+    - Tests: payment-validation-policy, use-exchange-rate, new-payment-form, PaymentFormAlerts, NewPaymentPage,
+      payments.service (balance/limit/recipient/self/fx) — all green.
