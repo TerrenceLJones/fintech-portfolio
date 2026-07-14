@@ -37,6 +37,13 @@ describe('StepUpChallengeModal', () => {
     expect(screen.getByRole('button', { name: 'Verify' })).toBeInTheDocument();
   });
 
+  it('gives the title an explicit text color so it stays readable in the portal (a11y)', () => {
+    // The modal renders in a Radix portal outside the themed subtree, so a title with no color class
+    // would inherit dark-on-dark. It must carry text-cl-text.
+    renderModal(controller());
+    expect(screen.getByRole('heading', { name: /verify it's you/i })).toHaveClass('text-cl-text');
+  });
+
   it('shows the wrong-code message and flags the cells invalid (AC-04)', () => {
     renderModal(controller({ errorKind: 'incorrect', code: '301298' }));
     expect(

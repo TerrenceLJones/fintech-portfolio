@@ -63,7 +63,7 @@ export function StepUpChallengeModal({
                 <Icon name="triangle-alert" size={21} className="text-cl-warn" />
               </div>
               <Dialog.Title asChild>
-                <Text as="h2" size="heading" className="mb-1.5">
+                <Text as="h2" size="heading" tone="default" className="mb-1.5">
                   Connection lost
                 </Text>
               </Dialog.Title>
@@ -100,7 +100,7 @@ export function StepUpChallengeModal({
                 <Icon name="shield" size={20} className="text-cl-accent-text" />
               </div>
               <Dialog.Title asChild>
-                <Text as="h2" size="heading" className="mb-1">
+                <Text as="h2" size="heading" tone="default" className="mb-1">
                   Verify it&apos;s you
                 </Text>
               </Dialog.Title>
@@ -174,7 +174,7 @@ export function StepUpChallengeModal({
                     </Button>
                   </>
                 ) : (
-                  <Text as="p" size="mono" tone="faint">
+                  <Text as="p" size="mono" tone="muted">
                     Resend in {formatCountdown(secondsToResend)}
                   </Text>
                 )}
