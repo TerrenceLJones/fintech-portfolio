@@ -3,48 +3,42 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Modal } from './Modal';
 
+function renderShell(onOpenChange = vi.fn(), open = true) {
+  return render(
+    <Modal open={open} onOpenChange={onOpenChange} maxWidth={340}>
+      <Modal.Title>Verify it&apos;s you</Modal.Title>
+      <Modal.Description>Enter your code.</Modal.Description>
+      <Modal.Close asChild>
+        <button type="button">Cancel</button>
+      </Modal.Close>
+    </Modal>,
+  );
+}
+
 describe('Modal', () => {
+  it('renders its children in an accessible dialog when open', () => {
+    renderShell();
+    const dialog = screen.getByRole('dialog');
+    expect(dialog).toBeInTheDocument();
+    // The title/description are wired to the dialog for a11y.
+    expect(dialog).toHaveAccessibleName("Verify it's you");
+    expect(screen.getByText('Enter your code.')).toBeInTheDocument();
+  });
+
   it('renders nothing when closed', () => {
-    render(<Modal open={false} onOpenChange={() => {}} title="Send $5,000.00?" />);
+    renderShell(vi.fn(), false);
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
-  it('renders the title and body when open, focus-trapped in a dialog role', () => {
-    render(
-      <Modal
-        open
-        onOpenChange={() => {}}
-        title="Send $5,000.00 to Acme Corp?"
-        body="This can't be undone."
-      />,
-    );
-    expect(screen.getByRole('dialog')).toBeInTheDocument();
-    expect(screen.getByText('Send $5,000.00 to Acme Corp?')).toBeInTheDocument();
-    expect(screen.getByText("This can't be undone.")).toBeInTheDocument();
-  });
-
-  it('calls onConfirm when the confirm button is clicked', async () => {
-    const onConfirm = vi.fn();
-    const user = userEvent.setup();
-    render(
-      <Modal
-        open
-        onOpenChange={() => {}}
-        title="Confirm?"
-        confirmLabel="Send"
-        onConfirm={onConfirm}
-      />,
-    );
-
-    await user.click(screen.getByRole('button', { name: 'Send' }));
-    expect(onConfirm).toHaveBeenCalledTimes(1);
-  });
-
-  it('calls onOpenChange(false) on Escape and on cancel click', async () => {
+  it('requests close on Escape and via a Modal.Close trigger', async () => {
     const onOpenChange = vi.fn();
     const user = userEvent.setup();
-    render(<Modal open onOpenChange={onOpenChange} title="Confirm?" cancelLabel="Cancel" />);
+    renderShell(onOpenChange);
 
+    await user.keyboard('{Escape}');
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+
+    onOpenChange.mockClear();
     await user.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });

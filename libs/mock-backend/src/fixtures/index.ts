@@ -8,6 +8,13 @@ export {
   SEED_RECIPIENTS,
   SEED_INTENTS,
   SEED_FX_RATES,
+  STEP_UP_THRESHOLD_MINOR_UNITS,
+  STEP_UP_OTP_VALID,
+  STEP_UP_OTP_EXPIRED,
+  STEP_UP_DESTINATION_SMS,
+  STEP_UP_DESTINATION_EMAIL,
+  STEP_UP_OTP_TTL_MS,
+  STEP_UP_MAX_ATTEMPTS,
 } from './payments.fixture';
 export type { SeedRecipient } from './payments.fixture';
 export { SEED_APPROVALS } from './approvals.fixture';

@@ -7,6 +7,8 @@ import { PayFromPanel } from './new-payment/PayFromPanel';
 import { PaymentFormAlerts } from './new-payment/PaymentFormAlerts';
 import { RecipientPicker } from './new-payment/RecipientPicker';
 import { ReviewSummary } from './new-payment/ReviewSummary';
+import { StepUpChallenge } from './new-payment/StepUpChallenge';
+import { StepUpAbandonedBanner } from './new-payment/StepUpAbandonedBanner';
 import { useNewPaymentForm } from './new-payment/use-new-payment-form';
 import { useDemoBeacon } from '@clearline/demo-beacon';
 import { newPaymentBeacon } from './NewPaymentPage.beacon';
@@ -82,6 +84,19 @@ export function NewPaymentPage() {
               activeError={form.activeError}
               onRetry={form.submit}
             />
+
+            {/* AC-03: after an abandoned step-up, the reserved payment is still waiting — surface it
+                with a Retry that reopens the same challenge (same idempotency key). */}
+            {form.awaitingStepUp && form.challengeIntent ? (
+              <StepUpAbandonedBanner
+                recipientName={form.challengeIntent.recipientName}
+                recipientMasked={form.challengeIntent.recipientMasked}
+                amountMinor={form.challengeIntent.amount.amountMinorUnits}
+                currency={form.challengeIntent.amount.currency}
+                idempotencyKey={form.idempotencyKey}
+                onRetry={form.retryStepUp}
+              />
+            ) : null}
           </div>
 
           {/* ── Right: the derived Review summary ─────────────────────────────── */}
@@ -113,6 +128,17 @@ export function NewPaymentPage() {
         confirmLabel="Send payment"
         onConfirm={form.onConfirm}
       />
+
+      {/* Mounted for as long as a reserved payment awaits step-up — open while the modal shows,
+          closed (but retained) once abandoned so the banner above can offer a Retry (US-CW-010). */}
+      {form.challenge ? (
+        <StepUpChallenge
+          challenge={form.challenge}
+          open={form.challengeOpen}
+          onOpenChange={form.onChallengeOpenChange}
+          onVerified={form.onStepUpVerified}
+        />
+      ) : null}
     </div>
   );
 }

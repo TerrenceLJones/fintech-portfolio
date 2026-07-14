@@ -1,0 +1,31 @@
+import { Meta, Stories } from '@storybook/addon-docs/blocks';
+import * as OtpInputStories from './OtpInput.stories';
+
+<Meta of={OtpInputStories} />
+
+# OtpInput
+
+A segmented one-time-code entry: `length` single-digit cells that read as one field. The value is
+fully controlled (the caller owns the string) while focus advances on entry and steps back on
+backspace, a pasted code is sanitized to digits and distributed across the cells, and `onComplete`
+fires the moment the code is full — the cue to auto-submit. In the `error` state every cell is
+flagged `aria-invalid` so a wrong code reads unambiguously.
+
+## User story
+
+**US-CW-010 — Step-Up Authentication for High-Value Payments**
+
+As an accounts payable manager submitting a high-value B2B payment, I want to be challenged with a
+step-up authentication (OTP) when the payment exceeds the risk threshold, so that high-risk payments
+are strongly authenticated. OtpInput is the code-entry primitive behind that challenge.
+
+## Acceptance criteria
+
+- **AC-02 — Completion.** Given all `length` digits are entered, when the last cell is filled, then
+  `onComplete` fires with the full code so the challenge can auto-submit.
+- **AC-04 — Error state.** Given `state="error"`, when rendered, then every cell has
+  `aria-invalid="true"` so a wrong code is visually and programmatically distinct.
+- Input is digit-only (non-numeric keys are ignored) and a pasted string is sanitized and truncated
+  to `length`.
+
+<Stories />

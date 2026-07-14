@@ -5,30 +5,26 @@ import * as ModalStories from './Modal.stories';
 
 # Modal
 
-A general-purpose dialog built on Radix `Dialog`, with `accent`/`negative`/`warning` tones for
-its icon/title treatment.
+The low-level modal chrome: a focus-trapped, Escape-closable overlay + centered surface built on
+Radix `Dialog`, with a free `children` slot. Use it when a modal needs bespoke content — a custom
+body, multiple faces, or a non-standard footer — that the opinionated `AlertModal` /
+`ConfirmationDialog` can't express. Compose the accessible title, description, and any
+close-triggering element via `Modal.Title`, `Modal.Description`, and `Modal.Close`.
 
-## User story
+This keeps Radix encapsulated inside the design system: app-level composites (e.g. the step-up
+challenge overlay) build custom modals **through `@clearline/ui`** and never import `radix-ui`
+directly.
 
-**US-CW-024 — Component library — molecules**
+## When to use
 
-As a clearline-web engineer, I want Modal/ConfirmationDialog and the other 6 Tier-2 molecules
-available as typed React components built on Radix Dialog, so that every irreversible-action
-confirmation in the app gets the same focus-trapped, Escape-cancels, countdown-gated behavior for
-free, instead of each feature epic re-implementing dialog accessibility by hand.
+- **`Modal`** — you need full control of the modal's contents (this component, the primitive).
+- **`AlertModal`** — a standard icon + title + body + confirm/cancel overlay.
+- **`ConfirmationDialog`** — an irreversible action guarded by a countdown before confirm.
 
-## Acceptance criteria
+## Accessibility
 
-- **AC-01 — Modal.** Given a Modal with `open={true}`, when it renders, then it exposes
-  `role="dialog"`, traps focus, and closes via Escape or the Cancel button — all inherited from
-  Radix Dialog, not hand-rolled.
-- AC-02 — ConfirmationDialog's `countdown` gates the confirm button and re-arms on every open.
-- AC-03 — VirtualCard hides the derived remaining-limit figure entirely when frozen.
-- AC-04 — Timeline shows before → after diffs with an arrow between them.
-- AC-05 — AIInsightCard's primary/secondary actions independently invoke their own callbacks.
-
-### Edge case covered here
-
-Modal renders nothing at all when `open={false}` — no hidden-but-present DOM.
+- Focus is trapped within the surface; Escape and an overlay click call `onOpenChange(false)`.
+- Include a `<Modal.Title>` so the dialog has an accessible name; add `<Modal.Description>`
+  for supporting copy. Both are wired to the dialog's ARIA automatically.
 
 <Stories />

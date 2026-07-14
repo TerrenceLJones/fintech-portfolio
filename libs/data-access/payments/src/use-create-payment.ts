@@ -5,7 +5,6 @@ import type {
   Money,
   PaymentErrorCode,
   PaymentErrorResponse,
-  PaymentIntent,
 } from '@clearline/contracts';
 import { authenticatedFetch } from '@clearline/data-access-auth';
 import {
@@ -71,7 +70,7 @@ export interface UseCreatePaymentOptions {
 async function postPayment(
   { request, idempotencyKey }: CreatePaymentVariables,
   timeoutMs: number,
-): Promise<PaymentIntent> {
+): Promise<CreatePaymentResponse> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
@@ -104,8 +103,9 @@ async function postPayment(
   // 5xx / unexpected — a transient failure eligible for retry.
   if (!response.ok) throw new Error('payment_failed');
 
-  const body = (await response.json()) as CreatePaymentResponse;
-  return body.intent;
+  // The whole response is returned (not just the intent): a high-value payment comes back
+  // `requires_action` with a `challenge` the caller must present before it commits (US-CW-010 AC-01).
+  return (await response.json()) as CreatePaymentResponse;
 }
 
 /**

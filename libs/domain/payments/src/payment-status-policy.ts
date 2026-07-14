@@ -1,6 +1,7 @@
 import type { PaymentIntentStatus } from '@clearline/contracts';
 
 const RECOGNIZED_STATUSES: readonly PaymentIntentStatus[] = [
+  'requires_action',
   'processing',
   'pending',
   'pending_review',

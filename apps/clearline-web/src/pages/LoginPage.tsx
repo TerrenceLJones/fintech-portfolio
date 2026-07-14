@@ -1,6 +1,14 @@
 import { useEffect, useRef, useState, type SubmitEvent } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router';
-import { Alert, AuthLayout, Button, Modal, PasswordField, Text, TextField } from '@clearline/ui';
+import {
+  Alert,
+  AlertModal,
+  AuthLayout,
+  Button,
+  PasswordField,
+  Text,
+  TextField,
+} from '@clearline/ui';
 import {
   LoginError,
   setAccessToken,
@@ -235,7 +243,7 @@ export function LoginPage() {
         </Text>
       </Text>
 
-      <Modal
+      <AlertModal
         open={pendingAccessToken != null}
         onOpenChange={(open) => {
           if (open) return;

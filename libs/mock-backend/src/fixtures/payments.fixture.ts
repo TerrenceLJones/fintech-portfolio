@@ -116,3 +116,22 @@ export const SEED_FX_RATES: Record<string, number> = {
   'USD->EUR': 0.918,
   'USD->GBP': 0.79,
 };
+
+/**
+ * Step-up (3DS-style) demo configuration (US-CW-010). Payments strictly above the threshold trigger an
+ * OTP challenge before they commit. A real backend would text a random code; this mock uses fixed,
+ * beacon-published codes so a tester can drive every branch deterministically:
+ *   - `STEP_UP_OTP_VALID` verifies and commits the payment.
+ *   - `STEP_UP_OTP_EXPIRED` forces the expiry path (old code invalidated, a fresh one issued) without
+ *     waiting out the real 10-minute clock (AC-06).
+ *   - any other 6-digit code is a wrong-code authentication failure (AC-04).
+ */
+export const STEP_UP_THRESHOLD_MINOR_UNITS = 1_000_000;
+export const STEP_UP_OTP_VALID = '424242';
+export const STEP_UP_OTP_EXPIRED = '000000';
+/** Where the demo OTP is "sent" — only the masked form is ever shown to the user. */
+export const STEP_UP_DESTINATION_SMS = '•••-•••-4417';
+export const STEP_UP_DESTINATION_EMAIL = 'm•••@clearline.com';
+/** Server-side OTP lifetime (AC-06) and the wrong-attempt ceiling before a challenge locks. */
+export const STEP_UP_OTP_TTL_MS = 10 * 60 * 1000;
+export const STEP_UP_MAX_ATTEMPTS = 5;

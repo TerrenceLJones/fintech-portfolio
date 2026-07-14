@@ -50,6 +50,29 @@ const acme: CreatePaymentRequest = {
   method: 'ach',
 };
 
+/** $12,000 to Acme — above the step-up threshold. */
+const highValue: CreatePaymentRequest = {
+  recipientId: 'rec_acme',
+  amount: { amountMinorUnits: 1_200_000, currency: 'USD' },
+  method: 'ach',
+};
+
+function verify(intentId: string, code: string, token: string) {
+  return fetch(`${ORIGIN}/api/payments/${intentId}/challenge/verify`, {
+    method: 'POST',
+    headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+    body: JSON.stringify({ code }),
+  });
+}
+
+function resend(intentId: string, token: string, body: Record<string, unknown> = {}) {
+  return fetch(`${ORIGIN}/api/payments/${intentId}/challenge/resend`, {
+    method: 'POST',
+    headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+}
+
 describe('GET /api/payments/context', () => {
   it('returns the source account and recipients for an authorized caller', async () => {
     const token = await login();
@@ -129,6 +152,83 @@ describe('POST /api/payments', () => {
     );
     expect(response.status).toBe(422);
     expect(await response.json()).toEqual({ error: 'invalid_amount' });
+  });
+});
+
+describe('POST /api/payments — step-up threshold (US-CW-010 AC-01)', () => {
+  it('returns a requires_action intent with a challenge for a high-value payment', async () => {
+    const token = await login();
+    const response = await pay(highValue, token);
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.intent.status).toBe('requires_action');
+    expect(body.challenge.intentId).toBe(body.intent.id);
+    expect(body.challenge.destinationMasked).toBeTruthy();
+    // The OTP code itself never crosses the wire.
+    expect(body.challenge).not.toHaveProperty('code');
+  });
+});
+
+describe('POST /api/payments/:id/challenge/verify (US-CW-010)', () => {
+  async function reserve(token: string): Promise<string> {
+    const body = await (await pay(highValue, token, 'hv-key')).json();
+    return body.intent.id;
+  }
+
+  it('commits the payment on the correct code (AC-02)', async () => {
+    const token = await login();
+    const intentId = await reserve(token);
+    const response = await verify(intentId, '424242', token);
+    expect(response.status).toBe(200);
+    expect((await response.json()).intent.status).toBe('pending');
+  });
+
+  it('returns 422 otp_incorrect for a wrong code (AC-04)', async () => {
+    const token = await login();
+    const intentId = await reserve(token);
+    const response = await verify(intentId, '111111', token);
+    expect(response.status).toBe(422);
+    expect(await response.json()).toEqual({ error: 'otp_incorrect' });
+  });
+
+  it('returns 422 otp_expired with a fresh challenge for an expired code (AC-06)', async () => {
+    const token = await login();
+    const intentId = await reserve(token);
+    const response = await verify(intentId, '000000', token);
+    expect(response.status).toBe(422);
+    const body = await response.json();
+    expect(body.error).toBe('otp_expired');
+    expect(body.challenge.intentId).toBe(intentId);
+  });
+
+  it('404s an unknown intent and 401s without a token', async () => {
+    const token = await login();
+    expect((await verify('pi_missing', '424242', token)).status).toBe(404);
+    const noAuth = await fetch(`${ORIGIN}/api/payments/pi_x/challenge/verify`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ code: '424242' }),
+    });
+    expect(noAuth.status).toBe(401);
+  });
+});
+
+describe('POST /api/payments/:id/challenge/resend (US-CW-010 AC-05)', () => {
+  it('issues a fresh challenge and can switch the delivery method', async () => {
+    const token = await login();
+    const intentId = (await (await pay(highValue, token, 'hv-key')).json()).intent.id;
+
+    const sms = await resend(intentId, token);
+    expect(sms.status).toBe(200);
+    expect((await sms.json()).challenge.method).toBe('otp_sms');
+
+    const email = await resend(intentId, token, { method: 'otp_email' });
+    expect((await email.json()).challenge.method).toBe('otp_email');
+  });
+
+  it('404s an unknown intent', async () => {
+    const token = await login();
+    expect((await resend('pi_missing', token)).status).toBe(404);
   });
 });
 

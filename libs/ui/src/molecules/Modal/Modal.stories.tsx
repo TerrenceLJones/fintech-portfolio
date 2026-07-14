@@ -1,9 +1,8 @@
-import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
+import { expect, within } from 'storybook/test';
 import { Modal } from './Modal';
 import { Button } from '../../atoms/Button';
-import { alertingAction } from '../../storybook-actions';
+import { Text } from '../../atoms/Text';
 
 const meta: Meta<typeof Modal> = {
   title: 'Molecules/Modal',
@@ -13,52 +12,40 @@ export default meta;
 
 type Story = StoryObj<typeof Modal>;
 
-function Demo({ onConfirm }: { onConfirm: () => void }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <>
-      <Button label="Open modal" onClick={() => setOpen(true)} />
-      <Modal
-        open={open}
-        onOpenChange={setOpen}
-        title="Send $5,000.00 to Acme Corp?"
-        body="This transfers funds immediately and can't be undone."
-        confirmLabel="Send"
-        onConfirm={() => {
-          onConfirm();
-          setOpen(false);
-        }}
-      />
-    </>
-  );
-}
-
-export const ConfirmSendsAndCloses: Story = {
-  args: { onConfirm: fn() },
-  render: (args) => <Demo onConfirm={args.onConfirm ?? (() => {})} />,
-  play: async ({ args, canvasElement }) => {
-    const canvas = within(canvasElement);
-    const body = within(document.body);
-    await userEvent.click(canvas.getByRole('button', { name: 'Open modal' }));
-    await userEvent.click(await body.findByRole('button', { name: 'Send' }));
-    await expect(args.onConfirm).toHaveBeenCalledOnce();
-    await waitFor(() => expect(body.queryByRole('dialog')).not.toBeInTheDocument());
-  },
-};
-
-export const Interactive: Story = {
-  render: () => <Demo onConfirm={alertingAction('Payment sent')} />,
-};
-
-export const CancelCloses: Story = {
-  args: { onConfirm: fn() },
-  render: (args) => <Demo onConfirm={args.onConfirm ?? (() => {})} />,
-  play: async ({ args, canvasElement }) => {
-    const canvas = within(canvasElement);
-    const body = within(document.body);
-    await userEvent.click(canvas.getByRole('button', { name: 'Open modal' }));
-    await userEvent.click(await body.findByRole('button', { name: 'Cancel' }));
-    await waitFor(() => expect(body.queryByRole('dialog')).not.toBeInTheDocument());
-    await expect(args.onConfirm).not.toHaveBeenCalled();
+export const Default: Story = {
+  args: { open: true, maxWidth: 340 },
+  render: (args) => (
+    <Modal {...args}>
+      <Modal.Title asChild>
+        <Text as="h2" size="heading" tone="default" className="mb-1">
+          Confirm action
+        </Text>
+      </Modal.Title>
+      <Modal.Description asChild>
+        <Text as="p" size="label" tone="muted" className="mb-4">
+          Bespoke content lives directly inside the shell — the design system owns the overlay,
+          focus-trap, and ARIA.
+        </Text>
+      </Modal.Description>
+      <div className="flex gap-2.5">
+        <Modal.Close asChild>
+          <button
+            type="button"
+            className="border-cl-border-2 bg-cl-surface text-cl-text-2 flex-1 rounded-lg border px-4 py-2.5 text-[13px] font-medium"
+          >
+            Cancel
+          </button>
+        </Modal.Close>
+        <Button fullWidth className="flex-[1.4]">
+          Confirm
+        </Button>
+      </div>
+    </Modal>
+  ),
+  play: async ({ canvasElement }) => {
+    // Radix renders the dialog in a portal at the document body, so query the whole document.
+    const body = within(canvasElement.ownerDocument.body);
+    const dialog = await body.findByRole('dialog');
+    await expect(dialog).toHaveAccessibleName('Confirm action');
   },
 };

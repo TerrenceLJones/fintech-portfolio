@@ -6,6 +6,11 @@ import type {
   PaymentErrorResponse,
   PaymentIntentResponse,
   SessionErrorResponse,
+  StepUpChallengeResponse,
+  StepUpErrorResponse,
+  StepUpMethod,
+  StepUpVerifyRequest,
+  StepUpVerifyResponse,
 } from '@clearline/contracts';
 import { hasPermission, permissionsForRole } from '@clearline/domain-auth';
 import { AuthService } from '../services/auth.service';
@@ -94,7 +99,60 @@ export function createPaymentsHandlers(
         };
         return HttpResponse.json(body, { status: 422 });
       }
+      // A high-value payment comes back reserved with a step-up challenge attached (US-CW-010 AC-01).
+      if (result.outcome === 'requires_action') {
+        const body: CreatePaymentResponse = { intent: result.intent, challenge: result.challenge };
+        return HttpResponse.json(body, { status: 200 });
+      }
       const body: CreatePaymentResponse = { intent: result.intent };
+      return HttpResponse.json(body, { status: 200 });
+    }),
+
+    // Step-up verify (US-CW-010 AC-02/AC-04/AC-06). A wrong code (otp_incorrect) and an expired code
+    // (otp_expired, with a freshly issued challenge) are both 422 the client renders distinctly; a
+    // connectivity failure never reaches here, so the client owns that (AC-07) path.
+    http.post('*/api/payments/:id/challenge/verify', async ({ request, params }) => {
+      const actor = resolveActor(request, authService);
+      if (!actor) return unauthorized();
+      if (!hasPermission(actor.permissions, 'payments:create')) return forbidden();
+
+      const { code } = (await request.json()) as StepUpVerifyRequest;
+      const result = paymentsService.verifyStepUp(String(params.id), code);
+
+      if (result.outcome === 'not_found') {
+        return HttpResponse.json({ error: 'not_found' }, { status: 404 });
+      }
+      if (result.outcome === 'verified') {
+        const body: StepUpVerifyResponse = { intent: result.intent };
+        return HttpResponse.json(body, { status: 200 });
+      }
+      if (result.outcome === 'expired') {
+        const body: StepUpErrorResponse = { error: 'otp_expired', challenge: result.challenge };
+        return HttpResponse.json(body, { status: 422 });
+      }
+      if (result.outcome === 'locked') {
+        return HttpResponse.json({ error: 'locked' } satisfies StepUpErrorResponse, {
+          status: 422,
+        });
+      }
+      return HttpResponse.json({ error: 'otp_incorrect' } satisfies StepUpErrorResponse, {
+        status: 422,
+      });
+    }),
+
+    // Step-up resend / "Try another method" (US-CW-010 AC-05) — issues a new code, optionally on a
+    // different channel, and invalidates the previous one server-side.
+    http.post('*/api/payments/:id/challenge/resend', async ({ request, params }) => {
+      const actor = resolveActor(request, authService);
+      if (!actor) return unauthorized();
+      if (!hasPermission(actor.permissions, 'payments:create')) return forbidden();
+
+      const payload = (await request.json().catch(() => ({}))) as { method?: StepUpMethod };
+      const result = paymentsService.resendStepUp(String(params.id), payload.method);
+      if (result.outcome === 'not_found') {
+        return HttpResponse.json({ error: 'not_found' }, { status: 404 });
+      }
+      const body: StepUpChallengeResponse = { challenge: result.challenge };
       return HttpResponse.json(body, { status: 200 });
     }),
 

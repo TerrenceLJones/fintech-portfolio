@@ -74,6 +74,60 @@ test('sends a cross-currency payment only after the converted amount is acknowle
   await expect(page.getByText('Pending')).toBeVisible();
 });
 
+test('challenges a high-value payment with step-up, then commits on the correct code (US-CW-010 AC-01/AC-02)', async ({
+  page,
+}) => {
+  await signIn(page);
+  await page.getByRole('navigation', { name: 'Main' }).getByText('Payments').click();
+
+  // $12,000 is above the $10,000 step-up threshold, so confirming reserves the payment in
+  // requires_action and opens the OTP challenge instead of committing.
+  await page.getByRole('button', { name: /Acme Corp/ }).click();
+  await page.getByLabel('Amount').fill('12000');
+  await page.getByRole('button', { name: /Review & send/ }).click();
+  await expect(page.getByText('Send $12,000.00 to Acme Corp?')).toBeVisible();
+  await page.getByRole('button', { name: 'Send payment' }).click();
+
+  await expect(page.getByRole('heading', { name: /Verify it's you/ })).toBeVisible();
+  // No navigation yet — nothing has committed.
+  await expect(page).toHaveURL(/\/payments\/new$/);
+
+  // 424242 is the mock's valid demo OTP — entering it verifies and commits (auto-submits on the last
+  // digit), landing on the pending status page.
+  await page.getByLabel('Code digit 1').click();
+  await page.keyboard.type('424242');
+
+  await expect(page).toHaveURL(/\/payments\/pi_/);
+  await expect(page.getByText('Pending')).toBeVisible();
+});
+
+test('abandoning a step-up challenge leaves the payment retryable with no charge (US-CW-010 AC-03)', async ({
+  page,
+}) => {
+  await signIn(page);
+  await page.getByRole('navigation', { name: 'Main' }).getByText('Payments').click();
+
+  await page.getByRole('button', { name: /Acme Corp/ }).click();
+  await page.getByLabel('Amount').fill('12000');
+  await page.getByRole('button', { name: /Review & send/ }).click();
+  await page.getByRole('button', { name: 'Send payment' }).click();
+  await expect(page.getByRole('heading', { name: /Verify it's you/ })).toBeVisible();
+
+  // Close the challenge without completing it — the reserved payment stays put, no charge is created.
+  await page.keyboard.press('Escape');
+  await expect(
+    page.getByText("Authentication wasn't completed. Try again to finish your payment."),
+  ).toBeVisible();
+  await expect(page).toHaveURL(/\/payments\/new$/);
+
+  // Retry reopens the same challenge; the correct code then commits it.
+  await page.getByRole('button', { name: /Retry verification/ }).click();
+  await expect(page.getByRole('heading', { name: /Verify it's you/ })).toBeVisible();
+  await page.getByLabel('Code digit 1').click();
+  await page.keyboard.type('424242');
+  await expect(page).toHaveURL(/\/payments\/pi_/);
+});
+
 test('blocks a self-transfer before any network call (US-CW-008 AC-05)', async ({ page }) => {
   await signIn(page);
   await page.getByRole('navigation', { name: 'Main' }).getByText('Payments').click();

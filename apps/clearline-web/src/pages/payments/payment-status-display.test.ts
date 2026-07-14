@@ -13,6 +13,14 @@ describe('paymentStatusDisplay', () => {
     expect(display.isSettling).toBe(true);
   });
 
+  it('shows a neutral, actionable state for a step-up-gated payment (US-CW-010)', () => {
+    const display = paymentStatusDisplay('requires_action');
+    expect(display.label).toBe('Action needed');
+    expect(display.description).toMatch(/identity verification/i);
+    // Terminal here — the view shouldn't poll a payment that's waiting on the user, not the network.
+    expect(display.isSettling).toBe(false);
+  });
+
   it('describes a reversal with its date and keeps it terminal (AC-02)', () => {
     const display = paymentStatusDisplay('reversed', { reversedDate: 'Jun 26, 2026' });
     expect(display.description).toBe(

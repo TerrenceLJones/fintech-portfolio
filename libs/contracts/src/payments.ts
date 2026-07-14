@@ -66,13 +66,21 @@ export interface CreatePaymentRequest {
  * The known payment lifecycle states. On the wire `PaymentIntent.status` is a plain string so a status
  * the client doesn't recognize can still round-trip; the client normalizes it (unknown → 'processing',
  * US-CW-009 AC-03) rather than trusting the raw value directly.
+ *   - requires_action: gated on a step-up challenge (OTP/biometric) before it can commit; no funds have
+ *     moved yet, and abandoning it leaves the intent here with no charge created (US-CW-010 AC-01/AC-03)
  *   - processing: definitive status not yet known (submitting, polling, or an unrecognized code)
  *   - pending: accepted, awaiting settlement ("Payment submitted — pending")
  *   - pending_review: held for compliance screening — surfaced neutrally, never as "sanctions" (AC-01)
  *   - settled / reversed / failed: terminal
  */
 export type PaymentIntentStatus =
-  'processing' | 'pending' | 'pending_review' | 'settled' | 'reversed' | 'failed';
+  | 'requires_action'
+  | 'processing'
+  | 'pending'
+  | 'pending_review'
+  | 'settled'
+  | 'reversed'
+  | 'failed';
 
 export interface PaymentIntent {
   id: string;
@@ -95,6 +103,56 @@ export interface PaymentIntent {
 
 export interface CreatePaymentResponse {
   intent: PaymentIntent;
+  /**
+   * Present when the payment tripped the step-up threshold (US-CW-010 AC-01): the intent comes back
+   * `requires_action` and this describes the challenge to present. Absent for an ordinary payment that
+   * committed straight to `pending`.
+   */
+  challenge?: StepUpChallenge;
+}
+
+/** How a step-up challenge is delivered. Only OTP is designed; "Try another method" toggles the channel. */
+export type StepUpMethod = 'otp_sms' | 'otp_email';
+
+/**
+ * A live step-up (3DS-style) challenge gating a high-value PaymentIntent (US-CW-010). The one-time code
+ * itself never crosses the wire — only where it was sent (`destinationMasked`, e.g. '•••-•••-4417') so
+ * the UI can say "Enter the 6-digit code sent to …". The server holds the code, its 10-minute expiry,
+ * and the idempotency key, so the whole lifecycle resolves against a single payment attempt.
+ */
+export interface StepUpChallenge {
+  intentId: string;
+  method: StepUpMethod;
+  destinationMasked: string;
+}
+
+/** Body of a verify attempt — the 6-digit one-time code the user entered. */
+export interface StepUpVerifyRequest {
+  code: string;
+}
+
+/**
+ * Why a step-up verify failed. `otp_incorrect` is a wrong code (an authentication failure); `otp_expired`
+ * means the code aged out — the server invalidates it and issues a fresh one before responding (AC-06);
+ * `locked` means too many wrong attempts. A network/connectivity failure is NOT in here — it never
+ * reaches the server, and the client renders it distinctly (AC-04 vs AC-07).
+ */
+export type StepUpErrorCode = 'otp_incorrect' | 'otp_expired' | 'locked';
+
+export interface StepUpErrorResponse {
+  error: StepUpErrorCode;
+  /** Present on `otp_expired`: the freshly issued replacement challenge (AC-06). */
+  challenge?: StepUpChallenge;
+}
+
+/** A successful verify commits the payment and returns the now-`processing`/`pending` intent (AC-02). */
+export interface StepUpVerifyResponse {
+  intent: PaymentIntent;
+}
+
+/** A resend / method-switch issues a new code and returns the refreshed challenge (AC-05/AC-06). */
+export interface StepUpChallengeResponse {
+  challenge: StepUpChallenge;
 }
 
 export interface PaymentIntentResponse {

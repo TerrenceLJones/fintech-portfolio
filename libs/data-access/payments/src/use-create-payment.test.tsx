@@ -47,7 +47,28 @@ describe('useCreatePayment', () => {
     result.current.mutate(variables);
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data?.status).toBe('pending');
+    expect(result.current.data?.intent.status).toBe('pending');
+    // An ordinary payment carries no step-up challenge.
+    expect(result.current.data?.challenge).toBeUndefined();
+  });
+
+  it('surfaces a step-up challenge when a high-value payment comes back requires_action (US-CW-010 AC-01)', async () => {
+    setAccessToken('access_valid');
+    server.use(
+      http.post('*/api/payments', () =>
+        HttpResponse.json({
+          intent: { ...pendingIntent, status: 'requires_action' },
+          challenge: { intentId: 'pi_1', method: 'otp_sms', destinationMasked: '•••-•••-4417' },
+        }),
+      ),
+    );
+
+    const { result } = renderHook(() => useCreatePayment(), { wrapper });
+    result.current.mutate(variables);
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data?.intent.status).toBe('requires_action');
+    expect(result.current.data?.challenge?.destinationMasked).toBe('•••-•••-4417');
   });
 
   it('sends the idempotency key in the Idempotency-Key header', async () => {

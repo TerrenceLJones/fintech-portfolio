@@ -1,6 +1,14 @@
 import type { DemoBeaconPageConfig } from '@clearline/demo-beacon';
-import { SEED_RECIPIENTS, SEED_SOURCE_ACCOUNT } from '@clearline/mock-backend/fixtures';
+import {
+  SEED_RECIPIENTS,
+  SEED_SOURCE_ACCOUNT,
+  STEP_UP_OTP_EXPIRED,
+  STEP_UP_OTP_VALID,
+  STEP_UP_THRESHOLD_MINOR_UNITS,
+} from '@clearline/mock-backend/fixtures';
 import { money } from '../../dev/beacon/shared';
+
+const stepUpThreshold = money({ amountMinorUnits: STEP_UP_THRESHOLD_MINOR_UNITS, currency: 'USD' });
 
 /** The full account number behind a seed recipient — the page only ever shows the masked form. */
 const acctOf = (id: string) => SEED_RECIPIENTS.find((r) => r.id === id)?.accountNumber ?? '';
@@ -51,6 +59,29 @@ export const newPaymentBeacon: DemoBeaconPageConfig = {
       ],
     },
     {
+      // The demo OTP codes the page (and a real SMS) would never expose, so a tester can drive the
+      // step-up challenge deterministically (US-CW-010).
+      kind: 'copyable',
+      title: 'Step-up (3DS) test codes',
+      items: [
+        {
+          label: 'Valid OTP',
+          value: STEP_UP_OTP_VALID,
+          hint: `Verifies the challenge and sends the payment. Triggered above ${stepUpThreshold}.`,
+        },
+        {
+          label: 'Expired OTP',
+          value: STEP_UP_OTP_EXPIRED,
+          hint: '“That code expired. We’ve sent a new one.” — old code invalidated server-side (AC-06).',
+        },
+        {
+          label: 'Wrong OTP',
+          value: '111111',
+          hint: 'Any other 6 digits → “We couldn’t verify your identity.” (AC-04).',
+        },
+      ],
+    },
+    {
       kind: 'flows',
       title: 'Try this',
       flows: [
@@ -61,6 +92,20 @@ export const newPaymentBeacon: DemoBeaconPageConfig = {
             { text: 'Click **Acme Corp** in the recipient list.' },
             { text: 'Enter amount **$5,000** — under balance and daily limit.' },
             { text: 'Review the summary, then Send — it moves to the status page.' },
+          ],
+        },
+        {
+          id: 'step-up',
+          title: 'Trigger step-up authentication',
+          steps: [
+            { text: 'Click **Acme Corp**, then enter **$12,000** — above the step-up threshold.' },
+            { text: 'Review & send, confirm — a “Verify it’s you” challenge appears.' },
+            {
+              text: `Enter the **Valid OTP** (${STEP_UP_OTP_VALID}) to finish, or the **Expired** / **Wrong** codes above to see recovery.`,
+            },
+            {
+              text: 'Or **close the challenge** → return banner + Retry, with the same key preserved.',
+            },
           ],
         },
         {

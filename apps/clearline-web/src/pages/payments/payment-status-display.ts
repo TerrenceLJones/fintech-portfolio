@@ -21,6 +21,16 @@ export function paymentStatusDisplay(
   detail: { reversedDate?: string } = {},
 ): PaymentStatusDisplay {
   switch (status) {
+    case 'requires_action':
+      // A payment gated on step-up shouldn't normally reach this view (the challenge resolves inline on
+      // the New Payment screen), but if one is opened directly it reads as a neutral, actionable state
+      // rather than a scary error (US-CW-010).
+      return {
+        badgeStatus: 'under-review',
+        label: 'Action needed',
+        description: 'This payment needs identity verification before it can be sent.',
+        isSettling: false,
+      };
     case 'pending':
       return {
         badgeStatus: 'pending-l1',

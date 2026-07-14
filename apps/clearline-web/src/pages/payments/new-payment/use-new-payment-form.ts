@@ -1,6 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
-import type { CreatePaymentRequest, PaymentRecipient } from '@clearline/contracts';
+import type {
+  CreatePaymentRequest,
+  PaymentIntent,
+  PaymentRecipient,
+  StepUpChallenge,
+} from '@clearline/contracts';
 import { validatePayment } from '@clearline/domain-payments';
 import { parseAmountToMinorUnits } from '@clearline/money';
 import {
@@ -49,6 +54,14 @@ export function useNewPaymentForm() {
   const [fxAcknowledged, setFxAcknowledged] = useState(false);
   const [clientError, setClientError] = useState<ActiveError | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
+
+  // Step-up (US-CW-010): a high-value payment comes back reserved in `requires_action` with a
+  // challenge. `challengeIntent` holds the reserved intent for as long as it's unresolved — including
+  // after the modal is closed (abandoned), which is what drives the "Authentication wasn't completed"
+  // banner + Retry (AC-03). `challengeOpen` is just whether the modal itself is showing.
+  const [challenge, setChallenge] = useState<StepUpChallenge | null>(null);
+  const [challengeIntent, setChallengeIntent] = useState<PaymentIntent | null>(null);
+  const [challengeOpen, setChallengeOpen] = useState(false);
 
   const idempotency = useIdempotencyKey(draft?.idempotencyKey);
 
@@ -172,9 +185,17 @@ export function useNewPaymentForm() {
     createPayment.mutate(
       { request: buildRequest(), idempotencyKey: idempotency.key },
       {
-        onSuccess: (intent) => {
+        onSuccess: (response) => {
+          // A high-value payment is reserved awaiting step-up (US-CW-010 AC-01): open the challenge
+          // instead of navigating — no funds have moved yet, and the same key threads through it.
+          if (response.intent.status === 'requires_action' && response.challenge) {
+            setChallenge(response.challenge);
+            setChallengeIntent(response.intent);
+            setChallengeOpen(true);
+            return;
+          }
           clearDraft();
-          navigate(`/payments/${intent.id}`);
+          navigate(`/payments/${response.intent.id}`);
         },
       },
     );
@@ -183,6 +204,28 @@ export function useNewPaymentForm() {
   function onConfirm() {
     setConfirmOpen(false);
     submit();
+  }
+
+  // The step-up challenge cleared (AC-02): the payment has committed, so drop the draft and move to the
+  // status page just like an ordinary payment.
+  function onStepUpVerified(intent: PaymentIntent) {
+    setChallengeOpen(false);
+    setChallenge(null);
+    setChallengeIntent(null);
+    clearDraft();
+    navigate(`/payments/${intent.id}`);
+  }
+
+  // Closing the modal without verifying abandons the challenge — the reserved intent stays
+  // `requires_action`, so we keep `challengeIntent` to surface the banner + Retry (AC-03).
+  function onChallengeOpenChange(open: boolean) {
+    setChallengeOpen(open);
+  }
+
+  // "Retry verification" reopens the SAME reserved challenge — same intent, same idempotency key — so a
+  // retry can never become a second payment (AC-03).
+  function retryStepUp() {
+    setChallengeOpen(true);
   }
 
   function selectRecipient(recipient: PaymentRecipient) {
@@ -261,6 +304,14 @@ export function useNewPaymentForm() {
     isPending: createPayment.isPending,
     isTimeout,
     isExhausted,
+    // Step-up challenge (US-CW-010)
+    challenge,
+    challengeIntent,
+    challengeOpen,
+    awaitingStepUp: challengeIntent !== null && !challengeOpen,
+    onChallengeOpenChange,
+    onStepUpVerified,
+    retryStepUp,
     // Derived view state
     activeError,
     projectedBalanceMinor,
