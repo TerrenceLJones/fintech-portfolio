@@ -1,6 +1,11 @@
 import type { DemoBeaconPageConfig } from '@clearline/demo-beacon';
 import { DEMO_USER_PASSWORD } from '@clearline/mock-backend/fixtures';
-import { DEMO_EMAIL, loadControls } from '../dev/beacon/shared';
+import {
+  DEMO_EMAIL,
+  EXAMPLE_SIGNUP_EMAIL,
+  loadControls,
+  verifyEmailSection,
+} from '../dev/beacon/shared';
 
 /** Sign-in guide: the seeded credentials and the auth-outage scenario. */
 export const loginBeacon: DemoBeaconPageConfig = {
@@ -32,8 +37,24 @@ export const loginBeacon: DemoBeaconPageConfig = {
             { text: 'Submit — you land on the dashboard.' },
           ],
         },
+        {
+          id: 'see-onboarding',
+          title: 'See the KYB onboarding flow',
+          steps: [
+            {
+              text: 'The demo account skips onboarding — start a fresh sign-up instead.',
+              navigateTo: '/signup',
+            },
+            { text: `Use \`${EXAMPLE_SIGNUP_EMAIL}\` and any strong password.` },
+            {
+              text: 'Hit the "verify your email" wall? Use **Get verification link & continue** below.',
+            },
+            { text: 'You land in the KYB wizard at the business-info step.' },
+          ],
+        },
       ],
     },
+    verifyEmailSection,
     {
       kind: 'toggles',
       title: 'Scenarios',

@@ -48,8 +48,23 @@ export const beneficialOwnersBeacon: DemoBeaconPageConfig = {
 export const documentUploadBeacon: DemoBeaconPageConfig = {
   pageId: 'onboarding.documents',
   title: 'KYB — documents',
-  summary: 'The OCR vendor is mocked — any uploaded image is “read” deterministically.',
+  summary:
+    'The OCR vendor is mocked: it “reads” the uploaded file’s **name**, not its pixels — so the file has to be *named* like the document. Any image works as long as its name matches.',
   sections: [
+    {
+      kind: 'text',
+      title: 'What the mock OCR accepts',
+      body: 'The file name (case-insensitive, punctuation ignored) must contain `driver` + `licen` → driver’s license, `passport` → passport, or `state id` / `identification card` → state ID. Anything else is rejected as “not a valid ID.”',
+    },
+    {
+      kind: 'copyable',
+      title: 'Example file names',
+      items: [
+        { label: "Driver's license", value: 'drivers-license.png' },
+        { label: 'Passport', value: 'passport.png' },
+        { label: 'State ID', value: 'state-id.png' },
+      ],
+    },
     {
       kind: 'flows',
       title: 'Try this',
@@ -58,8 +73,9 @@ export const documentUploadBeacon: DemoBeaconPageConfig = {
           id: 'docs',
           title: 'Upload a document',
           steps: [
-            { text: 'Upload any image file — the mock OCR accepts it.' },
-            { text: 'Repeated failures (3+) push the account into a “documents blocked” state.' },
+            { text: 'Rename any image to one of the names above, then upload it — it’s accepted.' },
+            { text: 'Upload an image with any other name to see the “not a valid ID” rejection.' },
+            { text: 'Three rejected uploads push the account into a “documents blocked” state.' },
           ],
         },
       ],
