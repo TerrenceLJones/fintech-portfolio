@@ -36,5 +36,9 @@ Each `SelectOption` describes one row:
 - **AC-08 — Select.** Given a `Select` with an option marked `disabled`, when opened, then that
   option renders with `aria-disabled="true"` and cannot be chosen; and choosing an enabled option
   calls `onValueChange` with its `value` and updates the trigger to that option's `label`.
+- **AC-09 — Select.** Given a `Select` with `disabled={true}`, when rendered, then the trigger stays
+  focusable and in the accessibility tree (`aria-disabled` is set rather than the native `disabled`
+  attribute, so keyboard/screen-reader focus isn't lost), and it is inert — clicking or pressing an
+  open key (Enter/Space/Arrows) does not open the listbox.
 
 <Stories />

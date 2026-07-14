@@ -236,6 +236,11 @@ export function LoginPage() {
         open={pendingAccessToken != null}
         onOpenChange={(open) => {
           if (open) return;
+          // Only an unresolved notice revokes on close. "Continue here" resolves it and then
+          // navigates while the dialog is still open, so the unmount that follows can fire a
+          // stray onOpenChange(false) from Radix's focus/dismiss cleanup — without this guard
+          // that would re-run the revoke and tear down the session the user just kept (AC-07).
+          if (pendingResolvedRef.current) return;
           // Cancelling doesn't just dismiss the notice — the login that triggered it already
           // established a real session server-side (US-CW-002 AC-07 is explicit that continuing
           // elsewhere never forces the other device out, but says nothing about leaving this one

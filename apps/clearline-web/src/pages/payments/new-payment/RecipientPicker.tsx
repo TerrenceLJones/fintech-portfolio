@@ -1,4 +1,4 @@
-import { Avatar, Icon, Text, TextField } from '@clearline/ui';
+import { Avatar, Button, Icon, Text, TextField } from '@clearline/ui';
 import { initialsFor } from './format';
 import type { NewPaymentForm } from './use-new-payment-form';
 
@@ -85,13 +85,9 @@ export function RecipientPicker({
           );
         })}
       </ul>
-      <button
-        type="button"
-        onClick={onEnterManualMode}
-        className="text-cl-accent-text mt-2 text-[12px] font-semibold"
-      >
+      <Button variant="link" onClick={onEnterManualMode} className="mt-2">
         Recipient not listed? Enter account details
-      </button>
+      </Button>
       {manualMode ? (
         <div className="mt-3 flex flex-col gap-3">
           <TextField

@@ -1,7 +1,8 @@
-import type { ReactNode } from 'react';
+import type { KeyboardEvent, PointerEvent, ReactNode } from 'react';
 import { Select as RadixSelect } from 'radix-ui';
 import { Icon } from '../../foundations/Icon';
 import { Text } from '../Text';
+import { useDisabledGuard } from '../../utils/useDisabledGuard';
 
 export interface SelectOption {
   /** The value emitted via `onValueChange` when this row is chosen. */
@@ -48,12 +49,37 @@ export function Select({
   className,
   'aria-label': ariaLabel,
 }: SelectProps) {
+  // Deliberately NOT passing `disabled` to Radix's Root — Radix renders it as the native HTML
+  // `disabled` attribute on the trigger, which drops it from the tab order and the accessibility
+  // tree (matching Checkbox's stance). Instead we mark the trigger `aria-disabled` and neutralize
+  // every vector Radix opens/mutates on. Unlike Checkbox (which only toggles on click), a Select
+  // trigger opens on pointerdown and on keydown (Enter/Space/Arrows), and mutates the value via
+  // typeahead even while closed — so we intercept pointerdown/keydown too. Radix composes consumer
+  // handlers before its own and skips its own when the event is `defaultPrevented`
+  // (`@radix-ui/primitive`'s `composeEventHandlers`), so preventing default here keeps the trigger
+  // focusable while making it inert. Verified against @radix-ui/react-select 2.x — a Radix major
+  // bump that changes this composition needs a human look.
+  const guard = useDisabledGuard<HTMLButtonElement>(disabled);
+  const inertHandlers = disabled
+    ? {
+        onPointerDown: (event: PointerEvent<HTMLButtonElement>) => event.preventDefault(),
+        // Let Tab/Shift+Tab through so focus can still leave the disabled trigger; suppress every
+        // other key, which covers Radix's open keys and the closed-trigger typeahead.
+        onKeyDown: (event: KeyboardEvent<HTMLButtonElement>) => {
+          if (event.key !== 'Tab') event.preventDefault();
+        },
+      }
+    : undefined;
   return (
-    <RadixSelect.Root value={value} onValueChange={onValueChange} disabled={disabled}>
+    <RadixSelect.Root value={value} onValueChange={onValueChange}>
       <RadixSelect.Trigger
         aria-label={ariaLabel}
+        aria-disabled={guard['aria-disabled']}
+        onClick={guard.onClick}
+        {...inertHandlers}
         className={[
-          'group border-cl-border-2 bg-cl-surface text-cl-text data-[state=open]:border-cl-accent data-[state=open]:ring-cl-accent-weak focus:border-cl-accent focus:ring-cl-accent-weak flex w-full cursor-pointer items-center justify-between gap-2 rounded-lg border py-[11px] pr-3.5 pl-3.5 text-[13px] font-medium outline-none focus:ring-3 disabled:cursor-not-allowed disabled:opacity-60 data-[state=open]:ring-3',
+          'group border-cl-border-2 bg-cl-surface text-cl-text data-[state=open]:border-cl-accent data-[state=open]:ring-cl-accent-weak focus:border-cl-accent focus:ring-cl-accent-weak flex w-full items-center justify-between gap-2 rounded-lg border py-[11px] pr-3.5 pl-3.5 text-[13px] font-medium outline-none focus:ring-3 data-[state=open]:ring-3',
+          disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer',
           className,
         ]
           .filter(Boolean)

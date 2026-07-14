@@ -83,4 +83,21 @@ export const DisabledControl: Story = {
       />
     </div>
   ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const trigger = canvas.getByRole('combobox', { name: 'Method' });
+
+    // Unlike a native `disabled` trigger, it stays in the a11y tree and the tab order — announcing
+    // its state via aria-disabled rather than vanishing from keyboard/screen-reader navigation.
+    expect(trigger).not.toBeDisabled();
+    await expect(trigger).toHaveAttribute('aria-disabled', 'true');
+    trigger.focus();
+    await expect(trigger).toHaveFocus();
+
+    // ...but it's inert: neither clicking nor pressing an open key opens the listbox.
+    await userEvent.click(trigger);
+    await userEvent.keyboard('{Enter}');
+    await userEvent.keyboard('{ArrowDown}');
+    expect(screen.queryByRole('option')).toBeNull();
+  },
 };

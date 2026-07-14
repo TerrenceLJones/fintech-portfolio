@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import type { CreatePaymentRequest, PaymentRecipient } from '@clearline/contracts';
 import { validatePayment } from '@clearline/domain-payments';
+import { parseAmountToMinorUnits } from '@clearline/money';
 import {
   PaymentTimeoutError,
   PaymentValidationError,
@@ -11,7 +12,7 @@ import {
   useIdempotencyKey,
   usePaymentContext,
 } from '@clearline/data-access-payments';
-import { messageForPaymentError, parseAmountToMinorUnits } from './new-payment-form';
+import { messageForPaymentError } from './new-payment-form';
 import { clearDraft, readDraft, writeDraft } from './payment-draft';
 
 /** An inline error tied to a field, optionally offering a limit-increase CTA. */
@@ -110,7 +111,10 @@ export function useNewPaymentForm() {
       return { field: 'recipient', message: 'Choose a recipient or enter account details.' };
     }
     if (amountMinor === null) {
-      return { field: 'amount', message: 'Enter an amount greater than $0.' };
+      return {
+        field: 'amount',
+        message: messageForPaymentError('invalid_amount', { currency: sourceCurrency }),
+      };
     }
     const decision = validatePayment({
       amountMinorUnits: amountMinor,

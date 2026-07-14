@@ -1,22 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { messageForPaymentError, parseAmountToMinorUnits } from './new-payment-form';
-
-describe('parseAmountToMinorUnits', () => {
-  it('parses plain, comma-grouped and $-prefixed dollar amounts to cents', () => {
-    expect(parseAmountToMinorUnits('5000')).toBe(500_000);
-    expect(parseAmountToMinorUnits('5,000.00')).toBe(500_000);
-    expect(parseAmountToMinorUnits('$5,000.50')).toBe(500_050);
-  });
-
-  it('returns null for empty, non-numeric or non-positive input', () => {
-    expect(parseAmountToMinorUnits('')).toBeNull();
-    expect(parseAmountToMinorUnits('abc')).toBeNull();
-    expect(parseAmountToMinorUnits('0')).toBeNull();
-    expect(parseAmountToMinorUnits('-5')).toBeNull();
-  });
-});
+import { messageForPaymentError } from './new-payment-form';
 
 describe('messageForPaymentError', () => {
+  it('prompts for a positive amount using the source currency symbol', () => {
+    expect(messageForPaymentError('invalid_amount')).toBe('Enter an amount greater than $0.');
+    expect(messageForPaymentError('invalid_amount', { currency: 'EUR' })).toBe(
+      'Enter an amount greater than €0.',
+    );
+    expect(messageForPaymentError('invalid_amount', { currency: 'JPY' })).toBe(
+      'Enter an amount greater than ¥0.',
+    );
+  });
+
   it('includes the available balance for insufficient_balance (AC-01)', () => {
     expect(
       messageForPaymentError('insufficient_balance', {

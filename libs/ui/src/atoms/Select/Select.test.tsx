@@ -24,7 +24,7 @@ describe('Select', () => {
     expect(trigger).toHaveTextContent('Wire');
   });
 
-  it('disables the trigger when the control is disabled', () => {
+  it('marks the trigger aria-disabled but keeps it focusable when the control is disabled', () => {
     render(
       <Select
         aria-label="Method"
@@ -34,6 +34,12 @@ describe('Select', () => {
         options={OPTIONS}
       />,
     );
-    expect(screen.getByRole('combobox', { name: 'Method' })).toBeDisabled();
+    // Native `disabled` would drop the trigger from the tab order and a11y tree; instead we mark it
+    // aria-disabled and keep it focusable so keyboard/screen-reader users don't lose it.
+    const trigger = screen.getByRole('combobox', { name: 'Method' });
+    expect(trigger).not.toBeDisabled();
+    expect(trigger).toHaveAttribute('aria-disabled', 'true');
+    trigger.focus();
+    expect(trigger).toHaveFocus();
   });
 });
