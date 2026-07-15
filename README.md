@@ -143,14 +143,14 @@ The frontend framework decision is settled (React 19 + Vite) and `clearline-web`
 - **EPIC-CW-001 / 016** — Authentication, session management, and account sign-up
 - **EPIC-CW-002** — Business onboarding & KYB
 - **EPIC-CW-003** — Role-based access control & permissions
+- **EPIC-CW-004** — Vendor payments & transfers (idempotent payment flow, validation gate, FX quote)
+- **EPIC-CW-005** — 3DS / step-up authentication for high-value payments
+- **EPIC-CW-006** — Expense submission & approval workflow (separation of duties, limit-based escalation, stale-action reconciliation)
+- **EPIC-CW-007** — Batch operations (partial-failure batch approve/reject, per-item idempotency keys, mid-batch resume)
 - **EPIC-CW-019** — Account owner provisioning at KYB approval
 - **EPIC-CW-020** — Reassign approver for blocked approvals
 
-**In progress:**
-
-- **EPIC-CW-004** — Vendor payments & transfers (idempotent payment flow, validation gate, FX quote)
-
-**Planned** (see `specs/epics/clearline-web/`): 3DS step-up auth, expense submission & approval workflow, batch operations, card management, real-time spend dashboard & analytics, vendor management & reconciliation, AI invoice coding, AI spend insights (streaming), budget management, plus cross-cutting accessibility (WCAG 2.1 AA) and audit logging.
+**Planned** (see `specs/epics/clearline-web/`): card management, real-time spend dashboard & analytics, vendor management & reconciliation, AI invoice coding, AI spend insights (streaming), budget management, organization & team management, plus cross-cutting accessibility (WCAG 2.1 AA) and audit logging.
 
 ---
 

@@ -9,7 +9,7 @@ feature_area: 'core'
 title: 'Account Owner Provisioning at KYB Approval'
 
 # Lifecycle status
-status: 'DRAFT'
+status: 'IMPLEMENTED'
 story_points: 3
 dependencies: ['US-CW-004', 'US-CW-006', 'US-CW-029']
 
@@ -22,17 +22,23 @@ history:
   - epic_id: 'EPIC-CW-019'
     action: 'created'
     date: '2026-07-07'
+  - epic_id: 'EPIC-CW-019'
+    action: 'approved'
+    date: '2026-07-07'
+  - epic_id: 'EPIC-CW-019'
+    action: 'implemented'
+    date: '2026-07-07'
 
 # Status timestamps — set when status transitions occur
-approved_date: null
-implementation_date: null
+approved_date: '2026-07-07'
+implementation_date: '2026-07-07'
 deprecated_date: null
 removed_date: null
 
 # User Story
 user_story:
   persona: 'business owner who has just completed KYB verification for my company'
-  capability: 'be provisioned as my account''s Owner the moment my business is approved — given the top approval tier and an Owner flag — so that I hold full financial authority over the account I created'
+  capability: "be provisioned as my account's Owner the moment my business is approved — given the top approval tier and an Owner flag — so that I hold full financial authority over the account I created"
   business_value: 'The account is unambiguously mine from the moment verification clears: I get Controller-level authority instead of being left as a default employee, and my ownership is recorded as a first-class, protected attribute rather than an afterthought'
   description: |
     As a business owner who has just completed KYB verification
@@ -113,10 +119,17 @@ edge_cases: |
 
 # Implementation Status
 implementation_status: |
-  🚧 Not yet implemented — DRAFT authored 2026-07-07 (EPIC-CW-019), specs-only for review.
-  This is the "implement now" slice that answers the account-owner-role question; the invite/team work
-  (US-CW-031) is deferred to EPIC-CW-018. Anticipated seams: OnboardingService approval path (creator
-  elevation via setUserRole), libs/contracts/src/session.ts (+ rbac.ts) for the isOwner flag,
-  libs/mock-backend/src/fixtures/users.fixture.ts + setUserRole for the flag plumbing, and useAuthorization()
-  to surface it. Source: specs/designs/Clearline Design System - Consolidated.dc.html §18 ("One Owner,
-  invite-only membership") — provisioning half only.
+  ✅ Implemented 2026-07-07 (EPIC-CW-019).
+  - AC-01: the creator is elevated to Owner atomically on the KYB-approval transition. The mock-backend
+    OnboardingService fires owner elevation as a one-time side effect only on the finalizing approval
+    (finalizedNow), idempotent on any re-submission, so there is never an approved business whose creator
+    is left a default employee.
+  - AC-02: elevation applies ownerProvisioning() → { role: 'controller', approvalLimit: null, isOwner: true }
+    (@clearline/domain-auth) via authService.setUserRole; the orthogonal isOwner flag rides the session
+    (libs/contracts/src/session.ts), is plumbed through auth.service + session handler, and is surfaced by
+    useAuthorization(). isOwner is not a role in the Role union and grants no permissions/UI in this slice.
+  - AC-03: provisioning establishes exactly one Owner with no self-clear/transfer path here; non-removable /
+    non-demotable enforcement is deferred to US-CW-031 (EPIC-CW-018).
+  Covered by owner-provisioning-policy.test.ts and onboarding.handlers.test.ts (post-approval session asserts
+  role 'controller', approvalLimit null, isOwner true). The invite/team-management half (US-CW-031) remains in
+  EPIC-CW-018. Source: specs/designs/Clearline Design System - Consolidated.dc.html §18 — provisioning half only.

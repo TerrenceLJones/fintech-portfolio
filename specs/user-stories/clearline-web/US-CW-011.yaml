@@ -9,7 +9,7 @@ feature_area: 'core'
 title: 'Expense Submission & Policy Enforcement'
 
 # Lifecycle status
-status: 'APPROVED'
+status: 'IMPLEMENTED'
 story_points: 3
 dependencies: ['US-CW-001']
 
@@ -25,10 +25,13 @@ history:
   - epic_id: 'EPIC-CW-006'
     action: 'approved'
     date: '2026-06-30'
+  - epic_id: 'EPIC-CW-006'
+    action: 'implemented'
+    date: '2026-07-15'
 
 # Status timestamps — set when status transitions occur
 approved_date: '2026-06-30'
-implementation_date: null
+implementation_date: '2026-07-15'
 deprecated_date: null
 removed_date: null
 
@@ -86,5 +89,8 @@ edge_cases: |
 
 # Implementation Status
 implementation_status: |
-  Not yet implemented. This story is APPROVED and ready for implementation planning, transcribed as part of the initial
-  specification pass for clearline-web — no application code exists yet.
+  ✅ Implemented 2026-07-15 (EPIC-CW-006). Employees submit expenses via NewExpensePage
+  (apps/clearline-web/src/pages/expenses/) with category, amount, and receipt; the pure policy gate in
+  @clearline/domain (use-new-expense-form) enforces the receipt-required and per-category policy-limit
+  rules with real-time feedback before submit, and over-limit items submit flagged for scrutiny. The
+  mock backend enqueues the submission into the approval queue (ApprovalsService.enqueue).

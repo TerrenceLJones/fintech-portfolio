@@ -2,8 +2,9 @@ epic_id: 'EPIC-CW-019'
 title: 'Account Owner Provisioning'
 app: 'clearline-web'
 feature_area: 'core'
-status: 'DRAFT'
-approved_date: null
+status: 'IMPLEMENTED'
+approved_date: '2026-07-07'
+implementation_date: '2026-07-07'
 created_date: '2026-07-07'
 source_reference: >
   Split out from the design §18 "Organization & Team Management" work (see EPIC-CW-018) as the foundational,
@@ -61,5 +62,10 @@ notes: >
   is intentionally NOT changed here: with no invited members, every user is a creator who still onboards as
   today. Ownership transfer is out of scope across both epics.
 
-  Status is DRAFT: authored as specs-only for review. The changes.updates entries are declared but NOT yet
-  applied to the already-IMPLEMENTED US-CW-004 / US-CW-006 records — that is an implementation-time step.
+  Implemented 2026-07-07: the creator is elevated to { role: 'controller', approvalLimit: null, isOwner: true }
+  atomically on the KYB-approval transition (mock-backend OnboardingService one-time approval side effect →
+  authService.setUserRole(ownerProvisioning())), the orthogonal isOwner flag rides the session (contracts
+  session.ts) and is surfaced via useAuthorization(), and the ownerProvisioning() policy lives in
+  @clearline/domain-auth. The declared changes.updates to US-CW-004 (elevate-at-approval) and US-CW-006
+  (orthogonal isOwner session flag) were applied in code; those already-IMPLEMENTED records keep their own
+  provenance histories.

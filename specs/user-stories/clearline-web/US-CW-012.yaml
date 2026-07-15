@@ -9,7 +9,7 @@ feature_area: 'core'
 title: 'Expense Approval Workflow'
 
 # Lifecycle status
-status: 'APPROVED'
+status: 'IMPLEMENTED'
 story_points: 8
 dependencies: ['US-CW-011', 'US-CW-006']
 
@@ -25,10 +25,13 @@ history:
   - epic_id: 'EPIC-CW-006'
     action: 'approved'
     date: '2026-06-30'
+  - epic_id: 'EPIC-CW-006'
+    action: 'implemented'
+    date: '2026-07-15'
 
 # Status timestamps — set when status transitions occur
 approved_date: '2026-06-30'
-implementation_date: null
+implementation_date: '2026-07-15'
 deprecated_date: null
 removed_date: null
 
@@ -116,5 +119,9 @@ edge_cases: |
 
 # Implementation Status
 implementation_status: |
-  Not yet implemented. This story is APPROVED and ready for implementation planning, transcribed as part of the initial
-  specification pass for clearline-web — no application code exists yet.
+  ✅ Implemented 2026-07-15 (EPIC-CW-006). ApprovalsPage (apps/clearline-web/src/pages/) renders the
+  queue with per-row canApprove pre-checks, required rejection reasons (RejectReasonDialog), limit-based
+  escalation and self-approval reassignment, and stale-action 409 reconciliation against server truth.
+  Server-side, @clearline/mock-backend's ApprovalsService enforces the same canApprove rule, records an
+  append-only audit event per decision, and returns a 409 conflict (naming who already actioned it) for
+  stale actions. Batch approve/reject landed here too and were hardened in EPIC-CW-007 (US-CW-013).
