@@ -381,7 +381,9 @@ export function ApprovalsPage() {
                     {blocked ? <Icon name="triangle-alert" size={11} className="shrink-0" /> : null}
                     {item.category}
                     {noteSuffix}
-                    {item.status === 'pending_l2' ? ' · escalated to a Controller' : ''}
+                    {item.status === 'pending_l2'
+                      ? ` · escalated by ${item.escalatedBy ?? 'a manager'}`
+                      : ''}
                     {item.policyFlagged ? ' · flagged for scrutiny' : ''}
                   </Text>
                 </div>

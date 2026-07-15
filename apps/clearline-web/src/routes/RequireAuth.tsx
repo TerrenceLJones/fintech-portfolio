@@ -17,6 +17,15 @@ import { getAccessToken, useRefreshToken } from '@clearline/data-access-auth';
  * connection on reload isn't evidence the session is gone, so it doesn't force a sign-out — it
  * offers a manual retry instead, the same way authenticatedFetch leaves an existing session alone
  * on a network failure rather than forcing a logout for what might just be a flaky connection.
+ *
+ * KNOWN DEMO-MODE CAVEAT (mock backend only): in the browser the reload-resume above does NOT work,
+ * so a hard reload of an authenticated session bounces here to /login. This is not a client bug —
+ * MSW's Service Worker can't set the httpOnly refresh-token cookie (`Set-Cookie` is a forbidden
+ * response header on a SW's synthetic response; see mock-backend browser.ts), so the silent refresh
+ * on boot sends no cookie and the server returns 401. Against a real backend the cookie round-trips
+ * and the session resumes. A side effect: the reload leaves a still-active refresh-token family on
+ * the server, so the *next* login trips the multi-device "New sign-in detected" notice in LoginPage
+ * even in the same browser — same root cause, also expected in the demo.
  */
 export function RequireAuth() {
   const location = useLocation();

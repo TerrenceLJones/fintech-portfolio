@@ -96,6 +96,12 @@ export function LoginPage() {
       {
         onSuccess: (data) => {
           if (data.hasOtherActiveSession) {
+            // The "New sign-in detected" notice (US-CW-002 AC-07). NOTE (demo-mode caveat): in the
+            // mock backend this can fire in the SAME browser with no real second device — a hard
+            // reload bounces to /login (MSW can't store the refresh cookie; see RequireAuth) yet
+            // leaves the prior refresh-token family active on the server, so the next login detects
+            // it as "another session." Expected in the demo; against a real backend it means a
+            // genuine concurrent session.
             pendingResolvedRef.current = false;
             setPendingAccessToken(data.accessToken);
             return;
