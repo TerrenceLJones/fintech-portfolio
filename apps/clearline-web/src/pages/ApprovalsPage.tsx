@@ -3,6 +3,7 @@ import type { ApprovalErrorCode, ApprovalQueueItem } from '@clearline/contracts'
 import { canApprove } from '@clearline/domain-auth';
 import {
   AccessDenied,
+  Alert,
   BulkActionResult,
   Button,
   Checkbox,
@@ -136,6 +137,15 @@ export function ApprovalsPage() {
   const selectedTargets = items
     .filter((item) => selected.has(item.id))
     .map((item) => ({ id: item.id, submitterName: item.submitterName }));
+  // Count the actionable selection, not the raw set: an id selected then individually actioned
+  // (and gone from the refetched queue) must not inflate the bulk-bar count or the reject-dialog count.
+  const selectedCount = selectedTargets.length;
+
+  // A failed single approve/reject that ISN'T a stale-action conflict (those get the reconcile dialog)
+  // — surfaced inline so the action never just silently does nothing.
+  const actionFailed =
+    (approve.isError && !(approve.error instanceof ApprovalConflictError)) ||
+    (reject.isError && !(reject.error instanceof ApprovalConflictError));
 
   function runBatchApprove(targets = selectedTargets) {
     batchApprove.mutate(targets, {
@@ -185,6 +195,12 @@ export function ApprovalsPage() {
         </div>
       </div>
 
+      {actionFailed ? (
+        <div className="mb-4">
+          <Alert tone="negative" title="Couldn't complete that action. Please try again." />
+        </div>
+      ) : null}
+
       {batchResult ? (
         <div className="mb-4">
           <BulkActionResult
@@ -213,10 +229,10 @@ export function ApprovalsPage() {
         </div>
       ) : null}
 
-      {selected.size > 0 ? (
+      {selectedCount > 0 ? (
         <div className="bg-cl-accent mb-3 flex items-center justify-between rounded-lg px-4 py-2.5 text-white">
           <Text as="span" size="label" weight="semibold" tone="default" className="text-white">
-            {selected.size} selected
+            {selectedCount} selected
           </Text>
           <div className="flex items-center gap-2">
             <Button
@@ -415,7 +431,7 @@ export function ApprovalsPage() {
       <RejectReasonDialog
         open={batchRejectOpen}
         onOpenChange={(open) => !open && setBatchRejectOpen(false)}
-        count={selected.size}
+        count={selectedCount}
         presets={['Missing receipts', 'Wrong period']}
         submitting={batchReject.isPending}
         onConfirm={runBatchReject}

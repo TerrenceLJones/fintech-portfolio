@@ -196,6 +196,23 @@ describe('ApprovalsPage', () => {
     ).toBeInTheDocument();
   });
 
+  it('surfaces an inline error when an approve fails for a non-conflict reason', async () => {
+    mockFinanceManager();
+    server.use(
+      http.post('*/api/approvals/:id/approve', () =>
+        HttpResponse.json({ error: 'internal_error' }, { status: 500 }),
+      ),
+    );
+    const user = userEvent.setup();
+    renderPage();
+
+    await waitFor(() => expect(screen.getByText('Priya Nair')).toBeInTheDocument());
+    const priyaRow = screen.getByText('Priya Nair').closest('[data-approval-row]') as HTMLElement;
+    await user.click(within(priyaRow).getByRole('button', { name: 'Approve' }));
+
+    expect(await screen.findByText(/Couldn't complete that action/)).toBeInTheDocument();
+  });
+
   it('batch-approves selected items, skipping a self-submitted one with its reason (AC-06)', async () => {
     mockFinanceManager();
     server.use(
