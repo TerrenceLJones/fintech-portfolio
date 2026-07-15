@@ -86,7 +86,16 @@ export class ApprovalsService {
     if (!hasPermission(actor.permissions, 'approvals:view')) {
       return { outcome: 'forbidden' };
     }
-    return { outcome: 'ok', items: [...this.items.values()].map((item) => ({ ...item })) };
+    // Escalations (pending_l2) are routed to Controller-tier approvers — those with no limit ceiling —
+    // and drop out of a limited manager's queue: once a manager escalates an over-limit item, it's the
+    // Controller's to action, not theirs (design §3.1, the Controller view is "Including L2 escalations
+    // routed from managers"). Among queue viewers (Employees lack approvals:view) an unlimited limit is
+    // the Controller signal.
+    const isControllerTier = actor.approvalLimit === null;
+    const items = [...this.items.values()]
+      .filter((item) => isControllerTier || item.status !== 'pending_l2')
+      .map((item) => ({ ...item }));
+    return { outcome: 'ok', items };
   }
 
   /** Adds a freshly-submitted expense to the pending queue so an approver can act on it (US-CW-011). */

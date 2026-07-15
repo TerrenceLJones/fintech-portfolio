@@ -161,6 +161,34 @@ describe('ApprovalsService.escalate', () => {
       reason: 'forbidden_role',
     });
   });
+
+  it('drops the escalated item from the escalating manager’s queue but routes it to a Controller (US-CW-012 AC-04)', () => {
+    const service = new ApprovalsService();
+    service.escalate('exp_4471', actor());
+
+    // The Finance Manager who escalated it can no longer action it — it has been handed to L2.
+    const managerQueue = service.getQueue(actor());
+    if (managerQueue.outcome === 'ok') {
+      expect(managerQueue.items.map((i) => i.id)).not.toContain('exp_4471');
+    }
+
+    // A Controller (no limit ceiling) sees it in their queue as a pending_l2 escalation.
+    const controllerQueue = service.getQueue(controller);
+    if (controllerQueue.outcome === 'ok') {
+      const routed = controllerQueue.items.find((i) => i.id === 'exp_4471');
+      expect(routed?.status).toBe('pending_l2');
+      expect(routed?.escalatedBy).toBe('Marcus Okafor');
+    }
+  });
+
+  it('still shows non-escalated (pending_l1) items to a Finance Manager', () => {
+    const service = new ApprovalsService();
+    const queue = service.getQueue(actor());
+    if (queue.outcome === 'ok') {
+      // exp_4201 is a plain L1 item — a limited manager still sees it.
+      expect(queue.items.map((i) => i.id)).toContain('exp_4201');
+    }
+  });
 });
 
 describe('ApprovalsService.reassign', () => {
