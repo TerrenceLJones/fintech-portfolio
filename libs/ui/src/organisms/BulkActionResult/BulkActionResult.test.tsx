@@ -47,4 +47,28 @@ describe('BulkActionResult', () => {
     );
     expect(screen.getByText(/9 of 10 approved/)).toBeInTheDocument();
   });
+
+  describe('mid-batch network drop (US-CW-013 AC-03)', () => {
+    const props = {
+      total: 20,
+      succeeded: 5,
+      confirmed: ['Priya Nair', 'Dara Reyes'],
+      notProcessed: Array.from({ length: 15 }, (_, i) => `Emp ${i + 1}`),
+    };
+
+    it('reports the confirmed count and keeps the unprocessed items resumable', () => {
+      render(<BulkActionResult {...props} />);
+      expect(screen.getByText(/Connection lost mid-batch/)).toBeInTheDocument();
+      expect(screen.getByText(/5 of 20 were confirmed/)).toBeInTheDocument();
+      expect(screen.getByText(/15 not yet processed/)).toBeInTheDocument();
+    });
+
+    it('offers a retry scoped to only the unprocessed items', async () => {
+      const onRetry = vi.fn();
+      const user = userEvent.setup();
+      render(<BulkActionResult {...props} onRetry={onRetry} />);
+      await user.click(screen.getByRole('button', { name: /Retry 15 unprocessed/ }));
+      expect(onRetry).toHaveBeenCalledTimes(1);
+    });
+  });
 });

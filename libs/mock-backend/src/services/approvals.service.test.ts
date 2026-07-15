@@ -192,3 +192,74 @@ describe('ApprovalsService.reassign', () => {
     });
   });
 });
+
+describe('ApprovalsService per-item idempotency (US-CW-013 AC-02)', () => {
+  it('replays the original success for a repeated idempotency key instead of a 409, applying it exactly once', () => {
+    const service = new ApprovalsService();
+    const first = service.approve('exp_4201', actor(), 'idem-1');
+    expect(first.outcome).toBe('ok');
+
+    // A retry of a failed/unprocessed batch re-sends the SAME key — it must NOT double-apply or 409.
+    const replay = service.approve('exp_4201', actor(), 'idem-1');
+    expect(replay).toEqual(first);
+
+    // Exactly one audit event was written for the two identical-key calls.
+    expect(service.getAuditLog().filter((e) => e.itemId === 'exp_4201')).toHaveLength(1);
+  });
+
+  it('still returns a 409 conflict for a stale re-approve that carries no idempotency key', () => {
+    const service = new ApprovalsService();
+    expect(service.approve('exp_4201', actor(), 'idem-1').outcome).toBe('ok');
+    // No key (a genuinely stale action from an outdated queue) still reconciles to server truth.
+    expect(service.approve('exp_4201', actor())).toEqual({
+      outcome: 'conflict',
+      actedBy: 'Marcus Okafor',
+    });
+  });
+
+  it('does not cache a forbidden outcome, so a fresh attempt is re-evaluated', () => {
+    const service = new ApprovalsService();
+    // Over-limit for a manager is forbidden and has no side effect — a later Controller retry with the
+    // same key must be re-evaluated on its own authority, not served the cached forbidden.
+    expect(service.approve('exp_4471', actor(), 'idem-2').outcome).toBe('forbidden');
+    expect(service.approve('exp_4471', controller, 'idem-2').outcome).toBe('ok');
+  });
+
+  it('reuses a rejection idempotency key so a resumed reject applies once', () => {
+    const service = new ApprovalsService();
+    const first = service.reject('exp_4201', actor(), 'Missing receipts', 'rej-1');
+    expect(first.outcome).toBe('ok');
+    expect(service.reject('exp_4201', actor(), 'Missing receipts', 'rej-1')).toEqual(first);
+    expect(service.getAuditLog().filter((e) => e.itemId === 'exp_4201')).toHaveLength(1);
+  });
+});
+
+describe('ApprovalsService per-employee notifications (US-CW-013 AC-04)', () => {
+  it('notifies the submitter individually on approval', () => {
+    const service = new ApprovalsService();
+    service.approve('exp_4201', actor());
+    expect(service.getNotifications()).toEqual([
+      expect.objectContaining({ submitterId: 'user_201', itemId: 'exp_4201', action: 'approved' }),
+    ]);
+  });
+
+  it('notifies each rejected submitter individually with the shared reason (not one batched message)', () => {
+    const service = new ApprovalsService();
+    service.reject('exp_4201', actor(), 'Missing receipts');
+    service.reject('exp_4202', actor(), 'Missing receipts');
+
+    const notifications = service.getNotifications();
+    expect(notifications).toHaveLength(2);
+    expect(notifications.map((n) => n.submitterId)).toEqual(['user_201', 'user_202']);
+    expect(
+      notifications.every((n) => n.action === 'rejected' && n.reason === 'Missing receipts'),
+    ).toBe(true);
+  });
+
+  it('does not emit a second notification when an idempotent action is replayed', () => {
+    const service = new ApprovalsService();
+    service.approve('exp_4201', actor(), 'idem-1');
+    service.approve('exp_4201', actor(), 'idem-1');
+    expect(service.getNotifications()).toHaveLength(1);
+  });
+});

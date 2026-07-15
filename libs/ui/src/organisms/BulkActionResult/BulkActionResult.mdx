@@ -5,8 +5,12 @@ import * as BulkActionResultStories from './BulkActionResult.stories';
 
 # BulkActionResult
 
-A partial-failure summary — successes stay committed, failures stay visible with per-row reasons
-and a retry-failed-only action, never an all-or-nothing rollback.
+The result of a bulk approve/reject, in two shapes with one shared guarantee — successes stay
+committed. A **partial failure** keeps each failure visible with its per-row reason and a
+retry-failed-only action (never an all-or-nothing rollback). A **mid-batch connection drop**
+(pass `notProcessed`) switches to a negative banner naming how many were confirmed before the
+drop, with the confirmed and "not yet processed" items split into two columns and a resume that
+retries only the unprocessed tail.
 
 ## User story
 
@@ -25,6 +29,12 @@ disabling logic from scratch in each feature epic.
   renders, then it shows "8 of 10 approved" (the committed count excludes the failures) with each
   failure's specific reason listed, plus a "Retry failed (2)" action.
 - AC-05 — AppShell owns theme state and requires zero additional per-page token setup.
+
+**US-CW-013 — Batch Approval & Bulk Actions**
+
+- **AC-03 — mid-batch network drop.** Given a batch interrupted after some items were confirmed,
+  when it renders with `notProcessed`, then the confirmed items are kept, the rest are shown as
+  "not yet processed", and "Retry N unprocessed" resumes only those (see the `NetworkDrop` story).
 
 ### Edge case covered here
 

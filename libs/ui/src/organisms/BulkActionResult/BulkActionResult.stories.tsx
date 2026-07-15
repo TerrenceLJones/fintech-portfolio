@@ -37,3 +37,23 @@ export const Interactive: Story = {
     onRetry: alertingAction('Retrying 2 failed item(s)…'),
   },
 };
+
+export const NetworkDrop: Story = {
+  args: {
+    total: 20,
+    succeeded: 5,
+    confirmed: ['Priya Nair · $4,200.00', 'Dara Reyes · $300.00', 'Lola Mensah · $86.40'],
+    notProcessed: [
+      'Sam Park · $1,990.00',
+      'Olivia Brandt · $640.00',
+      'James Lin · $310.00',
+      ...Array.from({ length: 12 }, (_, i) => `Teammate ${i + 4}`),
+    ],
+    onRetry: fn(),
+  },
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole('button', { name: 'Retry 15 unprocessed' }));
+    await expect(args.onRetry).toHaveBeenCalledOnce();
+  },
+};

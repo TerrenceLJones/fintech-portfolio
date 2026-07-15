@@ -235,6 +235,86 @@ describe('ApprovalsPage', () => {
     expect(screen.getByText('Cannot approve own expense')).toBeInTheDocument();
   });
 
+  it('confirms a fully successful batch with a toast, not the retry banner (US-CW-013 AC-01)', async () => {
+    mockFinanceManager();
+    server.use(
+      http.post('*/api/approvals/:id/approve', ({ params }) =>
+        HttpResponse.json({ item: { id: String(params.id) } }),
+      ),
+    );
+    const user = userEvent.setup();
+    renderPage();
+
+    await waitFor(() => expect(screen.getByText('Priya Nair')).toBeInTheDocument());
+    await user.click(screen.getByRole('checkbox', { name: 'Select all expenses' }));
+    await user.click(screen.getByRole('button', { name: 'Approve selected' }));
+
+    const toast = await screen.findByRole('status');
+    expect(toast).toHaveTextContent('3 approved');
+    // No partial-failure banner on a clean sweep.
+    expect(screen.queryByText(/couldn’t be processed/)).not.toBeInTheDocument();
+  });
+
+  it('keeps confirmed items and offers to resume the rest after a mid-batch drop (US-CW-013 AC-03)', async () => {
+    mockFinanceManager();
+    let confirmed = 0;
+    server.use(
+      http.post('*/api/approvals/:id/approve', ({ params }) => {
+        if (confirmed < 1) {
+          confirmed += 1;
+          return HttpResponse.json({ item: { id: String(params.id) } });
+        }
+        return HttpResponse.error();
+      }),
+    );
+    const user = userEvent.setup();
+    renderPage();
+
+    await waitFor(() => expect(screen.getByText('Priya Nair')).toBeInTheDocument());
+    await user.click(screen.getByRole('checkbox', { name: 'Select all expenses' }));
+    await user.click(screen.getByRole('button', { name: 'Approve selected' }));
+
+    expect(await screen.findByText(/Connection lost mid-batch/)).toBeInTheDocument();
+    expect(screen.getByText(/1 of 3 were confirmed/)).toBeInTheDocument();
+    expect(screen.getByText(/2 not yet processed/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Retry 2 unprocessed/ })).toBeInTheDocument();
+  });
+
+  it('retries only the failed item and re-sends its original idempotency key (US-CW-013 AC-02)', async () => {
+    mockFinanceManager();
+    const keysById = new Map<string, string[]>();
+    let failOnce = true;
+    server.use(
+      http.post('*/api/approvals/:id/approve', ({ request, params }) => {
+        const id = String(params.id);
+        const key = request.headers.get('idempotency-key') ?? '';
+        keysById.set(id, [...(keysById.get(id) ?? []), key]);
+        if (id === 'exp_4471' && failOnce) {
+          failOnce = false;
+          return HttpResponse.json({ error: 'stale_action', actedBy: 'Someone' }, { status: 409 });
+        }
+        return HttpResponse.json({ item: { id } });
+      }),
+    );
+    const user = userEvent.setup();
+    renderPage();
+
+    await waitFor(() => expect(screen.getByText('Priya Nair')).toBeInTheDocument());
+    await user.click(screen.getByRole('checkbox', { name: 'Select all expenses' }));
+    await user.click(screen.getByRole('button', { name: 'Approve selected' }));
+
+    await screen.findByText(/2 of 3 approved/);
+    await user.click(screen.getByRole('button', { name: /Retry failed \(1\)/ }));
+
+    await waitFor(() => expect(keysById.get('exp_4471')).toHaveLength(2));
+    const [firstKey, retryKey] = keysById.get('exp_4471')!;
+    // The retry re-sends the SAME key so the server can dedupe — never a second, distinct operation.
+    expect(retryKey).toBe(firstKey);
+    expect(firstKey).not.toBe('');
+    // The two already-committed approvals are never re-sent.
+    expect(keysById.get('exp_4201')).toHaveLength(1);
+  });
+
   it('shows the empty state when nothing is awaiting approval', async () => {
     setAccessToken('access_valid');
     server.use(

@@ -37,10 +37,13 @@ function getQueue(token?: string) {
   });
 }
 
-function approve(id: string, token: string) {
+function approve(id: string, token: string, idempotencyKey?: string) {
   return fetch(`${ORIGIN}/api/approvals/${id}/approve`, {
     method: 'POST',
-    headers: { authorization: `Bearer ${token}` },
+    headers: {
+      authorization: `Bearer ${token}`,
+      ...(idempotencyKey ? { 'idempotency-key': idempotencyKey } : {}),
+    },
   });
 }
 
@@ -138,6 +141,19 @@ describe('POST /api/approvals/:id/reject', () => {
     expect((await reject('exp_4201', token)).status).toBe(200);
     const queue = await (await getQueue(token)).json();
     expect(queue.items.map((i: { id: string }) => i.id)).not.toContain('exp_4201');
+  });
+});
+
+describe('per-item idempotency key (US-CW-013 AC-02)', () => {
+  it('replays the original 200 for a repeated Idempotency-Key rather than a 409', async () => {
+    const token = await login();
+    const first = await approve('exp_4201', token, 'idem-abc');
+    expect(first.status).toBe(200);
+
+    // A resumed batch re-sends the same key for that item — the server must not 409 or double-apply.
+    const replay = await approve('exp_4201', token, 'idem-abc');
+    expect(replay.status).toBe(200);
+    expect((await replay.json()).item.id).toBe('exp_4201');
   });
 });
 

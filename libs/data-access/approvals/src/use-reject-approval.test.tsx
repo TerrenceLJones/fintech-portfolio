@@ -4,7 +4,7 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { registerMswServer } from '@clearline/mock-backend/test-factories';
 import { clearAccessToken, setAccessToken } from '@clearline/data-access-auth';
 import { ApprovalConflictError } from './approval-conflict-error';
-import { useRejectApproval } from './use-reject-approval';
+import { requestReject, useRejectApproval } from './use-reject-approval';
 import { createQueryWrapper } from './test/create-query-wrapper';
 
 const server = registerMswServer();
@@ -55,5 +55,23 @@ describe('useRejectApproval', () => {
     await waitFor(() => expect(result.current.isError).toBe(true));
     expect(result.current.error).toBeInstanceOf(ApprovalConflictError);
     expect((result.current.error as ApprovalConflictError).actedBy).toBe('Marcus Okafor');
+  });
+
+  it('sends the Idempotency-Key header when a key is provided, so a resumed batch reject dedupes (US-CW-013 AC-02)', async () => {
+    setAccessToken('access_valid');
+    let seenKey: string | null = null;
+    server.use(
+      http.post('*/api/approvals/:id/reject', ({ request, params }) => {
+        seenKey = request.headers.get('idempotency-key');
+        return HttpResponse.json({ item: { id: params.id } });
+      }),
+    );
+
+    await requestReject({
+      id: 'exp_4201',
+      reason: 'Missing receipts',
+      idempotencyKey: 'rej-key-1',
+    });
+    expect(seenKey).toBe('rej-key-1');
   });
 });

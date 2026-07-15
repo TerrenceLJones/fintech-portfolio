@@ -58,7 +58,8 @@ export function createApprovalsHandlers(
       const actor = resolveActor(request, authService);
       if (!actor) return unauthorizedForSession(request, authService);
 
-      const result = approvalsService.approve(String(params.id), actor);
+      const idempotencyKey = request.headers.get('idempotency-key') ?? undefined;
+      const result = approvalsService.approve(String(params.id), actor, idempotencyKey);
       if (result.outcome === 'not_found') {
         return HttpResponse.json({ error: 'not_found' }, { status: 404 });
       }
@@ -82,7 +83,8 @@ export function createApprovalsHandlers(
       if (!actor) return unauthorizedForSession(request, authService);
 
       const { reason } = (await request.json()) as RejectApprovalRequest;
-      const result = approvalsService.reject(String(params.id), actor, reason);
+      const idempotencyKey = request.headers.get('idempotency-key') ?? undefined;
+      const result = approvalsService.reject(String(params.id), actor, reason, idempotencyKey);
       if (result.outcome === 'not_found') {
         return HttpResponse.json({ error: 'not_found' }, { status: 404 });
       }

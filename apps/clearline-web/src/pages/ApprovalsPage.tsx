@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { ApprovalErrorCode, ApprovalQueueItem } from '@clearline/contracts';
 import { canApprove } from '@clearline/domain-auth';
 import {
@@ -12,6 +12,7 @@ import {
   Modal,
   RejectReasonDialog,
   Text,
+  Toast,
   formatMoneyValue,
   type BulkActionFailure,
 } from '@clearline/ui';
@@ -28,6 +29,7 @@ import {
   useRejectApproval,
   type BatchActionResult,
   type BatchItemResult,
+  type BatchTargetItem,
 } from '@clearline/data-access-approvals';
 import { useDemoBeacon } from '@clearline/demo-beacon';
 import { approvalsBeacon } from './ApprovalsPage.beacon';
@@ -102,6 +104,20 @@ export function ApprovalsPage() {
   const [batchRejectOpen, setBatchRejectOpen] = useState(false);
   const [conflict, setConflict] = useState<{ actedBy: string } | null>(null);
   const [batchResult, setBatchResult] = useState<BatchActionResult | null>(null);
+  // Remembered so a "Retry" resumes with the matching mutation and — for reject — the same shared reason.
+  const [batchContext, setBatchContext] = useState<{ verb: 'approve' | 'reject'; reason?: string }>(
+    {
+      verb: 'approve',
+    },
+  );
+  const [toast, setToast] = useState<string | null>(null);
+
+  // A full-success confirmation is transient (design §7.2) — auto-dismiss it after a few seconds.
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => setToast(null), 4000);
+    return () => clearTimeout(timer);
+  }, [toast]);
 
   if (queue.error instanceof ApprovalsForbiddenError) {
     return <AccessDenied requestLine="403 Forbidden · GET /api/approvals" />;
@@ -147,35 +163,66 @@ export function ApprovalsPage() {
     (approve.isError && !(approve.error instanceof ApprovalConflictError)) ||
     (reject.isError && !(reject.error instanceof ApprovalConflictError));
 
-  function runBatchApprove(targets = selectedTargets) {
-    batchApprove.mutate(targets, {
-      onSuccess: (result) => {
-        setBatchResult(result);
-        setSelected(new Set());
-      },
-    });
+  /** A full-success batch confirms with a toast; anything left unresolved surfaces the result banner (§7.2). */
+  function settleBatch(result: BatchActionResult, verb: 'approved' | 'rejected') {
+    const unresolved = result.results.some((r) => r.outcome !== 'succeeded');
+    if (unresolved) {
+      setBatchResult(result);
+    } else {
+      setToast(`${result.succeeded} ${verb}`);
+      setBatchResult(null);
+    }
+    setSelected(new Set());
   }
 
-  function runBatchReject(reason: string) {
+  function runBatchApprove(targets: BatchTargetItem[] = selectedTargets) {
+    setBatchContext({ verb: 'approve' });
+    batchApprove.mutate(targets, { onSuccess: (result) => settleBatch(result, 'approved') });
+  }
+
+  function runBatchReject(reason: string, targets: BatchTargetItem[] = selectedTargets) {
+    setBatchContext({ verb: 'reject', reason });
     batchReject.mutate(
-      { items: selectedTargets, reason },
+      { items: targets, reason },
       {
         onSuccess: (result) => {
-          setBatchResult(result);
-          setSelected(new Set());
+          settleBatch(result, 'rejected');
           setBatchRejectOpen(false);
         },
       },
     );
   }
 
-  const batchFailures: BulkActionFailure[] = batchResult
-    ? batchResult.results
-        .filter(
-          (r): r is Extract<BatchItemResult, { outcome: 'skipped' }> => r.outcome === 'skipped',
-        )
-        .map((r) => ({ name: r.submitterName, reason: batchSkipReason(r) }))
+  // Re-run only the unresolved subset, re-sending each item's original idempotency key so the server
+  // dedupes it — the already-committed successes are never touched (US-CW-013 AC-02/AC-03).
+  function retryBatch(outcome: 'skipped' | 'not_processed') {
+    if (!batchResult) return;
+    const targets: BatchTargetItem[] = batchResult.results
+      .filter((r) => r.outcome === outcome)
+      .map((r) => ({
+        id: r.id,
+        submitterName: r.submitterName,
+        idempotencyKey: r.idempotencyKey,
+      }));
+    if (batchContext.verb === 'approve') runBatchApprove(targets);
+    else runBatchReject(batchContext.reason ?? '', targets);
+  }
+
+  const batchSkips = batchResult
+    ? batchResult.results.filter(
+        (r): r is Extract<BatchItemResult, { outcome: 'skipped' }> => r.outcome === 'skipped',
+      )
     : [];
+  const batchNotProcessed = batchResult
+    ? batchResult.results.filter((r) => r.outcome === 'not_processed')
+    : [];
+  const batchConfirmed = batchResult
+    ? batchResult.results.filter((r) => r.outcome === 'succeeded')
+    : [];
+  const batchFailures: BulkActionFailure[] = batchSkips.map((r) => ({
+    name: r.submitterName,
+    reason: batchSkipReason(r),
+  }));
 
   return (
     <div className="font-sans">
@@ -203,24 +250,24 @@ export function ApprovalsPage() {
 
       {batchResult ? (
         <div className="mb-4">
-          <BulkActionResult
-            total={batchResult.total}
-            succeeded={batchResult.succeeded}
-            failures={batchFailures}
-            onRetry={
-              batchFailures.length > 0
-                ? () =>
-                    runBatchApprove(
-                      batchResult.results
-                        .filter(
-                          (r): r is Extract<BatchItemResult, { outcome: 'skipped' }> =>
-                            r.outcome === 'skipped',
-                        )
-                        .map((r) => ({ id: r.id, submitterName: r.submitterName })),
-                    )
-                : undefined
-            }
-          />
+          {batchNotProcessed.length > 0 ? (
+            // A mid-batch connection drop: confirmed items stay committed, the rest are resumable (AC-03).
+            <BulkActionResult
+              total={batchResult.total}
+              succeeded={batchResult.succeeded}
+              confirmed={batchConfirmed.map((r) => r.submitterName)}
+              notProcessed={batchNotProcessed.map((r) => r.submitterName)}
+              onRetry={() => retryBatch('not_processed')}
+            />
+          ) : (
+            // A partial failure: successes commit, per-item skips stay visible with a retry-failed-only action.
+            <BulkActionResult
+              total={batchResult.total}
+              succeeded={batchResult.succeeded}
+              failures={batchFailures}
+              onRetry={batchFailures.length > 0 ? () => retryBatch('skipped') : undefined}
+            />
+          )}
           <div className="mt-2 text-right">
             <Button variant="link" size="sm" onClick={() => setBatchResult(null)}>
               Dismiss
@@ -460,6 +507,12 @@ export function ApprovalsPage() {
           </Button>
         </Modal.Close>
       </Modal>
+
+      {toast ? (
+        <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2">
+          <Toast message={toast} />
+        </div>
+      ) : null}
     </div>
   );
 }

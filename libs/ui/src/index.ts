@@ -20,6 +20,8 @@ export { PasswordField } from './atoms/PasswordField';
 export type { PasswordFieldProps } from './atoms/PasswordField';
 export { Alert } from './atoms/Alert';
 export type { AlertProps, AlertTone } from './atoms/Alert';
+export { Toast } from './atoms/Toast';
+export type { ToastProps, ToastTone } from './atoms/Toast';
 export { SegmentedControl } from './atoms/SegmentedControl';
 export type { SegmentedControlProps } from './atoms/SegmentedControl';
 export { Select } from './atoms/Select';

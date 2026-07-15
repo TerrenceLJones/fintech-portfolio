@@ -3,7 +3,7 @@ import { http, HttpResponse } from 'msw';
 import { renderHook, waitFor } from '@testing-library/react';
 import { registerMswServer } from '@clearline/mock-backend/test-factories';
 import { clearAccessToken, setAccessToken } from '@clearline/data-access-auth';
-import { ApprovalError, useApproveExpense } from './use-approve-expense';
+import { ApprovalError, requestApprove, useApproveExpense } from './use-approve-expense';
 import { createQueryWrapper } from './test/create-query-wrapper';
 
 const server = registerMswServer();
@@ -71,5 +71,19 @@ describe('useApproveExpense', () => {
 
     await waitFor(() => expect(result.current.isError).toBe(true));
     expect((result.current.error as ApprovalError).code).toBe('self_approval_blocked');
+  });
+
+  it('sends the Idempotency-Key header when a key is provided, so batch retries dedupe (US-CW-013 AC-02)', async () => {
+    setAccessToken('access_valid');
+    let seenKey: string | null = null;
+    server.use(
+      http.post('*/api/approvals/:id/approve', ({ request, params }) => {
+        seenKey = request.headers.get('idempotency-key');
+        return HttpResponse.json({ item: { id: params.id } });
+      }),
+    );
+
+    await requestApprove('exp_4201', 'idem-key-1');
+    expect(seenKey).toBe('idem-key-1');
   });
 });

@@ -29,10 +29,18 @@ export class ApprovalError extends Error {
 /**
  * Approves a single item, mapping the server's decisions to typed errors: a 403 to ApprovalError
  * (role/limit/self), a 409 to ApprovalConflictError (already actioned — AC-05). Exported so batch
- * approval can reuse the exact same per-item semantics.
+ * approval can reuse the exact same per-item semantics. An optional idempotency key travels in the
+ * `Idempotency-Key` header so a resumed batch re-sends the same key and the server dedupes it into a
+ * single committed approval (US-CW-013 AC-02).
  */
-export async function requestApprove(itemId: string): Promise<ApprovalActionResponse> {
-  const response = await authenticatedFetch(`/api/approvals/${itemId}/approve`, { method: 'POST' });
+export async function requestApprove(
+  itemId: string,
+  idempotencyKey?: string,
+): Promise<ApprovalActionResponse> {
+  const response = await authenticatedFetch(`/api/approvals/${itemId}/approve`, {
+    method: 'POST',
+    ...(idempotencyKey ? { headers: { 'idempotency-key': idempotencyKey } } : {}),
+  });
   if (response.status === 403) {
     const body = (await response.json()) as ApprovalErrorResponse;
     throw new ApprovalError(body.error, body.approvalLimit);
@@ -56,7 +64,7 @@ export async function requestApprove(itemId: string): Promise<ApprovalActionResp
 export function useApproveExpense() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: requestApprove,
+    mutationFn: (itemId: string) => requestApprove(itemId),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: APPROVALS_QUERY_KEY }),
   });
 }

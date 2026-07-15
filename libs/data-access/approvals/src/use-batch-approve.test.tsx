@@ -62,4 +62,94 @@ describe('useBatchApprove', () => {
       expect(skipped.actedBy).toBe('M. Okafor');
     }
   });
+
+  it('stamps every result with a stable idempotency key so a retry can re-send the same key (AC-02)', async () => {
+    setAccessToken('access_valid');
+    server.use(
+      http.post('*/api/approvals/:id/approve', ({ params }) =>
+        HttpResponse.json({ item: { id: params.id } }),
+      ),
+    );
+
+    const { result } = renderHook(() => useBatchApprove(), { wrapper });
+    result.current.mutate([{ id: 'exp_1', submitterName: 'Priya Nair' }]);
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    const item = result.current.data!.results[0]!;
+    expect(item.idempotencyKey).toEqual(expect.any(String));
+    expect(item.idempotencyKey.length).toBeGreaterThan(0);
+  });
+
+  it('reuses a caller-supplied idempotency key instead of minting a new one (safe partial retry, AC-02)', async () => {
+    setAccessToken('access_valid');
+    let seenKey: string | null = null;
+    server.use(
+      http.post('*/api/approvals/:id/approve', ({ request, params }) => {
+        seenKey = request.headers.get('idempotency-key');
+        return HttpResponse.json({ item: { id: params.id } });
+      }),
+    );
+
+    const { result } = renderHook(() => useBatchApprove(), { wrapper });
+    result.current.mutate([
+      { id: 'exp_1', submitterName: 'Priya Nair', idempotencyKey: 'reuse-me' },
+    ]);
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(seenKey).toBe('reuse-me');
+    expect(result.current.data!.results[0]!.idempotencyKey).toBe('reuse-me');
+  });
+
+  it('confirms items before a mid-batch network drop and marks the rest not_processed (AC-03)', async () => {
+    setAccessToken('access_valid');
+    // First 2 approvals confirm; the connection then drops for every remaining item.
+    let confirmed = 0;
+    server.use(
+      http.post('*/api/approvals/:id/approve', ({ params }) => {
+        if (confirmed < 2) {
+          confirmed += 1;
+          return HttpResponse.json({ item: { id: params.id } });
+        }
+        return HttpResponse.error();
+      }),
+    );
+
+    const items = [
+      { id: 'exp_1', submitterName: 'A' },
+      { id: 'exp_2', submitterName: 'B' },
+      { id: 'exp_3', submitterName: 'C' },
+      { id: 'exp_4', submitterName: 'D' },
+    ];
+
+    const { result } = renderHook(() => useBatchApprove(), { wrapper });
+    result.current.mutate(items);
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    const summary = result.current.data!;
+    expect(summary.succeeded).toBe(2);
+    const outcomes = summary.results.map((r) => r.outcome);
+    expect(outcomes).toEqual(['succeeded', 'succeeded', 'not_processed', 'not_processed']);
+  });
+
+  it('reports the in-flight item with the SAME key it was sent, so a resume replays not double-applies (AC-03)', async () => {
+    setAccessToken('access_valid');
+    // The item that drops mid-flight may have committed server-side before the response was lost;
+    // its not_processed result must carry the exact key the request used, so the resume dedupes.
+    const sentKeyById = new Map<string, string>();
+    server.use(
+      http.post('*/api/approvals/:id/approve', ({ request, params }) => {
+        sentKeyById.set(String(params.id), request.headers.get('idempotency-key') ?? '');
+        return HttpResponse.error();
+      }),
+    );
+
+    const { result } = renderHook(() => useBatchApprove(), { wrapper });
+    result.current.mutate([{ id: 'exp_1', submitterName: 'Priya Nair' }]);
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    const item = result.current.data!.results[0]!;
+    expect(item.outcome).toBe('not_processed');
+    expect(item.idempotencyKey).toBe(sentKeyById.get('exp_1'));
+    expect(item.idempotencyKey).not.toBe('');
+  });
 });

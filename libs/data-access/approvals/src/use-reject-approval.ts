@@ -8,6 +8,8 @@ import { ApprovalConflictError } from './approval-conflict-error';
 export interface RejectApprovalInput {
   id: string;
   reason: string;
+  /** Per-item key so a resumed batch reject re-sends the same key and the server dedupes it (US-CW-013 AC-02). */
+  idempotencyKey?: string;
 }
 
 /**
@@ -17,10 +19,14 @@ export interface RejectApprovalInput {
 export async function requestReject({
   id,
   reason,
+  idempotencyKey,
 }: RejectApprovalInput): Promise<ApprovalActionResponse> {
   const response = await authenticatedFetch(`/api/approvals/${id}/reject`, {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    headers: {
+      'content-type': 'application/json',
+      ...(idempotencyKey ? { 'idempotency-key': idempotencyKey } : {}),
+    },
     body: JSON.stringify({ reason }),
   });
   if (response.status === 409) {

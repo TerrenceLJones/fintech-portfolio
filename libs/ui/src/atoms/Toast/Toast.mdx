@@ -1,0 +1,29 @@
+import { Meta, Stories } from '@storybook/addon-docs/blocks';
+import * as ToastStories from './Toast.stories';
+
+<Meta of={ToastStories} />
+
+# Toast
+
+A transient dark pill for a one-line confirmation of a completed action — the "10 approved"
+batch-success toast from design §7.2. It pairs an icon with its color so the outcome reads without
+relying on hue, and announces to screen readers (`role="status"` politely, `role="alert"`
+assertively for the rare failure).
+
+## User story
+
+**US-CW-013 — Batch Approval & Bulk Actions**
+
+As an approver managing a high volume of pending expenses, I want to approve or reject many
+expenses in one action. When every item in the batch succeeds, I see a toast confirming the count
+("10 approved") rather than a partial-failure banner (AC-01).
+
+## Acceptance criteria
+
+- AC-01 — a fully successful batch approval surfaces a single "N approved" confirmation, not the
+  review-and-retry banner reserved for partial failures.
+
+Toast is presentational: the caller controls when it appears and dismisses it (e.g. on a short
+timer). It carries no all-or-nothing state itself.
+
+<Stories />
