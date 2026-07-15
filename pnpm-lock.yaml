@@ -134,6 +134,9 @@ importers:
       '@clearline/data-access-auth':
         specifier: workspace:*
         version: link:../../libs/data-access/auth
+      '@clearline/data-access-expenses':
+        specifier: workspace:*
+        version: link:../../libs/data-access/expenses
       '@clearline/data-access-onboarding':
         specifier: workspace:*
         version: link:../../libs/data-access/onboarding
@@ -149,6 +152,9 @@ importers:
       '@clearline/domain-auth':
         specifier: workspace:*
         version: link:../../libs/domain/auth
+      '@clearline/domain-expenses':
+        specifier: workspace:*
+        version: link:../../libs/domain/expenses
       '@clearline/domain-onboarding':
         specifier: workspace:*
         version: link:../../libs/domain/onboarding
@@ -284,6 +290,37 @@ importers:
         specifier: ^2.14.6
         version: 2.14.6(@types/node@24.13.2)(typescript@6.0.3)
 
+  libs/data-access/expenses:
+    dependencies:
+      '@clearline/contracts':
+        specifier: workspace:*
+        version: link:../../contracts
+      '@clearline/data-access-auth':
+        specifier: workspace:*
+        version: link:../auth
+      '@tanstack/react-query':
+        specifier: ^5.101.2
+        version: 5.101.2(react@19.2.7)
+      react:
+        specifier: ^19.2.0
+        version: 19.2.7
+      react-dom:
+        specifier: ^19.2.0
+        version: 19.2.7(react@19.2.7)
+    devDependencies:
+      '@clearline/mock-backend':
+        specifier: workspace:*
+        version: link:../../mock-backend
+      '@types/react':
+        specifier: ^19.2.17
+        version: 19.2.17
+      '@types/react-dom':
+        specifier: ^19.2.3
+        version: 19.2.3(@types/react@19.2.17)
+      msw:
+        specifier: ^2.14.6
+        version: 2.14.6(@types/node@24.13.2)(typescript@6.0.3)
+
   libs/data-access/onboarding:
     dependencies:
       '@clearline/contracts':
@@ -386,6 +423,12 @@ importers:
         specifier: workspace:*
         version: link:../../contracts
 
+  libs/domain/expenses:
+    dependencies:
+      '@clearline/contracts':
+        specifier: workspace:*
+        version: link:../../contracts
+
   libs/domain/onboarding: {}
 
   libs/domain/payments:
@@ -404,6 +447,9 @@ importers:
       '@clearline/domain-auth':
         specifier: workspace:*
         version: link:../domain/auth
+      '@clearline/domain-expenses':
+        specifier: workspace:*
+        version: link:../domain/expenses
       '@clearline/domain-onboarding':
         specifier: workspace:*
         version: link:../domain/onboarding

@@ -22,7 +22,7 @@ export const NAV_ITEMS: NavItemDef[] = [
     permission: 'expenses:view',
     label: 'My Expenses',
     icon: 'file-text',
-    path: '/',
+    path: '/expenses',
   },
   { id: 'cards', permission: 'cards:view', label: 'My Cards', icon: 'copy', path: '/cards' },
   {
@@ -56,6 +56,17 @@ export const NAV_ITEMS: NavItemDef[] = [
   { id: 'audit', permission: 'audit:view', label: 'Audit Log', icon: 'clock', path: '/audit' },
   { id: 'team', permission: 'team:view', label: 'Team', icon: 'users', path: '/team' },
 ];
+
+/**
+ * The page a user lands on after login, chosen by role (US-CW-001). Approvers (Finance Managers /
+ * Controllers, who hold approvals:view) land on their approval queue — their primary work surface;
+ * everyone else lands on My Expenses. Permission-driven rather than role-string-driven, consistent
+ * with the rest of the app's authorization model.
+ */
+export function homePathForPermissions(can: (permission: Permission) => boolean): string {
+  if (can('approvals:view')) return '/approvals';
+  return '/expenses';
+}
 
 /** The role-scoped nav items to render, given a permission predicate (from useAuthorization().can). */
 export function navItemsForPermissions(

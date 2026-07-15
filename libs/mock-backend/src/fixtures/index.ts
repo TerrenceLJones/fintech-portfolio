@@ -19,6 +19,13 @@ export {
 export type { SeedRecipient } from './payments.fixture';
 export { SEED_APPROVALS } from './approvals.fixture';
 export {
+  SEED_EXPENSE_CATEGORIES,
+  SEED_MY_EXPENSES,
+  EXPENSE_CURRENCY,
+  EXPENSE_L1_APPROVER_NAME,
+  EXPENSE_L2_APPROVER_NAME,
+} from './expenses.fixture';
+export {
   REGISTRY_EINS,
   WATCHLIST_NAMES,
   DEMO_ONBOARDED_USER_ID,

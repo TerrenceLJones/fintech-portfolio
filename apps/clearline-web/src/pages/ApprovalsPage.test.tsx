@@ -153,6 +153,71 @@ describe('ApprovalsPage', () => {
     await waitFor(() => expect(escalatedId).toBe('exp_4471'));
   });
 
+  it('rejects with a required reason captured from the dialog (AC-02)', async () => {
+    mockFinanceManager();
+    let sentReason: string | undefined;
+    server.use(
+      http.post('*/api/approvals/:id/reject', async ({ request }) => {
+        sentReason = ((await request.json()) as { reason: string }).reason;
+        return HttpResponse.json({ item: { ...QUEUE[0] } });
+      }),
+    );
+    const user = userEvent.setup();
+    renderPage();
+
+    await waitFor(() => expect(screen.getByText('Priya Nair')).toBeInTheDocument());
+    const priyaRow = screen.getByText('Priya Nair').closest('[data-approval-row]') as HTMLElement;
+    await user.click(within(priyaRow).getByRole('button', { name: 'Reject' }));
+
+    // The reject dialog requires a reason before it can be submitted.
+    await user.type(await screen.findByRole('textbox'), 'Missing itemized receipt');
+    await user.click(screen.getByRole('button', { name: 'Reject expense' }));
+
+    await waitFor(() => expect(sentReason).toBe('Missing itemized receipt'));
+  });
+
+  it('reconciles a stale approval to server truth on a 409 (AC-05)', async () => {
+    mockFinanceManager();
+    server.use(
+      http.post('*/api/approvals/:id/approve', () =>
+        HttpResponse.json({ error: 'stale_action', actedBy: 'Marcus Okafor' }, { status: 409 }),
+      ),
+    );
+    const user = userEvent.setup();
+    renderPage();
+
+    await waitFor(() => expect(screen.getByText('Priya Nair')).toBeInTheDocument());
+    const priyaRow = screen.getByText('Priya Nair').closest('[data-approval-row]') as HTMLElement;
+    await user.click(within(priyaRow).getByRole('button', { name: 'Approve' }));
+
+    expect(await screen.findByText('Already approved')).toBeInTheDocument();
+    expect(
+      screen.getByText(/This expense was already approved by Marcus Okafor/),
+    ).toBeInTheDocument();
+  });
+
+  it('batch-approves selected items, skipping a self-submitted one with its reason (AC-06)', async () => {
+    mockFinanceManager();
+    server.use(
+      http.post('*/api/approvals/:id/approve', ({ params }) => {
+        if (params.id === 'exp_4460') {
+          return HttpResponse.json({ error: 'self_approval_blocked' }, { status: 403 });
+        }
+        return HttpResponse.json({ item: { id: String(params.id) } });
+      }),
+    );
+    const user = userEvent.setup();
+    renderPage();
+
+    await waitFor(() => expect(screen.getByText('Priya Nair')).toBeInTheDocument());
+    await user.click(screen.getByRole('checkbox', { name: 'Select all expenses' }));
+    await user.click(screen.getByRole('button', { name: 'Approve selected' }));
+
+    // Two commit, the self-submitted expense is skipped with an explanatory reason.
+    expect(await screen.findByText(/2 of 3 approved/)).toBeInTheDocument();
+    expect(screen.getByText('Cannot approve own expense')).toBeInTheDocument();
+  });
+
   it('shows the empty state when nothing is awaiting approval', async () => {
     setAccessToken('access_valid');
     server.use(

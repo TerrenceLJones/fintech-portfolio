@@ -38,6 +38,11 @@ export interface ApprovalQueueItem {
   status: ApprovalStatus;
   /** Present once escalated — the manager who routed it to a Controller. */
   escalatedBy?: string;
+  /**
+   * Set when the expense exceeded its category's per-transaction policy limit at submit — surfaced in
+   * the queue so the approver gives it additional scrutiny (US-CW-011 AC-03).
+   */
+  policyFlagged?: boolean;
 }
 
 export interface ApprovalQueueResponse {
@@ -45,13 +50,28 @@ export interface ApprovalQueueResponse {
 }
 
 export type ApprovalErrorCode =
-  'forbidden_role' | 'approval_limit_exceeded' | 'self_approval_blocked';
+  | 'forbidden_role'
+  | 'approval_limit_exceeded'
+  | 'self_approval_blocked'
+  /**
+   * The item was already actioned (approved/rejected) by another approver before this stale request
+   * arrived — returned as a 409 so the caller reconciles against server truth rather than applying a
+   * duplicate decision (US-CW-012 AC-05).
+   */
+  | 'stale_action';
 
-/** Body of a 403 from an approval endpoint — the client maps `error` to the design's inline copy. */
+/** Body of a 403 (or 409 for `stale_action`) from an approval endpoint — the client maps `error` to the design's inline copy. */
 export interface ApprovalErrorResponse {
   error: ApprovalErrorCode;
   /** Present only when error is 'approval_limit_exceeded' — the caller's own limit (minor units), for the message + escalation prompt. */
   approvalLimit?: number;
+  /** Present only when error is 'stale_action' — the approver who already actioned it, for "already approved by {name}" (AC-05). */
+  actedBy?: string;
+}
+
+/** Body of a reject action — the reason is required and travels back to the submitter (US-CW-012 AC-02). */
+export interface RejectApprovalRequest {
+  reason: string;
 }
 
 export interface ApprovalActionResponse {

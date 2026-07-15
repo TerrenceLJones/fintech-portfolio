@@ -6,8 +6,9 @@ import { SignUpPage } from './pages/SignUpPage';
 import { VerifyEmailPage } from './pages/VerifyEmailPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
-import { DashboardPage } from './pages/DashboardPage';
 import { ApprovalsPage } from './pages/ApprovalsPage';
+import { MyExpensesPage } from './pages/expenses/MyExpensesPage';
+import { NewExpensePage } from './pages/expenses/NewExpensePage';
 import { NewPaymentPage } from './pages/payments/NewPaymentPage';
 import { PaymentStatusPage } from './pages/payments/PaymentStatusPage';
 import { PlaceholderPage } from './pages/PlaceholderPage';
@@ -22,6 +23,7 @@ import { RequirePermission } from './routes/RequirePermission';
 import { SessionActivityBoundary } from './routes/SessionActivityBoundary';
 import { OnboardingProgressBoundary } from './routes/OnboardingProgressBoundary';
 import { RequireOnboarded } from './routes/RequireOnboarded';
+import { HomeRedirect } from './routes/HomeRedirect';
 import { demoModeEnabled } from './dev/demo-mode';
 import { BEACON_THEME } from './dev/beacon/theme';
 import { globalBeacon } from './dev/beacon/global.beacon';
@@ -67,7 +69,15 @@ export function App() {
                   (US-CW-006 / US-CW-028); each gated section is additionally guarded server-side and by
                   RequirePermission below, so the client never is the security boundary. */}
                 <Route element={<AppChrome />}>
-                  <Route path="/" element={<DashboardPage />} />
+                  <Route path="/" element={<HomeRedirect />} />
+                  <Route
+                    element={
+                      <RequirePermission permission="expenses:view" apiPath="/api/expenses" />
+                    }
+                  >
+                    <Route path="/expenses" element={<MyExpensesPage />} />
+                    <Route path="/expenses/new" element={<NewExpensePage />} />
+                  </Route>
                   <Route
                     path="/cards"
                     element={

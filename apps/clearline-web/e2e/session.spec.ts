@@ -30,7 +30,8 @@ test('an expired access token is silently refreshed and the request replayed, wi
   await fillLoginForm(page, DEMO_EMAIL, DEMO_PASSWORD);
   await page.getByRole('button', { name: 'Sign in' }).click();
   await expectSignedIn(page);
-  await expect(page.getByText(`Signed in as ${DEMO_EMAIL}`)).toBeVisible();
+  // The demo account is a Finance Manager, so the role-based home is the approval queue (US-CW-001).
+  await expect(page).toHaveURL(/\/approvals$/);
 
   await mockBackend.expireAccessTokenForE2E(DEMO_EMAIL);
   await mockBackend.simulateRefreshOutcomeForE2E('success', DEMO_EMAIL);
@@ -39,9 +40,9 @@ test('an expired access token is silently refreshed and the request replayed, wi
   await triggerFocusRefetch(page);
   await refreshResponse;
 
-  // still on the dashboard, no redirect and no visible interruption to the signed-in state
-  await expect(page).toHaveURL(`${new URL(page.url()).origin}/`);
-  await expect(page.getByText(`Signed in as ${DEMO_EMAIL}`)).toBeVisible();
+  // still on the approval queue, no redirect and no visible interruption to the signed-in state
+  await expect(page).toHaveURL(/\/approvals$/);
+  await expectSignedIn(page);
 });
 
 test('a refresh rejected as reused ends the session everywhere, with a neutral security message (AC-02)', async ({
@@ -82,7 +83,8 @@ test('a refresh rejected as expired ends the session and preserves the route to 
   await triggerFocusRefetch(page);
   await refreshResponse;
 
-  await expect(page).toHaveURL(/\/login\?next=%2F/);
+  // The route to return to is the approval-queue home the Finance Manager was on (US-CW-001).
+  await expect(page).toHaveURL(/\/login\?next=%2Fapprovals/);
   await expect(page.getByText('Your session expired. Please sign in again.')).toBeVisible();
 });
 
@@ -106,8 +108,8 @@ test('a password change from another device ends this session on its next authen
   await page.getByRole('button', { name: 'Reset password' }).click();
   await expect(page).toHaveURL(/\/login$/);
 
-  // Back on the dashboard route: DashboardPage's useSession() fires on this fresh mount and
-  // discovers the family was revoked, without any focus/visibility trigger needed.
+  // Back on the home route: HomeRedirect's useAuthorization() → useSession() fires on this fresh
+  // mount and discovers the family was revoked, without any focus/visibility trigger needed.
   const sessionResponse = waitForApiResponse(page, '/api/auth/session', 'GET');
   await navigateSpa(page, '/');
   await sessionResponse;

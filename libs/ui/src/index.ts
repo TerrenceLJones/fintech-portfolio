@@ -50,6 +50,8 @@ export type {
 } from './molecules/PasswordRequirementsList';
 export { ConfirmationDialog } from './molecules/ConfirmationDialog';
 export type { ConfirmationDialogProps } from './molecules/ConfirmationDialog';
+export { RejectReasonDialog } from './molecules/RejectReasonDialog';
+export type { RejectReasonDialogProps } from './molecules/RejectReasonDialog';
 export { OtpInput } from './molecules/OtpInput';
 export type { OtpInputProps, OtpInputState } from './molecules/OtpInput';
 export { Modal } from './molecules/Modal';

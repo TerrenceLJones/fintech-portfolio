@@ -115,7 +115,9 @@ test.describe('Business onboarding & KYB (US-CW-004, US-CW-005)', () => {
     await expect(page.getByText('Your account is approved')).toBeVisible();
 
     await page.getByRole('button', { name: 'Go to dashboard' }).click();
-    await expect(page).toHaveURL(`${new URL(page.url()).origin}/`);
+    // The approved creator is an Owner with Controller-tier permissions, so the role-based home is
+    // the approval queue (US-CW-001).
+    await expect(page).toHaveURL(/\/approvals$/);
 
     // The approved creator is provisioned as the Owner (US-CW-030): Controller-tier nav an
     // Employee would never see — Budget Management and Audit Log — is now present, confirming the
@@ -141,12 +143,13 @@ test.describe('Business onboarding & KYB (US-CW-004, US-CW-005)', () => {
     page,
   }) => {
     // The demo seed user is an established, already-onboarded business (approved), so it lands on
-    // the dashboard and can never re-enter the wizard.
+    // its role-based home (the approval queue for this Finance Manager) and can never re-enter the
+    // wizard.
     await login(page, DEMO_EMAIL, DEMO_PASSWORD);
-    await expect(page).toHaveURL(`${new URL(page.url()).origin}/`);
+    await expect(page).toHaveURL(/\/approvals$/);
 
     await navigateSpa(page, '/onboarding/business');
-    await expect(page).toHaveURL(`${new URL(page.url()).origin}/`);
+    await expect(page).toHaveURL(/\/approvals$/);
   });
 
   test("shows the inline EIN error when the registry can't verify it (AC-04)", async ({

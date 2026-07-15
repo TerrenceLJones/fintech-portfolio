@@ -44,8 +44,12 @@ export async function navigateSpa(page: Page, path: string) {
   }, path);
 }
 
-/** Asserts a sign-in succeeded and landed on the authenticated home page. */
+/**
+ * Asserts a sign-in succeeded and landed inside the authenticated app shell. Role-agnostic: the
+ * post-login landing is now role-based (US-CW-001) — approvers land on /approvals, everyone else on
+ * /expenses — so this checks the app chrome is present rather than a single home URL.
+ */
 export async function expectSignedIn(page: Page) {
-  await expect(page).toHaveURL(`${new URL(page.url()).origin}/`);
-  await expect(page.getByText('Welcome back.')).toBeVisible();
+  await expect(page).not.toHaveURL(/\/login/);
+  await expect(page.getByRole('navigation', { name: 'Main' })).toBeVisible();
 }

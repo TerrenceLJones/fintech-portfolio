@@ -1,0 +1,34 @@
+import { Meta, Stories } from '@storybook/addon-docs/blocks';
+import * as RejectReasonDialogStories from './RejectReasonDialog.stories';
+
+<Meta of={RejectReasonDialogStories} />
+
+# RejectReasonDialog
+
+A Radix-`Dialog`-backed reason capture for rejecting an expense. The reason is required and travels
+back to the submitter, so the confirm button stays disabled until a non-empty reason is entered.
+Optional one-tap presets pre-fill the free-text box. Handles both the single-expense reject and the
+batch "one shared reason, each submitter notified individually" reject via `count`.
+
+## User story
+
+**US-CW-012 — Expense Approval Workflow**
+
+As an Approver, I want to reject an expense with a required reason, so that the submitter sees why it
+was rejected and can resubmit a corrected version.
+
+## Acceptance criteria
+
+- **AC-02 — Required reason.** Given an expense pending in my queue, when I click "Reject", then I
+  must provide a reason before the rejection can be submitted; the reason is shown to the submitter.
+- **§7.3 — Batch reject.** When rejecting several selected expenses at once, one shared reason is
+  attached individually to each, and each employee is notified separately (`count > 1`).
+
+### Edge cases covered here
+
+- The confirm button is disabled while the reason is empty or whitespace-only, and while a reject is
+  in flight (`submitting`).
+- The reason draft is cleared on every open transition, so a prior rejection's reason never leaks
+  into the next one.
+
+<Stories />

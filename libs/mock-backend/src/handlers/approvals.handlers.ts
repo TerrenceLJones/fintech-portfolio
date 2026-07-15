@@ -3,6 +3,7 @@ import type {
   ApprovalActionResponse,
   ApprovalErrorResponse,
   ApprovalQueueResponse,
+  RejectApprovalRequest,
   SessionErrorResponse,
 } from '@clearline/contracts';
 import { permissionsForRole } from '@clearline/domain-auth';
@@ -66,6 +67,10 @@ export function createApprovalsHandlers(
       if (result.outcome === 'not_found') {
         return HttpResponse.json({ error: 'not_found' }, { status: 404 });
       }
+      if (result.outcome === 'conflict') {
+        const body: ApprovalErrorResponse = { error: 'stale_action', actedBy: result.actedBy };
+        return HttpResponse.json(body, { status: 409 });
+      }
       if (result.outcome === 'forbidden') {
         const body: ApprovalErrorResponse = {
           error: result.reason,
@@ -77,13 +82,18 @@ export function createApprovalsHandlers(
       return HttpResponse.json(body, { status: 200 });
     }),
 
-    http.post('*/api/approvals/:id/reject', ({ request, params }) => {
+    http.post('*/api/approvals/:id/reject', async ({ request, params }) => {
       const actor = resolveActor(request, authService);
       if (!actor) return unauthorized();
 
-      const result = approvalsService.reject(String(params.id), actor);
+      const { reason } = (await request.json()) as RejectApprovalRequest;
+      const result = approvalsService.reject(String(params.id), actor, reason);
       if (result.outcome === 'not_found') {
         return HttpResponse.json({ error: 'not_found' }, { status: 404 });
+      }
+      if (result.outcome === 'conflict') {
+        const body: ApprovalErrorResponse = { error: 'stale_action', actedBy: result.actedBy };
+        return HttpResponse.json(body, { status: 409 });
       }
       if (result.outcome === 'forbidden') {
         const body: ApprovalErrorResponse = { error: result.reason };

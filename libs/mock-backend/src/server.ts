@@ -7,6 +7,7 @@ import { sessionHandlers } from './handlers/session.handlers';
 import { onboardingHandlers } from './handlers/onboarding.handlers';
 import { approvalsHandlers } from './handlers/approvals.handlers';
 import { paymentsHandlers } from './handlers/payments.handlers';
+import { expensesHandlers } from './handlers/expenses.handlers';
 
 export const server = setupServer(
   ...authHandlers,
@@ -16,4 +17,5 @@ export const server = setupServer(
   ...onboardingHandlers,
   ...approvalsHandlers,
   ...paymentsHandlers,
+  ...expensesHandlers,
 );

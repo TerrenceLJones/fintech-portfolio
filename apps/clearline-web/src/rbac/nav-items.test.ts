@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import type { Permission } from '@clearline/contracts';
 import { permissionsForRole } from '@clearline/domain-auth';
-import { navIdForPath, navItemsForPermissions, navPathForId } from './nav-items';
+import {
+  homePathForPermissions,
+  navIdForPath,
+  navItemsForPermissions,
+  navPathForId,
+} from './nav-items';
 
 function canFor(role: Parameters<typeof permissionsForRole>[0], isAdmin = false) {
   const perms = permissionsForRole(role, { isAdmin });
@@ -42,6 +47,17 @@ describe('navItemsForPermissions', () => {
   });
 });
 
+describe('homePathForPermissions', () => {
+  it('sends an Employee to My Expenses (US-CW-001)', () => {
+    expect(homePathForPermissions(canFor('employee'))).toBe('/expenses');
+  });
+
+  it('sends an approver (Finance Manager / Controller) to the approval queue', () => {
+    expect(homePathForPermissions(canFor('finance_manager'))).toBe('/approvals');
+    expect(homePathForPermissions(canFor('controller'))).toBe('/approvals');
+  });
+});
+
 describe('navPathForId / navIdForPath', () => {
   it('maps an id to its path and back', () => {
     expect(navPathForId('approvals')).toBe('/approvals');
@@ -53,12 +69,14 @@ describe('navPathForId / navIdForPath', () => {
     expect(navIdForPath('/payments/new')).toBe('payments');
   });
 
-  it('resolves the home path to expenses', () => {
-    expect(navIdForPath('/')).toBe('expenses');
+  it('maps the My Expenses link to the expenses route', () => {
+    expect(navPathForId('expenses')).toBe('/expenses');
+    expect(navIdForPath('/expenses')).toBe('expenses');
   });
 
   it('highlights the section for a nested route without "/" matching everything', () => {
     expect(navIdForPath('/approvals/exp_4471')).toBe('approvals');
+    expect(navIdForPath('/expenses/new')).toBe('expenses');
   });
 
   it('returns undefined for an unknown path', () => {

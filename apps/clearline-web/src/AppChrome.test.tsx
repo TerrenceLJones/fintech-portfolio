@@ -40,6 +40,7 @@ function renderChrome(initialEntry = '/', home: ReactNode = <div>Home content</d
           <Routes>
             <Route element={<AppChrome />}>
               <Route path="/" element={home} />
+              <Route path="/expenses" element={<div>My Expenses content</div>} />
               <Route path="/approvals" element={<div>Approvals content</div>} />
             </Route>
           </Routes>
@@ -96,7 +97,7 @@ function TitledHome() {
 describe('AppChrome page title', () => {
   it('defaults the heading and browser tab to the active section nav label', async () => {
     mockRole('employee');
-    renderChrome();
+    renderChrome('/expenses');
 
     await waitFor(() =>
       expect(screen.getByRole('heading', { name: 'My Expenses' })).toBeInTheDocument(),

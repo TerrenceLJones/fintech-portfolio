@@ -6,6 +6,7 @@ import type {
 } from '@clearline/contracts';
 import { authenticatedFetch } from '@clearline/data-access-auth';
 import { APPROVALS_QUERY_KEY } from './approvals-query-key';
+import { ApprovalConflictError } from './approval-conflict-error';
 
 /**
  * A server-side rejection of an approval, carrying the exact reason the UI maps to the design's
@@ -25,11 +26,20 @@ export class ApprovalError extends Error {
   }
 }
 
-async function postApprove(itemId: string): Promise<ApprovalActionResponse> {
+/**
+ * Approves a single item, mapping the server's decisions to typed errors: a 403 to ApprovalError
+ * (role/limit/self), a 409 to ApprovalConflictError (already actioned — AC-05). Exported so batch
+ * approval can reuse the exact same per-item semantics.
+ */
+export async function requestApprove(itemId: string): Promise<ApprovalActionResponse> {
   const response = await authenticatedFetch(`/api/approvals/${itemId}/approve`, { method: 'POST' });
   if (response.status === 403) {
     const body = (await response.json()) as ApprovalErrorResponse;
     throw new ApprovalError(body.error, body.approvalLimit);
+  }
+  if (response.status === 409) {
+    const body = (await response.json()) as ApprovalErrorResponse;
+    throw new ApprovalConflictError(body.actedBy ?? 'another approver');
   }
   if (!response.ok) {
     throw new Error('approve_failed');
@@ -46,7 +56,7 @@ async function postApprove(itemId: string): Promise<ApprovalActionResponse> {
 export function useApproveExpense() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: postApprove,
+    mutationFn: requestApprove,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: APPROVALS_QUERY_KEY }),
   });
 }

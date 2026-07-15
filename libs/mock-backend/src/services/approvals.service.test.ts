@@ -79,20 +79,68 @@ describe('ApprovalsService.approve', () => {
 });
 
 describe('ApprovalsService.reject', () => {
-  it('removes a rejected item from the queue', () => {
+  it('removes a rejected item from the queue and records the reason (US-CW-012 AC-02)', () => {
     const service = new ApprovalsService();
-    expect(service.reject('exp_4201', actor()).outcome).toBe('ok');
+    expect(service.reject('exp_4201', actor(), 'Out of policy').outcome).toBe('ok');
     const queue = service.getQueue(actor());
     if (queue.outcome === 'ok') {
       expect(queue.items.map((i) => i.id)).not.toContain('exp_4201');
     }
+    expect(service.getResolution('exp_4201')).toEqual({
+      action: 'rejected',
+      actedBy: 'Marcus Okafor',
+      reason: 'Out of policy',
+    });
   });
 
   it('blocks a role without approval authority', () => {
-    expect(new ApprovalsService().reject('exp_4201', employee)).toEqual({
+    expect(new ApprovalsService().reject('exp_4201', employee, 'Out of policy')).toEqual({
       outcome: 'forbidden',
       reason: 'forbidden_role',
     });
+  });
+});
+
+describe('ApprovalsService stale-action concurrency (US-CW-012 AC-05)', () => {
+  it('returns a conflict naming the approver who already approved the item', () => {
+    const service = new ApprovalsService();
+    expect(service.approve('exp_4201', actor()).outcome).toBe('ok');
+    // A second, stale approve from another approver's outdated queue view.
+    expect(
+      service.approve('exp_4201', actor({ userId: 'user_9', displayName: 'Jamie Lin' })),
+    ).toEqual({ outcome: 'conflict', actedBy: 'Marcus Okafor' });
+  });
+
+  it('returns a conflict when approving an item another approver already rejected', () => {
+    const service = new ApprovalsService();
+    service.reject('exp_4201', actor(), 'Duplicate');
+    expect(service.approve('exp_4201', controller)).toEqual({
+      outcome: 'conflict',
+      actedBy: 'Marcus Okafor',
+    });
+  });
+
+  it('still returns not_found for an id that never existed', () => {
+    expect(new ApprovalsService().approve('nope', actor())).toEqual({ outcome: 'not_found' });
+  });
+});
+
+describe('ApprovalsService.enqueue (submitted expenses join the queue)', () => {
+  it('adds a submitted expense so an approver sees it in the queue (US-CW-011 AC-01)', () => {
+    const service = new ApprovalsService();
+    service.enqueue({
+      id: 'exp_9001',
+      submitterId: 'user_77',
+      submitterName: 'Nadia Hassan',
+      category: 'Travel',
+      amount: { amountMinorUnits: 30_000, currency: 'USD' },
+      submittedDate: '2026-07-14',
+      status: 'pending_l1',
+    });
+    const queue = service.getQueue(actor());
+    if (queue.outcome === 'ok') {
+      expect(queue.items.map((i) => i.id)).toContain('exp_9001');
+    }
   });
 });
 

@@ -3,6 +3,7 @@ import { http, HttpResponse } from 'msw';
 import { renderHook, waitFor } from '@testing-library/react';
 import { registerMswServer } from '@clearline/mock-backend/test-factories';
 import { clearAccessToken, setAccessToken } from '@clearline/data-access-auth';
+import { ApprovalConflictError } from './approval-conflict-error';
 import { useRejectApproval } from './use-reject-approval';
 import { createQueryWrapper } from './test/create-query-wrapper';
 
@@ -12,11 +13,13 @@ const wrapper = createQueryWrapper({ mutations: { retry: false } });
 afterEach(() => clearAccessToken());
 
 describe('useRejectApproval', () => {
-  it('resolves with the rejected item', async () => {
+  it('sends the required reason and resolves with the rejected item (AC-02)', async () => {
     setAccessToken('access_valid');
+    let sentReason: string | undefined;
     server.use(
-      http.post('*/api/approvals/:id/reject', () =>
-        HttpResponse.json({
+      http.post('*/api/approvals/:id/reject', async ({ request }) => {
+        sentReason = ((await request.json()) as { reason: string }).reason;
+        return HttpResponse.json({
           item: {
             id: 'exp_4201',
             submitterId: 'user_201',
@@ -26,14 +29,31 @@ describe('useRejectApproval', () => {
             submittedDate: '2026-06-28',
             status: 'pending_l1',
           },
-        }),
+        });
+      }),
+    );
+
+    const { result } = renderHook(() => useRejectApproval(), { wrapper });
+    result.current.mutate({ id: 'exp_4201', reason: 'Out of policy' });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data?.item.id).toBe('exp_4201');
+    expect(sentReason).toBe('Out of policy');
+  });
+
+  it('surfaces a 409 as ApprovalConflictError naming who already actioned it (AC-05)', async () => {
+    setAccessToken('access_valid');
+    server.use(
+      http.post('*/api/approvals/:id/reject', () =>
+        HttpResponse.json({ error: 'stale_action', actedBy: 'Marcus Okafor' }, { status: 409 }),
       ),
     );
 
     const { result } = renderHook(() => useRejectApproval(), { wrapper });
-    result.current.mutate('exp_4201');
+    result.current.mutate({ id: 'exp_4201', reason: 'Duplicate' });
 
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data?.item.id).toBe('exp_4201');
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(result.current.error).toBeInstanceOf(ApprovalConflictError);
+    expect((result.current.error as ApprovalConflictError).actedBy).toBe('Marcus Okafor');
   });
 });

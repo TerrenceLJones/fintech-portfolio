@@ -9,10 +9,12 @@ import { sessionHandlers } from './handlers/session.handlers';
 import { onboardingHandlers } from './handlers/onboarding.handlers';
 import { approvalsHandlers } from './handlers/approvals.handlers';
 import { paymentsHandlers } from './handlers/payments.handlers';
+import { expensesHandlers } from './handlers/expenses.handlers';
 import { sharedAuthService } from './services/shared-auth-service';
 import { sharedOnboardingService } from './services/shared-onboarding-service';
 import { sharedPaymentsService } from './services/shared-payments-service';
-import { DEMO_ONBOARDED_BUSINESS, DEMO_ONBOARDED_USER_ID } from './fixtures/onboarding.fixture';
+import { DEMO_ONBOARDED_BUSINESS } from './fixtures/onboarding.fixture';
+import { SEED_USERS } from './fixtures/users.fixture';
 
 export const worker = setupWorker(
   ...authHandlers,
@@ -22,6 +24,7 @@ export const worker = setupWorker(
   ...onboardingHandlers,
   ...approvalsHandlers,
   ...paymentsHandlers,
+  ...expensesHandlers,
 );
 
 // Seed the demo user as an already-approved, fully-onboarded business so signing in as it lands on
@@ -29,7 +32,12 @@ export const worker = setupWorker(
 // browser (dev/e2e) entry point only — the Node MSW server (server.ts) never loads it, so unit and
 // component tests keep constructing fresh, seed-free OnboardingService instances. No-op if a record
 // already exists, e.g. one rehydrated from sessionStorage after a dev-server reload.
-sharedOnboardingService.seedApprovedAccount(DEMO_ONBOARDED_USER_ID, DEMO_ONBOARDED_BUSINESS);
+// Seed every role account as an already-approved, fully-onboarded business so signing in as any of
+// them lands on its role-based home rather than the onboarding wizard (US-CW-004 AC-09/AC-10). They
+// share one demo business — the point is to tour the role-scoped shells, not distinct orgs.
+for (const seedUser of SEED_USERS) {
+  sharedOnboardingService.seedApprovedAccount(seedUser.id, DEMO_ONBOARDED_BUSINESS);
+}
 
 /**
  * Test/demo override for AC-05 (auth-service-unreachable retry/backoff) — see

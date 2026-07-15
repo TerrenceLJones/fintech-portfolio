@@ -27,20 +27,50 @@ export interface SeedUser {
 export const DEMO_USER_PASSWORD = 'Correct-Horse-Battery-1';
 
 /**
- * Deterministic seed users for local dev/demo and tests — never real credentials. The demo account
- * starts as a Finance Manager with a $10,000 limit (the most feature-rich shell to explore), and
- * the role can be switched mid-session via simulateRoleChangeForE2E to exercise every US-CW-006 shell.
+ * The PBKDF2 hash of DEMO_USER_PASSWORD. Every seed account shares this one password so a tester can
+ * sign in as any role with the same credentials shown in the login guide — only the email differs.
+ */
+const DEMO_PASSWORD_HASH =
+  'pbkdf2-sha256$210000$EVdpGm+5ZSyaf/tp5qNqAA==$2HU7zHF8PxFivV/4XCZ8GGQeUpHl/B71IO6/yMl3ZhM=';
+
+/**
+ * Deterministic seed users for local dev/demo and tests — never real credentials. One account per
+ * approval-tier role so a tester can sign in as each and see its role-scoped shell and role-based
+ * home (US-CW-006 / US-CW-001): the Employee lands on My Expenses, the approvers on the queue. The
+ * Finance Manager (index 0, `demo@clearline.dev`) is the primary demo account e2e signs in as; its
+ * role can still be switched mid-session via simulateRoleChangeForE2E. All share DEMO_USER_PASSWORD.
  */
 export const SEED_USERS: SeedUser[] = [
   {
     id: 'user_1',
     email: 'demo@clearline.dev',
-    passwordHash:
-      'pbkdf2-sha256$210000$EVdpGm+5ZSyaf/tp5qNqAA==$2HU7zHF8PxFivV/4XCZ8GGQeUpHl/B71IO6/yMl3ZhM=',
+    passwordHash: DEMO_PASSWORD_HASH,
     verified: true,
     displayName: 'Marcus Okafor',
     role: 'finance_manager',
     approvalLimit: 1_000_000,
+    isAdmin: false,
+    isOwner: false,
+  },
+  {
+    id: 'user_2',
+    email: 'employee@clearline.dev',
+    passwordHash: DEMO_PASSWORD_HASH,
+    verified: true,
+    displayName: 'Theo Alvarez',
+    role: 'employee',
+    approvalLimit: null,
+    isAdmin: false,
+    isOwner: false,
+  },
+  {
+    id: 'user_3',
+    email: 'controller@clearline.dev',
+    passwordHash: DEMO_PASSWORD_HASH,
+    verified: true,
+    displayName: 'Sofia Whitman',
+    role: 'controller',
+    approvalLimit: null,
     isAdmin: false,
     isOwner: false,
   },

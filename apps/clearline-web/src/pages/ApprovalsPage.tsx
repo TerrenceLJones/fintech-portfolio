@@ -1,19 +1,41 @@
+import { useState } from 'react';
 import type { ApprovalErrorCode, ApprovalQueueItem } from '@clearline/contracts';
 import { canApprove } from '@clearline/domain-auth';
-import { AccessDenied, Button, EmptyState, Icon, Text, formatMoneyValue } from '@clearline/ui';
+import {
+  AccessDenied,
+  BulkActionResult,
+  Button,
+  Checkbox,
+  EmptyState,
+  Icon,
+  Modal,
+  RejectReasonDialog,
+  Text,
+  formatMoneyValue,
+  type BulkActionFailure,
+} from '@clearline/ui';
 import { useAuthorization, useSession } from '@clearline/data-access-auth';
 import {
+  ApprovalConflictError,
   ApprovalsForbiddenError,
   useApprovalQueue,
   useApproveExpense,
+  useBatchApprove,
+  useBatchReject,
   useEscalateApproval,
   useReassignApproval,
   useRejectApproval,
+  type BatchActionResult,
+  type BatchItemResult,
 } from '@clearline/data-access-approvals';
 import { useDemoBeacon } from '@clearline/demo-beacon';
 import { approvalsBeacon } from './ApprovalsPage.beacon';
-/** Queue table columns: Employee · category | Date | Amount | Action. */
-const COLS = '1.7fr 0.8fr 0.9fr 1.6fr';
+
+/** Queue table columns: select | Employee · category | Date | Amount | Action. */
+const COLS = '32px 1.6fr 0.8fr 0.9fr 1.6fr';
+
+/** The one-tap rejection reasons offered in the reject dialog (§6.2). */
+const REJECT_PRESETS = ['Out of policy', 'Missing detail', 'Duplicate'];
 
 /** "2026-06-28" → "Jun 28" to match the queue table's date column, without pulling in a date lib. */
 function formatSubmittedDate(iso: string): string {
@@ -36,11 +58,31 @@ function reasonText(reason: ApprovalErrorCode, approvalLimit: number | null): st
   }
 }
 
+/** Short per-item skip reason for the batch result summary (AC-06). */
+function batchSkipReason(result: Extract<BatchItemResult, { outcome: 'skipped' }>): string {
+  switch (result.code) {
+    case 'self_approval_blocked':
+      return 'Cannot approve own expense';
+    case 'approval_limit_exceeded':
+      return `Exceeds your ${formatMoneyValue({
+        amountMinorUnits: result.approvalLimit ?? 0,
+        currency: 'USD',
+      })} limit`;
+    case 'conflict':
+      return `Already approved by ${result.actedBy ?? 'another approver'}`;
+    case 'forbidden_role':
+      return 'Not permitted to approve';
+    default:
+      return "Couldn't be processed";
+  }
+}
+
 /**
- * The approval queue for Finance Managers and Controllers (US-CW-006). Each row pre-computes the same
- * canApprove decision the server enforces, so over-limit and self-submitted expenses render disabled
- * with the stated reason (AC-06/AC-07) rather than letting a doomed request through — but the server
- * is still the authority: it independently 403s these, and the action bar surfaces that too.
+ * The approval queue for Finance Managers and Controllers (US-CW-006 / US-CW-012). Each row
+ * pre-computes the same canApprove decision the server enforces, so over-limit and self-submitted
+ * expenses render with their stated reason (AC-03) rather than a doomed request. On top of the
+ * per-row actions this adds: a required reason on reject (AC-02), stale-action 409 reconciliation
+ * against server truth (AC-05), and batch approve/reject with a per-item success/skip summary (AC-06).
  */
 export function ApprovalsPage() {
   useDemoBeacon(approvalsBeacon);
@@ -51,6 +93,14 @@ export function ApprovalsPage() {
   const reject = useRejectApproval();
   const escalate = useEscalateApproval();
   const reassign = useReassignApproval();
+  const batchApprove = useBatchApprove();
+  const batchReject = useBatchReject();
+
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [rejectTarget, setRejectTarget] = useState<ApprovalQueueItem | null>(null);
+  const [batchRejectOpen, setBatchRejectOpen] = useState(false);
+  const [conflict, setConflict] = useState<{ actedBy: string } | null>(null);
+  const [batchResult, setBatchResult] = useState<BatchActionResult | null>(null);
 
   if (queue.error instanceof ApprovalsForbiddenError) {
     return <AccessDenied requestLine="403 Forbidden · GET /api/approvals" />;
@@ -58,6 +108,64 @@ export function ApprovalsPage() {
 
   const items = queue.data?.items ?? [];
   const approverId = session?.userId ?? '';
+
+  /** A stale action (approve/reject on an already-actioned item) → reconcile to server truth (AC-05). */
+  function handleActionError(error: unknown) {
+    if (error instanceof ApprovalConflictError) {
+      setConflict({ actedBy: error.actedBy });
+      void queue.refetch();
+    }
+  }
+
+  function toggle(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  const allSelected = items.length > 0 && items.every((item) => selected.has(item.id));
+  const someSelected = selected.size > 0 && !allSelected;
+
+  function toggleAll() {
+    setSelected(allSelected ? new Set() : new Set(items.map((item) => item.id)));
+  }
+
+  const selectedTargets = items
+    .filter((item) => selected.has(item.id))
+    .map((item) => ({ id: item.id, submitterName: item.submitterName }));
+
+  function runBatchApprove(targets = selectedTargets) {
+    batchApprove.mutate(targets, {
+      onSuccess: (result) => {
+        setBatchResult(result);
+        setSelected(new Set());
+      },
+    });
+  }
+
+  function runBatchReject(reason: string) {
+    batchReject.mutate(
+      { items: selectedTargets, reason },
+      {
+        onSuccess: (result) => {
+          setBatchResult(result);
+          setSelected(new Set());
+          setBatchRejectOpen(false);
+        },
+      },
+    );
+  }
+
+  const batchFailures: BulkActionFailure[] = batchResult
+    ? batchResult.results
+        .filter(
+          (r): r is Extract<BatchItemResult, { outcome: 'skipped' }> => r.outcome === 'skipped',
+        )
+        .map((r) => ({ name: r.submitterName, reason: batchSkipReason(r) }))
+    : [];
 
   return (
     <div className="font-sans">
@@ -77,6 +185,59 @@ export function ApprovalsPage() {
         </div>
       </div>
 
+      {batchResult ? (
+        <div className="mb-4">
+          <BulkActionResult
+            total={batchResult.total}
+            succeeded={batchResult.succeeded}
+            failures={batchFailures}
+            onRetry={
+              batchFailures.length > 0
+                ? () =>
+                    runBatchApprove(
+                      batchResult.results
+                        .filter(
+                          (r): r is Extract<BatchItemResult, { outcome: 'skipped' }> =>
+                            r.outcome === 'skipped',
+                        )
+                        .map((r) => ({ id: r.id, submitterName: r.submitterName })),
+                    )
+                : undefined
+            }
+          />
+          <div className="mt-2 text-right">
+            <Button variant="link" size="sm" onClick={() => setBatchResult(null)}>
+              Dismiss
+            </Button>
+          </div>
+        </div>
+      ) : null}
+
+      {selected.size > 0 ? (
+        <div className="bg-cl-accent mb-3 flex items-center justify-between rounded-lg px-4 py-2.5 text-white">
+          <Text as="span" size="label" weight="semibold" tone="default" className="text-white">
+            {selected.size} selected
+          </Text>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              icon="check"
+              loading={batchApprove.isPending}
+              onClick={() => runBatchApprove()}
+            >
+              Approve selected
+            </Button>
+            <Button variant="secondary" size="sm" onClick={() => setBatchRejectOpen(true)}>
+              Reject selected
+            </Button>
+            <Button variant="link" size="sm" onClick={() => setSelected(new Set())}>
+              Clear
+            </Button>
+          </div>
+        </div>
+      ) : null}
+
       {queue.isPending ? (
         <Text as="p" size="label" tone="muted">
           Loading approvals…
@@ -93,6 +254,12 @@ export function ApprovalsPage() {
             className="bg-cl-inset border-cl-border text-cl-text-3 font-mono grid items-center border-b px-4 py-2.25 text-[11px] font-semibold tracking-wide uppercase"
             style={{ gridTemplateColumns: COLS }}
           >
+            <Checkbox
+              checked={allSelected}
+              indeterminate={someSelected}
+              onCheckedChange={toggleAll}
+              aria-label="Select all expenses"
+            />
             <div>Employee · category</div>
             <div>Date</div>
             <div className="text-right">Amount</div>
@@ -109,9 +276,6 @@ export function ApprovalsPage() {
             const isSelf = item.submitterId === approverId;
             const overLimit = !decision.allowed && decision.reason === 'approval_limit_exceeded';
             const selfBlocked = !decision.allowed && decision.reason === 'self_approval_blocked';
-            // Both blocked states share the compact §3.1 treatment: warn-highlighted row, an inline
-            // triangle note, and a single collapsed action (Escalate for over-limit, Reassign for
-            // self) — no Approve/Reject. The full reason stays screen-reader-only (AC-06/AC-07).
             const blocked = overLimit || selfBlocked;
             const noteSuffix = overLimit
               ? ' · over your limit'
@@ -130,6 +294,11 @@ export function ApprovalsPage() {
                 ].join(' ')}
                 style={{ gridTemplateColumns: COLS }}
               >
+                <Checkbox
+                  checked={selected.has(item.id)}
+                  onCheckedChange={() => toggle(item.id)}
+                  aria-label={`Select ${item.submitterName}`}
+                />
                 <div className="min-w-0">
                   <Text as="span" size="label" weight="medium" tone="default">
                     {item.submitterName}
@@ -144,14 +313,13 @@ export function ApprovalsPage() {
                     size="label"
                     tone={blocked ? 'warning' : 'muted'}
                     className="mt-1 mb-0 flex items-center gap-1"
-                    // Self-blocked shows its full reason inline, so it doubles as the Reassign
-                    // button's description (over-limit keeps the sr-only reason node instead).
                     id={selfBlocked ? `reason-${item.id}` : undefined}
                   >
                     {blocked ? <Icon name="triangle-alert" size={11} className="shrink-0" /> : null}
                     {item.category}
                     {noteSuffix}
                     {item.status === 'pending_l2' ? ' · escalated to a Controller' : ''}
+                    {item.policyFlagged ? ' · flagged for scrutiny' : ''}
                   </Text>
                 </div>
                 <Text as="div" size="mono" tone="muted" className="pt-0.5">
@@ -167,9 +335,6 @@ export function ApprovalsPage() {
                   {formatMoneyValue(item.amount)}
                 </Text>
                 <div className="flex items-center justify-end gap-2">
-                  {/* Over-limit keeps its full limit sentence as a screen-reader node (the visible
-                      note only says "· over your limit"); self-blocked shows its full reason inline
-                      (see the note above), so no sr-only duplicate is needed there. */}
                   {overLimit ? (
                     <span id={`reason-${item.id}`} className="sr-only">
                       {reasonText(decision.reason, approvalLimit)}
@@ -177,20 +342,19 @@ export function ApprovalsPage() {
                   ) : null}
                   {decision.allowed ? (
                     <>
-                      <Button variant="danger" size="sm" onClick={() => reject.mutate(item.id)}>
+                      <Button variant="danger" size="sm" onClick={() => setRejectTarget(item)}>
                         Reject
                       </Button>
                       <Button
                         variant="primary"
                         tone="positive"
                         size="sm"
-                        onClick={() => approve.mutate(item.id)}
+                        onClick={() => approve.mutate(item.id, { onError: handleActionError })}
                       >
                         Approve
                       </Button>
                     </>
                   ) : overLimit ? (
-                    // Over your limit → the one-click escalation to a Controller (AC-06).
                     <Button
                       variant="primary"
                       size="sm"
@@ -201,8 +365,6 @@ export function ApprovalsPage() {
                       Escalate to Controller
                     </Button>
                   ) : selfBlocked ? (
-                    // Your own expense → hand it to another approver, the sanctioned path past the
-                    // self-approval block (AC-08).
                     <Button
                       variant="primary"
                       size="sm"
@@ -212,8 +374,6 @@ export function ApprovalsPage() {
                       Reassign approver
                     </Button>
                   ) : (
-                    // Any other block (e.g. forbidden_role — not reachable from this queue) keeps a
-                    // disabled Approve with its stated reason rather than a doomed action.
                     <Button
                       variant="primary"
                       tone="positive"
@@ -231,6 +391,59 @@ export function ApprovalsPage() {
           })}
         </div>
       )}
+
+      <RejectReasonDialog
+        open={rejectTarget !== null}
+        onOpenChange={(open) => !open && setRejectTarget(null)}
+        presets={REJECT_PRESETS}
+        submitting={reject.isPending}
+        onConfirm={(reason) => {
+          if (!rejectTarget) return;
+          reject.mutate(
+            { id: rejectTarget.id, reason },
+            {
+              onSuccess: () => setRejectTarget(null),
+              onError: (error) => {
+                setRejectTarget(null);
+                handleActionError(error);
+              },
+            },
+          );
+        }}
+      />
+
+      <RejectReasonDialog
+        open={batchRejectOpen}
+        onOpenChange={(open) => !open && setBatchRejectOpen(false)}
+        count={selected.size}
+        presets={['Missing receipts', 'Wrong period']}
+        submitting={batchReject.isPending}
+        onConfirm={runBatchReject}
+      />
+
+      <Modal open={conflict !== null} onOpenChange={(open) => !open && setConflict(null)}>
+        <div className="mb-3 flex items-center gap-2.75">
+          <div className="bg-cl-neg-weak flex h-9 w-9 shrink-0 items-center justify-center rounded-lg">
+            <Icon name="x-circle" size={17} className="text-cl-neg" />
+          </div>
+          <Modal.Title asChild>
+            <Text as="h2" size="heading" tone="default">
+              Already approved
+            </Text>
+          </Modal.Title>
+        </div>
+        <Modal.Description asChild>
+          <Text as="p" size="label" tone="muted" className="mb-4">
+            This expense was already approved by {conflict?.actedBy}. Your view has been refreshed
+            to the current state.
+          </Text>
+        </Modal.Description>
+        <Modal.Close asChild>
+          <Button fullWidth icon="refresh">
+            View updated queue
+          </Button>
+        </Modal.Close>
+      </Modal>
     </div>
   );
 }

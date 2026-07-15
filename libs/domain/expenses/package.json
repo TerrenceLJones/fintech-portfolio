@@ -1,0 +1,22 @@
+{
+  "name": "@clearline/domain-expenses",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Pure, framework-agnostic expense-submission rules — the validateExpense gate (amount, category, receipt-required-over-threshold), the advisory category per-transaction limit check, and submit-time approval-tier routing (L1 vs L2 by amount). No data-access or UI dependencies, mirrors libs/domain/payments.",
+  "main": "src/index.ts",
+  "scripts": {
+    "lint": "eslint .",
+    "type-check": "tsc --noEmit",
+    "test": "vitest run",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@clearline/contracts": "workspace:*"
+  },
+  "devDependencies": {},
+  "metadata": {
+    "package_type": "shared",
+    "app": "clearline-web",
+    "scope": "Domain lib for EPIC-CW-006 (US-CW-011 Expense Submission & Policy Enforcement, US-CW-012 Expense Approval Workflow)."
+  }
+}

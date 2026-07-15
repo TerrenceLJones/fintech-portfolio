@@ -41,9 +41,9 @@ export interface VerifyTarget {
  * Pass the account a viewer just signed up with (`target`) so the link is minted for *their* address
  * rather than a placeholder — the sign-up wall does this with the email/password still in its form
  * state. With no target it falls back to {@link EXAMPLE_SIGNUP_EMAIL}, the throwaway account the
- * guide copy tells a viewer to use when they haven't signed up in this session (e.g. on the login
- * page). Re-minting for an already-registered-but-unverified account yields a second valid token
- * rather than a duplicate, so a viewer can click it even after an earlier link went stale.
+ * sign-up guide tells a viewer to use before they've submitted the form. Re-minting for an
+ * already-registered-but-unverified account yields a second valid token rather than a duplicate, so
+ * a viewer can click it even after an earlier link went stale.
  */
 export function buildVerifyEmailSection(target?: VerifyTarget): DemoBeaconSection {
   const email = target?.email ?? EXAMPLE_SIGNUP_EMAIL;
@@ -70,10 +70,3 @@ export function buildVerifyEmailSection(target?: VerifyTarget): DemoBeaconSectio
     ],
   };
 }
-
-/**
- * The placeholder-account verify section, for pages that don't know a just-signed-up account (the
- * login guide, and the sign-up page before its form is submitted). The sign-up wall swaps in a
- * {@link buildVerifyEmailSection} bound to the real credentials instead.
- */
-export const verifyEmailSection: DemoBeaconSection = buildVerifyEmailSection();

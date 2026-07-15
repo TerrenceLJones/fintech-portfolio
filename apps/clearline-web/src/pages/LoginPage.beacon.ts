@@ -1,29 +1,72 @@
+import type { Role } from '@clearline/contracts';
 import type { DemoBeaconPageConfig } from '@clearline/demo-beacon';
-import { DEMO_USER_PASSWORD } from '@clearline/mock-backend/fixtures';
-import {
-  DEMO_EMAIL,
-  EXAMPLE_SIGNUP_EMAIL,
-  loadControls,
-  verifyEmailSection,
-} from '../dev/beacon/shared';
+import { DEMO_USER_PASSWORD, SEED_USERS } from '@clearline/mock-backend/fixtures';
+import { formatMoneyValue } from '@clearline/ui';
+import { EXAMPLE_SIGNUP_EMAIL, loadControls } from '../dev/beacon/shared';
 import { resetSection } from '../dev/beacon/global.beacon';
 
-/** Sign-in guide: the seeded credentials and the auth-outage scenario. */
+const ROLE_LABEL: Record<Role, string> = {
+  employee: 'Employee',
+  finance_manager: 'Finance Manager',
+  controller: 'Controller',
+};
+
+/** Ascending access level, so the credentials list reads Employee → Finance Manager → Controller. */
+const ROLE_ACCESS_ORDER: Record<Role, number> = {
+  employee: 0,
+  finance_manager: 1,
+  controller: 2,
+};
+
+const SEED_USERS_BY_ACCESS = [...SEED_USERS].sort(
+  (a, b) => ROLE_ACCESS_ORDER[a.role] - ROLE_ACCESS_ORDER[b.role],
+);
+
+/** Where each role lands after signing in (US-CW-001), surfaced in the credential hint. */
+const ROLE_HOME: Record<Role, string> = {
+  employee: 'My Expenses',
+  finance_manager: 'Approvals queue',
+  controller: 'Approvals queue',
+};
+
+/** The row hint: approval authority (for approvers) and the role-based home the account lands on. */
+function landingHint(user: (typeof SEED_USERS)[number]): string {
+  const authority =
+    user.role === 'employee'
+      ? ''
+      : user.approvalLimit === null
+        ? 'unlimited · '
+        : `${formatMoneyValue({ amountMinorUnits: user.approvalLimit, currency: 'USD' })} limit · `;
+  return `${authority}lands on ${ROLE_HOME[user.role]}.`;
+}
+
+/**
+ * One copyable section per role, ordered by access level, so the role name renders as the section
+ * heading above the account's name, email, and where it lands. All share the password below.
+ */
+const credentialSections = SEED_USERS_BY_ACCESS.map((user) => ({
+  kind: 'copyable' as const,
+  title: ROLE_LABEL[user.role],
+  items: [{ label: user.displayName, value: user.email, hint: landingHint(user) }],
+}));
+
+/** Sign-in guide: one credential per role (all share the same password) and the auth-outage scenario. */
 export const loginBeacon: DemoBeaconPageConfig = {
   pageId: 'login',
   title: 'Sign in',
-  summary: 'The demo account is pre-seeded and already onboarded, so you land on the dashboard.',
+  summary:
+    'Pre-seeded, already-onboarded accounts — one per role. They all share the same password; pick an email to tour that role and its role-based home.',
   sections: [
+    ...credentialSections,
     {
       kind: 'copyable',
-      title: 'Demo credentials',
+      title: 'Password · all roles',
       items: [
         {
-          label: 'Email',
-          value: DEMO_EMAIL,
-          hint: 'Marcus Okafor — a Finance Manager ($10,000 limit).',
+          label: 'Password',
+          value: DEMO_USER_PASSWORD,
+          hint: 'The same password works for every account above.',
         },
-        { label: 'Password', value: DEMO_USER_PASSWORD },
       ],
     },
     {
@@ -31,11 +74,14 @@ export const loginBeacon: DemoBeaconPageConfig = {
       title: 'Try this',
       flows: [
         {
-          id: 'sign-in',
-          title: 'Sign in',
+          id: 'sign-in-role',
+          title: 'Sign in as any role',
           steps: [
-            { text: 'Copy the email and password above into the form.' },
-            { text: 'Submit — you land on the dashboard.' },
+            { text: 'Copy one of the role emails and the shared password into the form.' },
+            {
+              text: 'Submit — an **Employee** lands on **My Expenses**; a **Finance Manager** or **Controller** lands on the **Approvals** queue.',
+            },
+            { text: 'Sign out and repeat with a different role to compare the shells.' },
           ],
         },
         {
@@ -43,19 +89,18 @@ export const loginBeacon: DemoBeaconPageConfig = {
           title: 'See the KYB onboarding flow',
           steps: [
             {
-              text: 'The demo account skips onboarding — start a fresh sign-up instead.',
+              text: 'The seeded accounts skip onboarding — start a fresh sign-up instead.',
               navigateTo: '/signup',
             },
             { text: `Use \`${EXAMPLE_SIGNUP_EMAIL}\` and any strong password.` },
             {
-              text: 'Hit the "verify your email" wall? Use **Get verification link & continue** below.',
+              text: 'Hit the "verify your email" wall? Use **Get verification link & continue** in the sign-up guide.',
             },
             { text: 'You land in the KYB wizard at the business-info step.' },
           ],
         },
       ],
     },
-    verifyEmailSection,
     {
       kind: 'toggles',
       title: 'Scenarios',
