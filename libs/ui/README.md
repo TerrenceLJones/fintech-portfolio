@@ -9,6 +9,8 @@ Components are built tier-by-tier — **foundations → atoms → molecules → 
 export is documented in Storybook with an `.mdx` doc page and `.stories.tsx`, and covered by a
 `.test.tsx`.
 
+**Browse the component library (deployed Storybook):** <https://clearline-component-library.vercel.app>
+
 ## Usage
 
 ```tsx

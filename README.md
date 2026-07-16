@@ -12,7 +12,7 @@ Clearline is a web-only frontend that models the parts of a spend platform where
 
 The focus is fidelity to real failure modes — idempotency-key replay, partial-failure batch approvals, SoD enforcement, daily-limit and self-transfer guards, network-retry with full-jitter backoff — modeled explicitly in pure domain logic and surfaced honestly in the UI.
 
-`apps/clearline-web` · `[demo url]` · `[loom url]`
+`apps/clearline-web` · [live demo](https://clearline-web-delta.vercel.app/) · [component library](https://clearline-component-library.vercel.app) · `[loom url]`
 
 ---
 
