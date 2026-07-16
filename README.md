@@ -66,7 +66,7 @@ It's a standalone, project-agnostic library (`libs/demo-beacon`, `@clearline/dem
 
 **How it works:** each page calls `useDemoBeacon(config)` to register its guide while mounted; a single `DemoBeaconProvider` in `App.tsx` owns the store and renders the launcher. Anything side-effectful (navigation, backend simulation, reset) crosses the boundary as a callback the app supplies. Config lives beside each page in colocated `*.beacon.ts` files (`apps/clearline-web/src/**/*.beacon.ts`) and shared helpers in `src/dev/beacon/`.
 
-See [`libs/demo-beacon/README.md`](libs/demo-beacon/README.md) for the config API and [`docs/adr/0001-demo-beacon.md`](docs/adr/0001-demo-beacon.md) for the design decisions (hook-registration over route-mapping; static config over live introspection).
+See [`libs/demo-beacon/README.md`](libs/demo-beacon/README.md) for the config API.
 
 **When it appears:** automatically in local dev, and in a hosted demo build that sets `VITE_ENABLE_MOCKS=true`. A real production build leaves that unset — the store still mounts (page hooks are harmless no-ops) but the launcher/panel UI chunk is never loaded, so it costs nothing. Gating lives in `apps/clearline-web/src/dev/demo-mode.ts`.
 
@@ -100,7 +100,7 @@ clearline/
   infrastructure/            # IDRs, setup guides, env templates, CI/CD, verification checklists
 ```
 
-Built with **Nx + pnpm**. Domain libs are pure TypeScript, framework-agnostic, and fully unit-testable in isolation. Platform-level technology decisions (monorepo tool, TS/Node versions, mock-backend strategy, hosting, CI/CD) are recorded in [`specs/tdr/TDR-PLATFORM-001.yaml`](specs/tdr/TDR-PLATFORM-001.yaml); the `clearline-web` app baseline (React + Vite, routing, API style) is in `TDR-CW-WEB-001`.
+Built with **Nx + pnpm**. Domain libs are pure TypeScript, framework-agnostic, and fully unit-testable in isolation.
 
 ### App structure (`apps/clearline-web/src`)
 
@@ -147,10 +147,11 @@ The frontend framework decision is settled (React 19 + Vite) and `clearline-web`
 - **EPIC-CW-005** — 3DS / step-up authentication for high-value payments
 - **EPIC-CW-006** — Expense submission & approval workflow (separation of duties, limit-based escalation, stale-action reconciliation)
 - **EPIC-CW-007** — Batch operations (partial-failure batch approve/reject, per-item idempotency keys, mid-batch resume)
+- **EPIC-CW-008** — Card management (virtual card issuance with limits + MCC restrictions, real-time WebSocket transaction feed, freeze controls, security-gated declines)
 - **EPIC-CW-019** — Account owner provisioning at KYB approval
 - **EPIC-CW-020** — Reassign approver for blocked approvals
 
-**Planned** (see `specs/epics/clearline-web/`): card management, real-time spend dashboard & analytics, vendor management & reconciliation, AI invoice coding, AI spend insights (streaming), budget management, organization & team management, plus cross-cutting accessibility (WCAG 2.1 AA) and audit logging.
+**Planned** (see `specs/epics/clearline-web/`): real-time spend dashboard & analytics, vendor management & reconciliation, AI invoice coding, AI spend insights (streaming), budget management, organization & team management, plus cross-cutting accessibility (WCAG 2.1 AA) and audit logging.
 
 ---
 
