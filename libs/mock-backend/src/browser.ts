@@ -10,7 +10,15 @@ import { onboardingHandlers } from './handlers/onboarding.handlers';
 import { approvalsHandlers } from './handlers/approvals.handlers';
 import { paymentsHandlers } from './handlers/payments.handlers';
 import { expensesHandlers } from './handlers/expenses.handlers';
+import { cardsHandlers, cardsFeedHandler } from './handlers/cards.handlers';
 import { sharedAuthService } from './services/shared-auth-service';
+import { sharedCardsService } from './services/shared-cards-service';
+import {
+  DEMO_LIMIT_DECLINE_CHARGE,
+  DEMO_LIVE_CHARGE,
+  DEMO_MCC_DECLINE_CHARGE,
+  DEMO_SECURITY_DECLINE_CHARGE,
+} from './fixtures/cards.fixture';
 import { sharedOnboardingService } from './services/shared-onboarding-service';
 import { sharedPaymentsService } from './services/shared-payments-service';
 import { DEMO_ONBOARDED_BUSINESS } from './fixtures/onboarding.fixture';
@@ -25,6 +33,8 @@ export const worker = setupWorker(
   ...approvalsHandlers,
   ...paymentsHandlers,
   ...expensesHandlers,
+  ...cardsHandlers,
+  cardsFeedHandler,
 );
 
 // Seed the demo user as an already-approved, fully-onboarded business so signing in as it lands on
@@ -224,4 +234,56 @@ export function simulateRoleChangeForE2E(
  */
 export function simulatePaymentReversalForE2E(intentId: string): void {
   sharedPaymentsService.reverse(intentId);
+}
+
+/**
+ * Dev/demo control for US-CW-014 AC-02: streams an in-policy $150 Notion Labs authorization onto a
+ * card's live feed. Because the card's remaining limit is derived from authorized spend, the number
+ * visibly moves the moment this lands. Reachable only via the demo Beacon (behind import.meta.env.DEV),
+ * so it never ships — the demo has no real card network to originate authorizations.
+ */
+export function simulateCardChargeForE2E(cardId: string): void {
+  sharedCardsService.authorizeTransaction(cardId, { ...DEMO_LIVE_CHARGE });
+}
+
+/** The kinds of decline the demo can stage, each mapping to one acceptance criterion. */
+export type CardDeclineKind = 'mcc' | 'limit' | 'security';
+
+/**
+ * Dev/demo control for the three decline scenarios (US-CW-014 AC-03/AC-04/AC-07):
+ *   - 'mcc'      → a Restaurants charge on a Software/Office-only card (category block).
+ *   - 'limit'    → a charge $25 over the card's remaining derived limit (guaranteed insufficient-limit).
+ *   - 'security' → a charge on a card flagged lost/stolen, so the true reason is recorded but the
+ *                  cardholder only ever sees the generic message.
+ * Each streams a declined row onto the feed; none moves the limit. Demo-only, behind import.meta.env.DEV.
+ */
+export function simulateCardDeclineForE2E(cardId: string, kind: CardDeclineKind): void {
+  if (kind === 'mcc') {
+    sharedCardsService.authorizeTransaction(cardId, { ...DEMO_MCC_DECLINE_CHARGE });
+    return;
+  }
+  if (kind === 'security') {
+    sharedCardsService.authorizeTransaction(cardId, {
+      ...DEMO_SECURITY_DECLINE_CHARGE,
+      securityHold: 'lost_or_stolen',
+    });
+    return;
+  }
+  // 'limit': force the charge above whatever headroom the card currently has so it always declines.
+  const card = sharedCardsService.getCard(cardId);
+  const remaining = card
+    ? card.monthlyLimit.amountMinorUnits - card.authorizedSpend.amountMinorUnits
+    : 0;
+  sharedCardsService.authorizeTransaction(cardId, {
+    ...DEMO_LIMIT_DECLINE_CHARGE,
+    amountMinorUnits: Math.max(DEMO_LIMIT_DECLINE_CHARGE.amountMinorUnits, remaining + 2_500),
+  });
+}
+
+/**
+ * Dev/demo control for US-CW-014 AC-06: force-closes the card's live feed socket so the client shows
+ * its "Reconnecting…" banner and reconnects with exponential backoff. Demo-only, behind import.meta.env.DEV.
+ */
+export function simulateCardFeedDropForE2E(cardId: string): void {
+  sharedCardsService.dropFeed(cardId);
 }

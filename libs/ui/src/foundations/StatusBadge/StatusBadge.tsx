@@ -7,6 +7,7 @@ export type StatusKey =
   | 'pending-l1'
   | 'pending-l2'
   | 'approved'
+  | 'active'
   | 'paid'
   | 'reconciled'
   | 'rejected'
@@ -29,6 +30,7 @@ const STATUS: Record<StatusKey, StatusDefinition> = {
   'pending-l1': { icon: 'clock', label: 'Pending L1', tone: 'pending' },
   'pending-l2': { icon: 'clock', label: 'Pending L2', tone: 'warning' },
   approved: { icon: 'check', label: 'Approved', tone: 'positive' },
+  active: { icon: 'check', label: 'Active', tone: 'positive' },
   paid: { icon: 'arrow-right-circle', label: 'Paid', tone: 'paid' },
   reconciled: { icon: 'double-check', label: 'Reconciled', tone: 'reconciled' },
   rejected: { icon: 'x-circle', label: 'Rejected', tone: 'negative' },

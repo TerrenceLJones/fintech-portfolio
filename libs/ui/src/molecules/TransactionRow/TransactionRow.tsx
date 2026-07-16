@@ -1,7 +1,8 @@
+import { Icon } from '../../foundations/Icon';
 import { formatMoney } from '../../utils/formatMoney';
 import { Text } from '../../atoms/Text';
 
-export type TransactionRowState = 'default' | 'live' | 'dim';
+export type TransactionRowState = 'default' | 'live' | 'dim' | 'declined';
 
 export interface TransactionRowProps {
   merchant: string;
@@ -10,6 +11,12 @@ export interface TransactionRowProps {
   amount: number;
   initials?: string;
   state?: TransactionRowState;
+  /**
+   * The feed-side reason for a declined row (e.g. 'MCC restricted (Restaurants)'), shown as
+   * "Declined · {reason}". Only used when `state` is 'declined' (US-CW-014 AC-03/AC-04). This is the
+   * Controller-facing feed reason — the cardholder-facing message is gated separately.
+   */
+  declineReason?: string;
 }
 
 export function TransactionRow({
@@ -19,9 +26,11 @@ export function TransactionRow({
   amount,
   initials,
   state = 'default',
+  declineReason,
 }: TransactionRowProps) {
   const live = state === 'live';
   const dim = state === 'dim';
+  const declined = state === 'declined';
 
   return (
     <div
@@ -31,26 +40,46 @@ export function TransactionRow({
         dim ? 'opacity-70' : '',
       ].join(' ')}
     >
-      <Text
-        as="div"
-        size="label"
-        weight="semibold"
-        className={[
-          'flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg',
-          live ? 'bg-cl-surface text-cl-text' : 'bg-cl-surface-2 text-cl-text-2',
-        ].join(' ')}
-      >
-        {(initials ?? merchant.slice(0, 2)).slice(0, 2)}
-      </Text>
+      {declined ? (
+        // A declined charge reads through an icon + red reason text + strikethrough amount — never
+        // colour alone (US-CW-014 accessibility requirement).
+        <div className="bg-cl-neg-weak text-cl-neg flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg">
+          <Icon name="x-circle" size={16} />
+        </div>
+      ) : (
+        <Text
+          as="div"
+          size="label"
+          weight="semibold"
+          className={[
+            'flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg',
+            live ? 'bg-cl-surface text-cl-text' : 'bg-cl-surface-2 text-cl-text-2',
+          ].join(' ')}
+        >
+          {(initials ?? merchant.slice(0, 2)).slice(0, 2)}
+        </Text>
+      )}
       <div className="min-w-0 flex-1">
         <Text as="div" size="label" weight="semibold" tone="default" className="truncate">
           {merchant}
         </Text>
-        <Text as="div" size="label" weight="regular" tone="faint">
-          {category} &middot; {time}
-        </Text>
+        {declined ? (
+          <Text as="div" size="label" weight="regular" className="text-cl-neg truncate">
+            Declined &middot; {declineReason ?? 'declined'}
+          </Text>
+        ) : (
+          <Text as="div" size="label" weight="regular" tone="faint">
+            {category} &middot; {time}
+          </Text>
+        )}
       </div>
-      <Text as="div" size="mono" weight="semibold" tone="default" className="flex-shrink-0">
+      <Text
+        as="div"
+        size="mono"
+        weight="semibold"
+        tone={declined ? 'faint' : 'default'}
+        className={['flex-shrink-0', declined ? 'line-through' : ''].join(' ')}
+      >
         {formatMoney(amount)}
       </Text>
     </div>

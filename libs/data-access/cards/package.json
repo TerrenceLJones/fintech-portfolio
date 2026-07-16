@@ -1,0 +1,34 @@
+{
+  "name": "@clearline/data-access-cards",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Cards data-access layer for clearline-web (US-CW-014): React Query hooks over /api/cards/* (wallet list, single card, issuance context, issue, freeze) plus a useTransactionFeed hook that owns a real-time WebSocket connection with a connecting/open/reconnecting state machine and exponential reconnect backoff. Surfaces the server's 4xx as typed errors. No UI, no business rules — those live in libs/ui and libs/domain/cards.",
+  "main": "src/index.ts",
+  "scripts": {
+    "lint": "eslint .",
+    "type-check": "tsc --noEmit",
+    "test": "vitest run",
+    "build": "tsc"
+  },
+  "peerDependencies": {
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "dependencies": {
+    "@clearline/contracts": "workspace:*",
+    "@clearline/data-access-auth": "workspace:*",
+    "@clearline/domain-cards": "workspace:*",
+    "@tanstack/react-query": "^5.101.2"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@clearline/mock-backend": "workspace:*",
+    "msw": "^2.14.6"
+  },
+  "metadata": {
+    "package_type": "shared",
+    "app": "clearline-web",
+    "scope": "Data-access lib for EPIC-CW-008 (US-CW-014 Virtual Card Issuance & Real-Time Controls)."
+  }
+}

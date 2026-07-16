@@ -25,6 +25,9 @@ const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'payments:create',
     'budget:view',
     'audit:view',
+    // Issuing virtual cards and freezing them is a Controller-only capability (US-CW-014); every
+    // role can `cards:view` their own wallet, but only a Controller can `cards:manage`.
+    'cards:manage',
   ],
 };
 

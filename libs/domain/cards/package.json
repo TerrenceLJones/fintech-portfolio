@@ -1,0 +1,22 @@
+{
+  "name": "@clearline/domain-cards",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Pure, framework-agnostic virtual-card rules (US-CW-014): derived remaining-limit computation (never stored), MCC allow-list checks, the single authorizeCardTransaction gate (security hold → freeze → MCC → limit), the security-gating layer that collapses sensitive declines to one generic cardholder message, and the transaction-feed exponential reconnect backoff. No data-access or UI dependencies, mirrors libs/domain/payments.",
+  "main": "src/index.ts",
+  "scripts": {
+    "lint": "eslint .",
+    "type-check": "tsc --noEmit",
+    "test": "vitest run",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@clearline/contracts": "workspace:*"
+  },
+  "devDependencies": {},
+  "metadata": {
+    "package_type": "shared",
+    "app": "clearline-web",
+    "scope": "Domain lib for EPIC-CW-008 (US-CW-014 Virtual Card Issuance & Real-Time Controls)."
+  }
+}

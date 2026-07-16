@@ -8,6 +8,7 @@ import { onboardingHandlers } from './handlers/onboarding.handlers';
 import { approvalsHandlers } from './handlers/approvals.handlers';
 import { paymentsHandlers } from './handlers/payments.handlers';
 import { expensesHandlers } from './handlers/expenses.handlers';
+import { cardsHandlers, cardsFeedHandler } from './handlers/cards.handlers';
 
 export const server = setupServer(
   ...authHandlers,
@@ -18,4 +19,6 @@ export const server = setupServer(
   ...approvalsHandlers,
   ...paymentsHandlers,
   ...expensesHandlers,
+  ...cardsHandlers,
+  cardsFeedHandler,
 );

@@ -11,6 +11,9 @@ import { MyExpensesPage } from './pages/expenses/MyExpensesPage';
 import { NewExpensePage } from './pages/expenses/NewExpensePage';
 import { NewPaymentPage } from './pages/payments/NewPaymentPage';
 import { PaymentStatusPage } from './pages/payments/PaymentStatusPage';
+import { CardWalletPage } from './pages/cards/CardWalletPage';
+import { IssueCardPage } from './pages/cards/IssueCardPage';
+import { CardDetailPage } from './pages/cards/CardDetailPage';
 import { PlaceholderPage } from './pages/PlaceholderPage';
 import { BusinessInfoStepPage } from './pages/onboarding/BusinessInfoStepPage';
 import { BeneficialOwnersStepPage } from './pages/onboarding/BeneficialOwnersStepPage';
@@ -78,16 +81,21 @@ export function App() {
                     <Route path="/expenses" element={<MyExpensesPage />} />
                     <Route path="/expenses/new" element={<NewExpensePage />} />
                   </Route>
+                  {/* Card management (US-CW-014). The wallet + detail feed are viewable by any role
+                    with cards:view; issuance is Controller-only (cards:manage), re-checked server-side. */}
                   <Route
-                    path="/cards"
+                    element={<RequirePermission permission="cards:view" apiPath="/api/cards" />}
+                  >
+                    <Route path="/cards" element={<CardWalletPage />} />
+                    <Route path="/cards/:cardId" element={<CardDetailPage />} />
+                  </Route>
+                  <Route
                     element={
-                      <PlaceholderPage
-                        title="My Cards"
-                        icon="copy"
-                        body="Your virtual and physical cards will live here."
-                      />
+                      <RequirePermission permission="cards:manage" apiPath="/api/cards/context" />
                     }
-                  />
+                  >
+                    <Route path="/cards/new" element={<IssueCardPage />} />
+                  </Route>
                   <Route
                     element={
                       <RequirePermission permission="approvals:view" apiPath="/api/approvals" />

@@ -15,6 +15,7 @@ export type Role = 'employee' | 'finance_manager' | 'controller';
 export type Permission =
   | 'expenses:view'
   | 'cards:view'
+  | 'cards:manage'
   | 'approvals:view'
   | 'approvals:act'
   | 'reconciliation:view'
