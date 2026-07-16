@@ -41,6 +41,12 @@ declare global {
       ) => void;
       /** Posts an additive reversing ledger entry against a payment and flips it to "Reversed", standing in for the bank's reversal webhook (US-CW-009 AC-02). */
       simulatePaymentReversalForE2E: (intentId: string) => void;
+      /** Arms/disarms a single spend-dashboard section's simulated 500 so its isolated error + scoped retry can be exercised (US-CW-015 AC-05). Invalidates analytics so the section refetches without a reload. */
+      setAnalyticsSectionFailureForE2E: (
+        section:
+          'summary' | 'spend-by-category' | 'by-department' | 'top-vendors' | 'recent-activity',
+        armed: boolean,
+      ) => void;
     };
   }
 }

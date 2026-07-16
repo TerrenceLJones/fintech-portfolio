@@ -25,8 +25,8 @@ const SEED_USERS_BY_ACCESS = [...SEED_USERS].sort(
 /** Where each role lands after signing in (US-CW-001), surfaced in the credential hint. */
 const ROLE_HOME: Record<Role, string> = {
   employee: 'My Expenses',
-  finance_manager: 'Approvals queue',
-  controller: 'Approvals queue',
+  finance_manager: 'Spend dashboard',
+  controller: 'Spend dashboard',
 };
 
 /** The row hint: approval authority (for approvers) and the role-based home the account lands on. */
@@ -79,7 +79,7 @@ export const loginBeacon: DemoBeaconPageConfig = {
           steps: [
             { text: 'Copy one of the role emails and the shared password into the form.' },
             {
-              text: 'Submit — an **Employee** lands on **My Expenses**; a **Finance Manager** or **Controller** lands on the **Approvals** queue.',
+              text: 'Submit — an **Employee** lands on **My Expenses**; a **Finance Manager** or **Controller** lands on the **Spend dashboard**.',
             },
             { text: 'Sign out and repeat with a different role to compare the shells.' },
           ],

@@ -19,13 +19,20 @@ describe('navItemsForPermissions', () => {
     expect(items.map((i) => i.label)).toEqual(['My Expenses', 'My Cards']);
   });
 
-  it('gives a Finance Manager expenses/cards plus Approvals, Reconciliation and Payments (AC-02)', () => {
+  it('gives a Finance Manager the Dashboard plus Approvals, Reconciliation and Payments (AC-02)', () => {
     const labels = navItemsForPermissions(canFor('finance_manager')).map((i) => i.label);
+    expect(labels).toContain('Dashboard');
     expect(labels).toContain('Approvals');
     expect(labels).toContain('Reconciliation');
     expect(labels).toContain('Payments');
     expect(labels).not.toContain('Budget Management');
     expect(labels).not.toContain('Audit Log');
+  });
+
+  it('does not give an Employee the Dashboard link (analytics:view, US-CW-015)', () => {
+    expect(navItemsForPermissions(canFor('employee')).map((i) => i.label)).not.toContain(
+      'Dashboard',
+    );
   });
 
   it('does not give an Employee the Payments link (EPIC-CW-004)', () => {
@@ -52,9 +59,9 @@ describe('homePathForPermissions', () => {
     expect(homePathForPermissions(canFor('employee'))).toBe('/expenses');
   });
 
-  it('sends an approver (Finance Manager / Controller) to the approval queue', () => {
-    expect(homePathForPermissions(canFor('finance_manager'))).toBe('/approvals');
-    expect(homePathForPermissions(canFor('controller'))).toBe('/approvals');
+  it('sends a Finance Manager / Controller to the spend dashboard (US-CW-015)', () => {
+    expect(homePathForPermissions(canFor('finance_manager'))).toBe('/dashboard');
+    expect(homePathForPermissions(canFor('controller'))).toBe('/dashboard');
   });
 });
 

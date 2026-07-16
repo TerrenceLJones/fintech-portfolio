@@ -14,6 +14,7 @@ describe('permissionsForRole', () => {
     expect(perms).toContain('approvals:view');
     expect(perms).toContain('approvals:act');
     expect(perms).toContain('reconciliation:view');
+    expect(perms).toContain('analytics:view');
     expect(perms).toContain('payments:create');
     expect(perms).not.toContain('budget:view');
     expect(perms).not.toContain('audit:view');
@@ -23,6 +24,7 @@ describe('permissionsForRole', () => {
     const perms = permissionsForRole('controller', { isAdmin: false });
     expect(perms).toContain('approvals:act');
     expect(perms).toContain('reconciliation:view');
+    expect(perms).toContain('analytics:view');
     expect(perms).toContain('payments:create');
     expect(perms).toContain('budget:view');
     expect(perms).toContain('audit:view');

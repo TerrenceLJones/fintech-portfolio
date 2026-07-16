@@ -6,3 +6,4 @@ export type * from './rbac';
 export type * from './cards';
 export type * from './payments';
 export type * from './expenses';
+export type * from './analytics';

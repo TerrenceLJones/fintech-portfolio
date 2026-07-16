@@ -30,8 +30,8 @@ test('an expired access token is silently refreshed and the request replayed, wi
   await fillLoginForm(page, DEMO_EMAIL, DEMO_PASSWORD);
   await page.getByRole('button', { name: 'Sign in' }).click();
   await expectSignedIn(page);
-  // The demo account is a Finance Manager, so the role-based home is the approval queue (US-CW-001).
-  await expect(page).toHaveURL(/\/approvals$/);
+  // The demo account is a Finance Manager, so the role-based home is the spend dashboard (US-CW-001/US-CW-015).
+  await expect(page).toHaveURL(/\/dashboard$/);
 
   await mockBackend.expireAccessTokenForE2E(DEMO_EMAIL);
   await mockBackend.simulateRefreshOutcomeForE2E('success', DEMO_EMAIL);
@@ -40,8 +40,8 @@ test('an expired access token is silently refreshed and the request replayed, wi
   await triggerFocusRefetch(page);
   await refreshResponse;
 
-  // still on the approval queue, no redirect and no visible interruption to the signed-in state
-  await expect(page).toHaveURL(/\/approvals$/);
+  // still on the spend dashboard, no redirect and no visible interruption to the signed-in state
+  await expect(page).toHaveURL(/\/dashboard$/);
   await expectSignedIn(page);
 });
 
@@ -83,8 +83,8 @@ test('a refresh rejected as expired ends the session and preserves the route to 
   await triggerFocusRefetch(page);
   await refreshResponse;
 
-  // The route to return to is the approval-queue home the Finance Manager was on (US-CW-001).
-  await expect(page).toHaveURL(/\/login\?next=%2Fapprovals/);
+  // The route to return to is the spend-dashboard home the Finance Manager was on (US-CW-001/US-CW-015).
+  await expect(page).toHaveURL(/\/login\?next=%2Fdashboard/);
   await expect(page.getByText('Your session expired. Please sign in again.')).toBeVisible();
 });
 

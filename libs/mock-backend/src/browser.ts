@@ -11,6 +11,13 @@ import { approvalsHandlers } from './handlers/approvals.handlers';
 import { paymentsHandlers } from './handlers/payments.handlers';
 import { expensesHandlers } from './handlers/expenses.handlers';
 import { cardsHandlers, cardsFeedHandler } from './handlers/cards.handlers';
+import {
+  analyticsHandlers,
+  isAnalyticsSectionFailureArmed,
+  setAnalyticsSectionFailure,
+  type AnalyticsSection,
+} from './handlers/analytics.handlers';
+import { sharedAnalyticsService } from './services/shared-analytics-service';
 import { sharedAuthService } from './services/shared-auth-service';
 import { sharedCardsService } from './services/shared-cards-service';
 import {
@@ -35,6 +42,7 @@ export const worker = setupWorker(
   ...expensesHandlers,
   ...cardsHandlers,
   cardsFeedHandler,
+  ...analyticsHandlers,
 );
 
 // Seed the demo user as an already-approved, fully-onboarded business so signing in as it lands on
@@ -286,4 +294,28 @@ export function simulateCardDeclineForE2E(cardId: string, kind: CardDeclineKind)
  */
 export function simulateCardFeedDropForE2E(cardId: string): void {
   sharedCardsService.dropFeed(cardId);
+}
+
+/**
+ * Dev/demo control for US-CW-015 AC-05: arms/disarms a 500 on a single dashboard section (e.g.
+ * "top-vendors") so a viewer can watch it fail behind its own error boundary while every other
+ * section renders and retries independently. A persistent flag the Beacon toggle mirrors and can
+ * turn back OFF. Demo-only, behind import.meta.env.DEV.
+ */
+export function setAnalyticsSectionFailureForE2E(section: AnalyticsSection, armed: boolean): void {
+  setAnalyticsSectionFailure(section, armed);
+}
+
+/** Current armed state of a section's simulated failure — lets the Beacon toggle mirror reality when it reopens. */
+export function isAnalyticsSectionFailureArmedForE2E(section: AnalyticsSection): boolean {
+  return isAnalyticsSectionFailureArmed(section);
+}
+
+/**
+ * Dev/demo control for US-CW-015 AC-06: backdates the dashboard's freshness stamp by `minutes` so the
+ * "Last updated N minutes ago" stale indicator and manual Refresh are visible without waiting. The
+ * next Refresh (or a real refetch) restamps it to now. Demo-only, behind import.meta.env.DEV.
+ */
+export function backdateAnalyticsRefreshForE2E(minutes = 10): void {
+  sharedAnalyticsService.backdateRefresh(minutes);
 }

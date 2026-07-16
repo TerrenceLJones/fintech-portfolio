@@ -34,6 +34,7 @@ function renderHome(role: Role) {
           <Route path="/" element={<HomeRedirect />} />
           <Route path="/expenses" element={<div>My Expenses</div>} />
           <Route path="/approvals" element={<div>Approvals queue</div>} />
+          <Route path="/dashboard" element={<div>Spend dashboard</div>} />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>,
@@ -41,9 +42,9 @@ function renderHome(role: Role) {
 }
 
 describe('HomeRedirect', () => {
-  it('sends an approver (Finance Manager) to the approval queue', async () => {
+  it('sends a Finance Manager to the spend dashboard (US-CW-015)', async () => {
     renderHome('finance_manager');
-    await waitFor(() => expect(screen.getByText('Approvals queue')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Spend dashboard')).toBeInTheDocument());
   });
 
   it('sends an Employee to My Expenses', async () => {

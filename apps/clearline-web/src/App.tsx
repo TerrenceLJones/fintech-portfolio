@@ -14,6 +14,7 @@ import { PaymentStatusPage } from './pages/payments/PaymentStatusPage';
 import { CardWalletPage } from './pages/cards/CardWalletPage';
 import { IssueCardPage } from './pages/cards/IssueCardPage';
 import { CardDetailPage } from './pages/cards/CardDetailPage';
+import { DashboardPage } from './pages/dashboard/DashboardPage';
 import { PlaceholderPage } from './pages/PlaceholderPage';
 import { BusinessInfoStepPage } from './pages/onboarding/BusinessInfoStepPage';
 import { BeneficialOwnersStepPage } from './pages/onboarding/BeneficialOwnersStepPage';
@@ -73,6 +74,18 @@ export function App() {
                   RequirePermission below, so the client never is the security boundary. */}
                 <Route element={<AppChrome />}>
                   <Route path="/" element={<HomeRedirect />} />
+                  {/* Spend analytics dashboard (US-CW-015). Finance Managers and Controllers hold
+                    analytics:view; the read is re-checked server-side on every /api/analytics/* call. */}
+                  <Route
+                    element={
+                      <RequirePermission
+                        permission="analytics:view"
+                        apiPath="/api/analytics/summary"
+                      />
+                    }
+                  >
+                    <Route path="/dashboard" element={<DashboardPage />} />
+                  </Route>
                   <Route
                     element={
                       <RequirePermission permission="expenses:view" apiPath="/api/expenses" />

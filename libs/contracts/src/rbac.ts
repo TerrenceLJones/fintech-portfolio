@@ -19,6 +19,7 @@ export type Permission =
   | 'approvals:view'
   | 'approvals:act'
   | 'reconciliation:view'
+  | 'analytics:view'
   | 'budget:view'
   | 'audit:view'
   | 'team:view'

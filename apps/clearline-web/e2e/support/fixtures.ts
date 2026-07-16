@@ -49,6 +49,12 @@ export const test = base.extend<{ mockBackend: MockBackend }>({
         ),
       simulatePaymentReversalForE2E: (intentId) =>
         page.evaluate((id) => window.__e2eMockBackend!.simulatePaymentReversalForE2E(id), intentId),
+      setAnalyticsSectionFailureForE2E: (section, armed) =>
+        page.evaluate(
+          ({ section, armed }) =>
+            window.__e2eMockBackend!.setAnalyticsSectionFailureForE2E(section, armed),
+          { section, armed },
+        ),
     });
   },
 });

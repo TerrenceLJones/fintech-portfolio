@@ -43,3 +43,9 @@ export {
   DEMO_ONBOARDED_USER_ID,
   DEMO_ONBOARDED_BUSINESS,
 } from './onboarding.fixture';
+export {
+  SEED_SPEND_TRANSACTIONS,
+  SEED_ANALYTICS_KPIS,
+  DEFAULT_ANALYTICS_RANGE,
+} from './analytics.fixture';
+export type { SeedTransaction } from './analytics.fixture';

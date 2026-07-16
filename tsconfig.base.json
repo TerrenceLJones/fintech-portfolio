@@ -46,7 +46,8 @@
       "@clearline/domain-cards": ["libs/domain/cards/src/index.ts"],
       "@clearline/data-access-cards": ["libs/data-access/cards/src/index.ts"],
       "@clearline/domain-expenses": ["libs/domain/expenses/src/index.ts"],
-      "@clearline/data-access-expenses": ["libs/data-access/expenses/src/index.ts"]
+      "@clearline/data-access-expenses": ["libs/data-access/expenses/src/index.ts"],
+      "@clearline/data-access-analytics": ["libs/data-access/analytics/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp", "dist"]

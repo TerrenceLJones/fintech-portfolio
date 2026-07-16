@@ -18,6 +18,13 @@ export interface NavItemDef {
 
 export const NAV_ITEMS: NavItemDef[] = [
   {
+    id: 'dashboard',
+    permission: 'analytics:view',
+    label: 'Dashboard',
+    icon: 'bar-chart',
+    path: '/dashboard',
+  },
+  {
     id: 'expenses',
     permission: 'expenses:view',
     label: 'My Expenses',
@@ -58,13 +65,13 @@ export const NAV_ITEMS: NavItemDef[] = [
 ];
 
 /**
- * The page a user lands on after login, chosen by role (US-CW-001). Approvers (Finance Managers /
- * Controllers, who hold approvals:view) land on their approval queue — their primary work surface;
+ * The page a user lands on after login, chosen by role (US-CW-001). Finance Managers and Controllers
+ * (who hold analytics:view) land on the spend dashboard — their primary monitoring surface (US-CW-015);
  * everyone else lands on My Expenses. Permission-driven rather than role-string-driven, consistent
  * with the rest of the app's authorization model.
  */
 export function homePathForPermissions(can: (permission: Permission) => boolean): string {
-  if (can('approvals:view')) return '/approvals';
+  if (can('analytics:view')) return '/dashboard';
   return '/expenses';
 }
 

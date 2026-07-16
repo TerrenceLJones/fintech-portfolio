@@ -28,6 +28,7 @@ async function bootstrap() {
       simulateRefreshOutcomeForE2E,
       simulateRoleChangeForE2E,
       simulatePaymentReversalForE2E,
+      setAnalyticsSectionFailureForE2E,
     } = await import('@clearline/mock-backend/browser');
     await worker.start({ onUnhandledRequest: 'bypass' });
     // With the mock backend in play there's no real ID-verification vendor, so swap the browser
@@ -52,6 +53,12 @@ async function bootstrap() {
       simulatePaymentReversalForE2E: (intentId: string) => {
         simulatePaymentReversalForE2E(intentId);
         void queryClient.invalidateQueries({ queryKey: ['payments'] });
+      },
+      // Arm/disarm a single dashboard section's simulated failure, then invalidate analytics so the
+      // section refetches and shows (or clears) its isolated error without a reload (US-CW-015 AC-05).
+      setAnalyticsSectionFailureForE2E: (section, armed) => {
+        setAnalyticsSectionFailureForE2E(section, armed);
+        void queryClient.invalidateQueries({ queryKey: ['analytics'] });
       },
     };
   }

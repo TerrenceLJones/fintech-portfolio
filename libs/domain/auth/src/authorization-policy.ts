@@ -14,6 +14,9 @@ const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'approvals:view',
     'approvals:act',
     'reconciliation:view',
+    // The spend analytics dashboard is a Finance Manager's primary monitoring surface (US-CW-015);
+    // it's the role's role-based home. Controllers inherit it below.
+    'analytics:view',
     'payments:create',
   ],
   controller: [
@@ -22,6 +25,7 @@ const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'approvals:view',
     'approvals:act',
     'reconciliation:view',
+    'analytics:view',
     'payments:create',
     'budget:view',
     'audit:view',
