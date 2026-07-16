@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useParams } from 'react-router';
 import { toMajorUnits } from '@clearline/money';
 import { EmptyState, Text, VirtualCard } from '@clearline/ui';
@@ -22,7 +23,9 @@ export function CardDetailPage() {
   const { can } = useAuthorization();
   const canManage = can('cards:manage');
   usePageTitle(detail.card ? detail.card.holderName : 'Card');
-  useDemoBeacon(cardDetailBeacon(cardId));
+  // Memoize per card — cardDetailBeacon returns a fresh object each call, and useDemoBeacon
+  // re-registers on config-identity change, so an inline call would loop the render (AC-01).
+  useDemoBeacon(useMemo(() => cardDetailBeacon(cardId), [cardId]));
 
   if (detail.notFound) {
     return (
