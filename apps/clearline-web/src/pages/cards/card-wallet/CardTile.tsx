@@ -25,7 +25,7 @@ export function CardTile({ card, onOpen }: CardTileProps) {
       type="button"
       data-card-tile
       onClick={() => onOpen(card.id)}
-      className="border-cl-border bg-cl-surface hover:border-cl-border-2 focus-visible:outline-cl-focus block w-full rounded-xl border p-3.5 text-left transition-colors focus-visible:outline-2"
+      className="border-cl-border bg-cl-surface hover:border-cl-border-2 focus-visible:outline-cl-focus block w-full cursor-pointer rounded-xl border p-3.5 text-left transition-colors focus-visible:outline-2"
     >
       <VirtualCardFace
         holder={card.holderName}
