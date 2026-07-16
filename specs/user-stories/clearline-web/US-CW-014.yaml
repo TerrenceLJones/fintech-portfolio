@@ -9,7 +9,7 @@ feature_area: 'payments'
 title: 'Virtual Card Issuance & Real-Time Controls'
 
 # Lifecycle status
-status: 'APPROVED'
+status: 'IMPLEMENTED'
 story_points: 8
 dependencies: ['US-CW-006']
 
@@ -25,10 +25,13 @@ history:
   - epic_id: 'EPIC-CW-008'
     action: 'approved'
     date: '2026-06-30'
+  - epic_id: 'EPIC-CW-008'
+    action: 'implemented'
+    date: '2026-07-16'
 
 # Status timestamps — set when status transitions occur
 approved_date: '2026-06-30'
-implementation_date: null
+implementation_date: '2026-07-16'
 deprecated_date: null
 removed_date: null
 
@@ -121,5 +124,27 @@ edge_cases: |
 
 # Implementation Status
 implementation_status: |
-  Not yet implemented. This story is APPROVED and ready for implementation planning, transcribed as part of the initial
-  specification pass for clearline-web — no application code exists yet.
+  ✅ Implemented 2026-07-16 (EPIC-CW-008, PR #31). Controllers issue virtual cards with a monthly limit and
+  MCC restrictions and control them in real time. The remaining limit is a derived value
+  (@clearline/domain-cards deriveRemainingLimit) computed everywhere it's shown and never stored on the
+  wire — VirtualCard sends monthlyLimit + authorizedSpend, not remaining. The transaction feed runs over a
+  genuine WebSocket (MSW ws handler) with an injectable-socket client hook (useTransactionFeed) that owns a
+  connecting/open/reconnecting state machine and exponential reconnect backoff. Every authorization passes
+  the same server-side gate the client uses (authorizeCardTransaction: security-hold → freeze → MCC →
+  limit), and decline reasons are filtered through a security-gating layer (cardholderDeclineMessage) so
+  sensitive reasons never reach the cardholder. Card issuance and freeze are Controller-only (cards:manage),
+  re-checked server-side, and emit audit events.
+  - AC-01: CardsService.issueCard creates the card (visible in the wallet) and records a card.issued audit
+    event capturing the monthly limit + allowed MCCs; IssueCardPage drives it (Controller-gated).
+  - AC-02: an approved authorization streams onto the feed over the WebSocket within a tick and the derived
+    remaining limit re-derives from the server's updated authorized spend (useCardDetail refetch).
+  - AC-03: an out-of-category charge is declined "mcc_restricted"; the cardholder sees "…this card can't be
+    used at this type of merchant" and the feed row shows "Declined · MCC restricted (Restaurants)".
+  - AC-04: a charge over the remaining derived limit is declined "insufficient_limit" with the matching
+    cardholder + feed copy (exceedsRemainingLimit).
+  - AC-05: setFreeze flips the card at the authorization layer immediately (a frozen card declines every new
+    charge) and audits who/when; the frozen state reads through a snowflake glyph + "Frozen" label.
+  - AC-06: on a dropped socket the feed shows a "Reconnecting…" banner with a backoff countdown, keeps prior
+    (dimmed) transactions visible as "may not be current", and reconnects with exponential backoff.
+  - AC-07: a lost/stolen/fraud decline collapses to the identical generic cardholder message; the true
+    reason is recorded server-side and never surfaced to the cardholder (leak-asserting unit test).
