@@ -45,3 +45,23 @@ export const Dim: Story = {
     state: 'dim',
   },
 };
+export const DeclinedMcc: Story = {
+  args: {
+    merchant: 'Vista Grill',
+    category: 'Restaurants',
+    time: 'just now',
+    amount: 64,
+    state: 'declined',
+    declineReason: 'MCC restricted (Restaurants)',
+  },
+};
+export const DeclinedLimit: Story = {
+  args: {
+    merchant: 'GitHub',
+    category: 'Software',
+    time: 'just now',
+    amount: 75,
+    state: 'declined',
+    declineReason: 'insufficient limit remaining',
+  },
+};

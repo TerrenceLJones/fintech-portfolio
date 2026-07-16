@@ -6,7 +6,9 @@ import * as TransactionRowStories from './TransactionRow.stories';
 # TransactionRow
 
 A single ledger-line row — merchant, category, time, and amount — with `default`/`live`/`dim`
-states for freshly-posted or superseded entries.
+states for freshly-posted or superseded entries, plus a `declined` state (US-CW-014) that swaps the
+avatar for an X-circle icon, names the feed-side decline reason, and strikes through the amount so a
+rejected charge reads through icon + text, never colour alone.
 
 ## User story
 

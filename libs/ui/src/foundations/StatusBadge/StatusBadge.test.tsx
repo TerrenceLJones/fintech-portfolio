@@ -14,6 +14,7 @@ describe('StatusBadge', () => {
       'pending-l1',
       'pending-l2',
       'approved',
+      'active',
       'paid',
       'reconciled',
       'rejected',

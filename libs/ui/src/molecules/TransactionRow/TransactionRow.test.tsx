@@ -23,4 +23,22 @@ describe('TransactionRow', () => {
     );
     expect(screen.getByText('Am')).toBeInTheDocument();
   });
+
+  it('renders a declined row with its reason and a struck-through amount (US-CW-014 AC-03/AC-04)', () => {
+    render(
+      <TransactionRow
+        merchant="Vista Grill"
+        category="Restaurants"
+        time="just now"
+        amount={64}
+        state="declined"
+        declineReason="MCC restricted (Restaurants)"
+      />,
+    );
+    // The reason names itself; a declined charge is signalled by icon + text, never colour alone.
+    expect(screen.getByText('Declined · MCC restricted (Restaurants)')).toBeInTheDocument();
+    // The amount is struck through because no funds moved.
+    const amount = screen.getByText('$64.00');
+    expect(amount).toHaveClass('line-through');
+  });
 });

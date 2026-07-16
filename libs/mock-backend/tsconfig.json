@@ -9,6 +9,7 @@
   "references": [
     { "path": "../contracts" },
     { "path": "../domain/auth" },
+    { "path": "../domain/cards" },
     { "path": "../domain/expenses" },
     { "path": "../domain/onboarding" },
     { "path": "../domain/payments" }

@@ -19,17 +19,25 @@ describe('permissionsForRole', () => {
     expect(perms).not.toContain('audit:view');
   });
 
-  it('adds budget and audit for a Controller on top of Finance Manager', () => {
+  it('adds budget, audit and card management for a Controller on top of Finance Manager', () => {
     const perms = permissionsForRole('controller', { isAdmin: false });
     expect(perms).toContain('approvals:act');
     expect(perms).toContain('reconciliation:view');
     expect(perms).toContain('payments:create');
     expect(perms).toContain('budget:view');
     expect(perms).toContain('audit:view');
+    expect(perms).toContain('cards:manage');
   });
 
   it('does not grant payment creation to an Employee', () => {
     expect(permissionsForRole('employee', { isAdmin: false })).not.toContain('payments:create');
+  });
+
+  it('lets every role view cards but reserves card issuance/freeze (cards:manage) for a Controller', () => {
+    expect(permissionsForRole('employee', { isAdmin: false })).toContain('cards:view');
+    expect(permissionsForRole('finance_manager', { isAdmin: false })).toContain('cards:view');
+    expect(permissionsForRole('employee', { isAdmin: false })).not.toContain('cards:manage');
+    expect(permissionsForRole('finance_manager', { isAdmin: false })).not.toContain('cards:manage');
   });
 
   it('grants team:view for an Admin without granting any approval authority (orthogonality)', () => {
