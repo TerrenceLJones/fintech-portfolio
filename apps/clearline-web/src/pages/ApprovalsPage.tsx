@@ -47,14 +47,18 @@ function formatSubmittedDate(iso: string): string {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-function reasonText(reason: ApprovalErrorCode, approvalLimit: number | null): string {
+function reasonText(
+  reason: ApprovalErrorCode,
+  approvalLimit: number | null,
+  currency: string,
+): string {
   switch (reason) {
     case 'self_approval_blocked':
       return "You can't approve your own expense. It needs another approver.";
     case 'approval_limit_exceeded':
       return `This exceeds your approval limit of ${formatMoneyValue({
         amountMinorUnits: approvalLimit ?? 0,
-        currency: 'USD',
+        currency,
       })}. Route it to a Controller for approval.`;
     default:
       return "You don't have permission to approve this.";
@@ -62,14 +66,17 @@ function reasonText(reason: ApprovalErrorCode, approvalLimit: number | null): st
 }
 
 /** Short per-item skip reason for the batch result summary (AC-06). */
-function batchSkipReason(result: Extract<BatchItemResult, { outcome: 'skipped' }>): string {
+function batchSkipReason(
+  result: Extract<BatchItemResult, { outcome: 'skipped' }>,
+  currency: string,
+): string {
   switch (result.code) {
     case 'self_approval_blocked':
       return 'Cannot approve own expense';
     case 'approval_limit_exceeded':
       return `Exceeds your ${formatMoneyValue({
         amountMinorUnits: result.approvalLimit ?? 0,
-        currency: 'USD',
+        currency,
       })} limit`;
     case 'conflict':
       return `Already approved by ${result.actedBy ?? 'another approver'}`;
@@ -89,8 +96,11 @@ function batchSkipReason(result: Extract<BatchItemResult, { outcome: 'skipped' }
  */
 export function ApprovalsPage() {
   useDemoBeacon(approvalsBeacon);
-  const { permissions, approvalLimit } = useAuthorization();
+  const { permissions, approvalLimit, currency } = useAuthorization();
   const { data: session } = useSession();
+  // Money figures are shown in the org currency from the session; 'USD' is only a defensive default
+  // for the brief pre-session-load window (this page renders behind auth, so it's effectively always set).
+  const currencyCode = currency ?? 'USD';
   const queue = useApprovalQueue();
   const approve = useApproveExpense();
   const reject = useRejectApproval();
@@ -221,7 +231,7 @@ export function ApprovalsPage() {
     : [];
   const batchFailures: BulkActionFailure[] = batchSkips.map((r) => ({
     name: r.submitterName,
-    reason: batchSkipReason(r),
+    reason: batchSkipReason(r, currencyCode),
   }));
 
   return (
@@ -236,7 +246,7 @@ export function ApprovalsPage() {
             <Text as="span" size="mono" weight="semibold" tone="default">
               {approvalLimit === null
                 ? 'Unlimited'
-                : formatMoneyValue({ amountMinorUnits: approvalLimit, currency: 'USD' })}
+                : formatMoneyValue({ amountMinorUnits: approvalLimit, currency: currencyCode })}
             </Text>
           </Text>
         </div>
@@ -343,7 +353,7 @@ export function ApprovalsPage() {
             const noteSuffix = overLimit
               ? ' · over your limit'
               : selfBlocked
-                ? ` · ${reasonText('self_approval_blocked', approvalLimit)}`
+                ? ` · ${reasonText('self_approval_blocked', approvalLimit, currencyCode)}`
                 : '';
 
             return (
@@ -402,7 +412,7 @@ export function ApprovalsPage() {
                 <div className="flex items-center justify-end gap-2">
                   {overLimit ? (
                     <span id={`reason-${item.id}`} className="sr-only">
-                      {reasonText(decision.reason, approvalLimit)}
+                      {reasonText(decision.reason, approvalLimit, currencyCode)}
                     </span>
                   ) : null}
                   {decision.allowed ? (

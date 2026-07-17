@@ -50,6 +50,26 @@ describe('NavigationShell', () => {
     expect(() => render(<NavigationShell items={EMPLOYEE_ITEMS} />)).not.toThrow();
   });
 
+  it('renders an empty nav without crashing when the role authorizes no items', () => {
+    render(<NavigationShell items={[]} />);
+    const nav = screen.getByRole('navigation', { name: 'Main' });
+    expect(nav).toBeEmptyDOMElement();
+  });
+
+  it('stacks its items vertically as a rail rather than a horizontal row (design §3.1)', () => {
+    render(<NavigationShell items={EMPLOYEE_ITEMS} />);
+    const nav = screen.getByRole('navigation', { name: 'Main' });
+    expect(nav).toHaveClass('flex-col');
+    expect(nav).not.toHaveClass('items-center');
+  });
+
+  it('gives the active item the accent treatment alongside aria-current (AC-03)', () => {
+    render(<NavigationShell items={FINANCE_MANAGER_ITEMS} activeId="approvals" />);
+    const active = screen.getByRole('button', { name: 'Approvals' });
+    expect(active).toHaveAttribute('aria-current', 'page');
+    expect(active).toHaveClass('bg-cl-accent-weak');
+  });
+
   it('marks the item matching activeId as active and calls onNavigate with its id', async () => {
     const onNavigate = vi.fn();
     const user = userEvent.setup();

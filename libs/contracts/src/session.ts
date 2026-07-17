@@ -27,6 +27,12 @@ export interface SessionResponse {
    * Employees carry no approvals:act permission regardless of this value.
    */
   approvalLimit: number | null;
+  /**
+   * The organization's currency (ISO 4217) that approvalLimit and other org money figures are
+   * denominated in — server-sourced (the org is single-currency, per ExpenseContextResponse) so the
+   * client can format the approval limit without assuming USD.
+   */
+  currency: string;
   /** Orthogonal to the approval tier — grants team:view only, never approval authority. */
   isAdmin: boolean;
   /**

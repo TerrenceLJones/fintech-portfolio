@@ -7,6 +7,7 @@ import type {
 } from '@clearline/contracts';
 import { AuthService, type RevocationReason } from '../services/auth.service';
 import { sharedAuthService } from '../services/shared-auth-service';
+import { EXPENSE_CURRENCY } from '../fixtures';
 import { parseCookie } from './cookies';
 import { MOCKED_CLIENT_IP } from './auth.handlers';
 
@@ -80,6 +81,8 @@ export function createSessionHandlers(authService: AuthService = sharedAuthServi
           displayName: result.displayName!,
           role: result.role!,
           approvalLimit: result.approvalLimit!,
+          // The demo org is single-currency; approvalLimit and other money figures are in this currency.
+          currency: EXPENSE_CURRENCY,
           isAdmin: result.isAdmin!,
           isOwner: result.isOwner!,
         };

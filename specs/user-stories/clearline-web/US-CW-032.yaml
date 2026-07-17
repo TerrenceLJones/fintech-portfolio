@@ -1,0 +1,169 @@
+# User Story Registry Record
+# User stories are the source of truth for what the application supports.
+# Epics declare changes to these records via their changes.adds/updates/deprecates/removes sections.
+
+# Identity
+id: 'US-CW-032'
+app: 'clearline-web'
+feature_area: 'core'
+title: 'Persistent Sidebar App Shell & User-Identity Footer'
+
+# Lifecycle status
+status: 'IMPLEMENTED'
+story_points: 5
+dependencies: ['US-CW-006', 'US-CW-025', 'US-CW-028']
+
+# Provenance — immutable after creation
+created_by_epic: 'EPIC-CW-021'
+created_date: '2026-07-16'
+
+# Provenance history — append-only record of every epic that has touched this story
+history:
+  - epic_id: 'EPIC-CW-021'
+    action: 'created'
+    date: '2026-07-16'
+  - epic_id: 'EPIC-CW-021'
+    action: 'approved'
+    date: '2026-07-17'
+  - epic_id: 'EPIC-CW-021'
+    action: 'implemented'
+    date: '2026-07-17'
+
+# Status timestamps — set when status transitions occur
+approved_date: '2026-07-17'
+implementation_date: '2026-07-17'
+deprecated_date: null
+removed_date: null
+
+# User Story
+user_story:
+  persona: 'Finance team member (Employee, Finance Manager, or Controller) operating within Clearline'
+  capability: 'navigate the app from a persistent left sidebar — brand at the top, my role-scoped sections stacked down the rail, and my own identity, role and approval limit anchored at the bottom — instead of a horizontal top bar'
+  business_value: 'the shipped app matches the sidebar shell the design system specifies for every product screen, the rail scales to the full section list as more epics land (Reconciliation, Budget, Audit, Team) without crowding a top bar, and a persistent who-am-I / what-can-I-approve indicator reduces role-confusion errors'
+  description: |
+    As a Clearline user with an assigned role (Employee, Finance Manager, or Controller)
+    I want a persistent left sidebar that shows the Clearline brand, only the sections my role authorizes stacked vertically, and my identity, role and approval limit pinned at the bottom
+    So that the app matches its design system's canonical shell, the navigation has room to grow, and I can always see who I'm signed in as and what authority I hold
+
+# Acceptance Criteria
+acceptance_criteria:
+  - id: 'AC-01'
+    description: |
+      Given I am authenticated and viewing any in-app page
+      When the app shell renders
+      Then navigation appears as a persistent left sidebar rail — Clearline brand at the top, role-scoped nav
+        items stacked vertically below it — and the page content renders in a scrollable region to its right
+      And there is no horizontal top navigation bar
+    status: 'active'
+  - id: 'AC-02'
+    description: |
+      Given the sidebar renders for my role
+      When it lists nav items
+      Then it shows exactly the role-scoped items US-CW-006 authorizes (identical membership to before the
+        migration — this story changes the axis and chrome of the nav, not which links a role sees)
+    status: 'active'
+  - id: 'AC-03'
+    description: |
+      Given I am on a section's page (including a nested route under it, e.g. /approvals/exp_1)
+      When the sidebar renders
+      Then that section's item is shown active with the design's accent treatment (accent-weak background,
+        accent-text) and carries aria-current="page"
+    status: 'active'
+  - id: 'AC-04'
+    description: |
+      Given I am authenticated
+      When the sidebar footer renders
+      Then it shows my identity pinned to the bottom of the rail — avatar initials, my name, and my role, with my
+        approval limit (e.g. "$10k limit" or "Unlimited") or an Admin indicator where applicable — derived from
+        the live session via useAuthorization(), with no new session fields required
+    status: 'active'
+  - id: 'AC-05'
+    description: |
+      Given the theme toggle previously lived in the top bar
+      When the sidebar renders
+      Then the Light/Dark control appears in the sidebar footer, still backed by the shared useTheme() state, and
+        toggling it still drives `data-theme` on document.documentElement across the whole app (no theme capability
+        is lost in the move)
+    status: 'active'
+  - id: 'AC-06'
+    description: |
+      Given my role is downgraded mid-session (US-CW-006 AC-05)
+      When the session refetches
+      Then now-unauthorized items disappear from the sidebar and the "your access changed" banner still renders
+        (in the content region), without a page reload or crash
+    status: 'active'
+  - id: 'AC-07'
+    description: |
+      Given I am on a narrow / mobile-width viewport
+      When the app shell renders
+      Then the rail collapses behind a toggle (off-canvas drawer) so page content is not stranded, and opening the
+        toggle reveals the same role-scoped nav and identity footer
+    status: 'active'
+  - id: 'AC-08'
+    description: |
+      Given a keyboard-only user
+      When they tab through the shell
+      Then the sidebar is a single labelled `<nav>` landmark, every nav item and the theme control are reachable and
+        operable by keyboard, and focus order follows brand → nav items → footer
+    status: 'active'
+
+# Technical Notes
+technical_notes: |
+  This is a UI-only re-layout of the authenticated shell — no domain, data-access, contract, or mock-backend change.
+  AppShell (US-CW-025, libs/ui) changes from a sticky top bar to a two-column flex layout: a fixed-width (≈212px per
+  design §3.1) left rail and a scrollable content column holding the existing usePageTitle-driven heading, the
+  access-changed banner slot, and the page `<Outlet/>`. The rail composes the vertical NavigationShell (US-CW-028,
+  updated by this epic) in its body and a new footer holding the user-identity block and the relocated theme control.
+
+  The role→item decision is NOT reopened: apps/clearline-web/src/rbac/nav-items.ts + AppChrome.tsx keep computing the
+  same permission-filtered NavigationShellItem[] via navItemsForPermissions(can) and pass it straight through, so
+  US-CW-006's gating and redundant server-side enforcement are unaffected. AppChrome additionally passes the session
+  identity (name, role, approvalLimit, isOwner/isAdmin from useAuthorization()) to AppShell for the footer.
+
+  The user-identity footer is net-new UI (present in design §3.1/§9.1/§18 but never built into the top bar). Prefer an
+  Avatar atom for the initials; render role + approval-limit/Admin as secondary text. It reads the session, it does
+  not own any authorization decision.
+
+  Keep AppShell dependency-boundaries intact: it consumes useTheme() and never creates a ThemeProvider (US-CW-025),
+  and NavigationShell stays free of auth/routing/ThemeProvider dependencies (US-CW-028 AC-04/AC-06).
+
+# Edge Cases
+edge_cases: |
+  - Role resolves to zero authorized nav items — the rail still renders brand + identity footer without crashing.
+  - Session/identity not yet loaded — footer shows a loading/placeholder state, not a flash of wrong identity or a crash.
+  - Very long name or a wide "Unlimited"/Admin badge — footer truncates gracefully (ellipsis) without breaking rail width.
+  - Narrow-viewport drawer open when a role downgrade removes the active item — the drawer re-renders the smaller set without stranding focus.
+  - Approval limit is null (Controller = Unlimited) vs. a numeric limit vs. Employee (no approval authority) — footer renders each correctly.
+
+# Implementation Status
+implementation_status: |
+  ✅ Implemented: 2026-07-17 (EPIC-CW-021)
+  📁 Files created/modified:
+    - libs/ui/src/organisms/AppShell/AppShell.tsx (+ .mdx / .stories.tsx / .test.tsx) — two-column layout: a
+      persistent left rail (brand · vertical NavigationShell · footer group with the relocated Light/Dark
+      SegmentedControl + SidebarFooter) beside a scrollable content column holding the banner, usePageTitle
+      heading, and <Outlet/>. Narrow-viewport off-canvas drawer via a hamburger, backdrop, and Escape/close
+      (AC-07/AC-08). Still consumes useTheme() and never creates a ThemeProvider.
+    - libs/ui/src/organisms/SidebarFooter/{SidebarFooter.tsx,.test.tsx,.stories.tsx,.mdx,index.ts} — net-new
+      presentational identity organism (Avatar initials · name (truncated) · role · detail), with a loading
+      placeholder; no auth/routing/ThemeProvider dependency. Exported from libs/ui/src/index.ts.
+    - libs/ui/src/organisms/NavigationShell/NavigationShell.tsx — reoriented vertical (US-CW-028 update); active
+      item keeps the accent-weak/accent-text + aria-current treatment via NavItem.
+    - apps/clearline-web/src/AppChrome.tsx — builds the identity from useAuthorization() (name/role/limit/isAdmin)
+      and passes it + identityLoading to AppShell; RBAC nav filtering unchanged.
+    - apps/clearline-web/src/rbac/identity.ts (+ identity.test.ts) — pure display mappers: roleLabel,
+      initialsFromName, and identityDetail (currency-agnostic — the org currency is passed in, never assumed USD;
+      compact with one fractional digit so a non-round limit stays accurate, e.g. $2,500 -> "$2.5k").
+    - libs/data-access/auth/src/use-authorization.ts — surfaces the existing session displayName on the hook.
+    - libs/contracts/src/session.ts + libs/mock-backend — added the org currency to SessionResponse (server-sourced,
+      single-currency) and surfaced it on useAuthorization().currency, so the footer, ApprovalsPage, and the login
+      beacon format money in the org currency instead of a hardcoded 'USD'. (This is the one net-new session field —
+      an org-wide currency concern, not a footer-specific requirement; the footer's name/role/limit still derive
+      purely from fields the session already carried.)
+    - apps/clearline-web/src/pages/LoginPage.beacon.ts — demo guide calls out the sidebar + identity footer.
+  🔗 Role→item mapping and mid-session re-evaluation stay upstream in nav-items.ts + AppChrome (US-CW-006);
+     the access-changed banner (AC-06) still renders in the content region.
+  🧪 Test coverage: @clearline/ui suite green (390 tests incl. AppShell drawer/identity + SidebarFooter +
+     NavigationShell vertical/active/empty), @clearline/clearline-web green (301 incl. AppChrome per-role footer
+     + identity helpers), @clearline/data-access-auth green (displayName). rbac.spec.ts e2e (nav landmark +
+     access-changed banner) remains valid — assertions are axis-agnostic.

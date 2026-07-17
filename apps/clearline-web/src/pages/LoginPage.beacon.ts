@@ -1,6 +1,6 @@
 import type { Role } from '@clearline/contracts';
 import type { DemoBeaconPageConfig } from '@clearline/demo-beacon';
-import { DEMO_USER_PASSWORD, SEED_USERS } from '@clearline/mock-backend/fixtures';
+import { DEMO_USER_PASSWORD, EXPENSE_CURRENCY, SEED_USERS } from '@clearline/mock-backend/fixtures';
 import { formatMoneyValue } from '@clearline/ui';
 import { EXAMPLE_SIGNUP_EMAIL, loadControls } from '../dev/beacon/shared';
 import { resetSection } from '../dev/beacon/global.beacon';
@@ -36,7 +36,7 @@ function landingHint(user: (typeof SEED_USERS)[number]): string {
       ? ''
       : user.approvalLimit === null
         ? 'unlimited · '
-        : `${formatMoneyValue({ amountMinorUnits: user.approvalLimit, currency: 'USD' })} limit · `;
+        : `${formatMoneyValue({ amountMinorUnits: user.approvalLimit, currency: EXPENSE_CURRENCY })} limit · `;
   return `${authority}lands on ${ROLE_HOME[user.role]}.`;
 }
 
@@ -81,7 +81,12 @@ export const loginBeacon: DemoBeaconPageConfig = {
             {
               text: 'Submit — an **Employee** lands on **My Expenses**; a **Finance Manager** or **Controller** lands on the **Spend dashboard**.',
             },
-            { text: 'Sign out and repeat with a different role to compare the shells.' },
+            {
+              text: 'Note the **left sidebar**: only your role-scoped sections are stacked in the rail, and the footer pins your identity — avatar, name, role, and approval limit (e.g. **$10k limit**, **Unlimited**, or nothing for an Employee).',
+            },
+            {
+              text: 'Sign out and repeat with a different role to compare the shells — nav items and the footer authority change with the role.',
+            },
           ],
         },
         {

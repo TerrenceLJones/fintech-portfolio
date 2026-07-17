@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
-import { Alert, AppShell } from '@clearline/ui';
+import { Alert, AppShell, type SidebarIdentity } from '@clearline/ui';
 import { useAccessChanged, useAuthorization } from '@clearline/data-access-auth';
 import { NAV_ITEMS, navIdForPath, navItemsForPermissions, navPathForId } from './rbac/nav-items';
+import { identityDetail, initialsFromName, roleLabel } from './rbac/identity';
 import { PageTitleSetterContext } from './hooks/page-title-context';
 
 /**
@@ -18,7 +19,8 @@ import { PageTitleSetterContext } from './hooks/page-title-context';
  * Analytics Dashboard. Resolving both surfaces from one value here keeps the tab and heading in sync.
  */
 export function AppChrome() {
-  const { can } = useAuthorization();
+  const { can, role, isAdmin, approvalLimit, currency, displayName, isLoading } =
+    useAuthorization();
   const { accessChanged, dismiss } = useAccessChanged();
   const location = useLocation();
   const navigate = useNavigate();
@@ -33,6 +35,18 @@ export function AppChrome() {
   useEffect(() => {
     document.title = title ? `${title} · Clearline` : 'Clearline';
   }, [title]);
+
+  // The net-new sidebar identity footer (design §3.1 / US-CW-032) — read straight from the live
+  // session; it presents who-am-I / what-can-I-approve and owns no authorization decision.
+  const identity: SidebarIdentity | undefined =
+    role && displayName
+      ? {
+          name: displayName,
+          initials: initialsFromName(displayName),
+          roleLabel: roleLabel(role),
+          detail: identityDetail(role, approvalLimit, isAdmin, currency ?? undefined),
+        }
+      : undefined;
 
   const banner = accessChanged ? (
     // role="status" (implicit aria-live=polite) so a mid-session downgrade is announced to screen
@@ -58,6 +72,8 @@ export function AppChrome() {
         }}
         title={title}
         banner={banner}
+        identity={identity}
+        identityLoading={isLoading}
       />
     </PageTitleSetterContext.Provider>
   );

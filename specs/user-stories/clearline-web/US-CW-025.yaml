@@ -35,6 +35,17 @@ history:
     action: 'updated'
     date: '2026-07-10'
     note: 'Removed AC-03 (ApprovalActionBar) — organism deleted; approval actions render inline in the queue table per US-CW-006 redesign.'
+  - epic_id: 'EPIC-CW-021'
+    action: 'updated'
+    date: '2026-07-17'
+    note: >
+      Rewrote AC-05's AppShell layout contract from a sticky top bar to a two-column sidebar: a persistent
+      left rail (brand · role-scoped vertical NavigationShell · footer holding the relocated Light/Dark
+      control + the new SidebarFooter identity block) beside a scrollable content column rendering the page
+      Outlet. Narrower guarantees preserved verbatim — AppShell still consumes theme via useTheme() (never
+      creates a ThemeProvider), the toggle still drives data-theme on document.documentElement app-wide, and a
+      consuming screen still writes only <AppShell title="..."> with zero per-page token/theme boilerplate. The
+      banner slot and usePageTitle heading survive in the content column. AppShell.mdx/stories updated.
 
 # Status timestamps — set when status transitions occur
 approved_date: '2026-06-30'
@@ -88,8 +99,9 @@ acceptance_criteria:
     description: |
       Given `<AppShell>` wrapping any page content, with a `<ThemeProvider>` mounted once at the app root
       When rendered
-      Then it renders the sticky top bar with a Light/Dark toggle backed by that shared theme state, and requires zero additional per-page token setup
+      Then it renders the persistent left sidebar rail (brand · role-scoped vertical navigation · footer with the Light/Dark toggle, relocated from the old top bar into the rail) backed by that shared theme state, beside a scrollable content column, and requires zero additional per-page token setup
     status: 'active'
+    # AC-05 layout contract rewritten from a sticky top bar to the sidebar rail by EPIC-CW-021 (2026-07-17); theme-state guarantees unchanged.
 
 # Technical Notes
 technical_notes: |

@@ -45,5 +45,20 @@ export const SpendDashboard: Story = {
     title: 'Spend Dashboard',
     navItems: NAV_ITEMS,
     activeNavId: 'expenses',
+    identity: {
+      name: 'Marcus Okafor',
+      initials: 'MO',
+      roleLabel: 'Finance Manager',
+      detail: '$10k limit',
+    },
+  },
+};
+
+export const IdentityLoading: Story = {
+  args: {
+    title: 'Spend Dashboard',
+    navItems: NAV_ITEMS,
+    activeNavId: 'expenses',
+    identityLoading: true,
   },
 };

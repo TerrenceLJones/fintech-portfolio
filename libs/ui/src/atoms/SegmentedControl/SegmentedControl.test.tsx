@@ -26,4 +26,15 @@ describe('SegmentedControl', () => {
     render(<SegmentedControl options={['Comfortable', 'Compact']} value="Compact" />);
     expect(screen.getByRole('button', { name: 'Compact' })).toHaveAttribute('aria-pressed', 'true');
   });
+
+  it('splits the width evenly across options when fullWidth', () => {
+    render(<SegmentedControl options={['Light', 'Dark']} fullWidth />);
+    expect(screen.getByRole('button', { name: 'Light' })).toHaveClass('flex-1');
+    expect(screen.getByRole('button', { name: 'Dark' })).toHaveClass('flex-1');
+  });
+
+  it('sizes to content (segments not stretched) by default', () => {
+    render(<SegmentedControl options={['Light', 'Dark']} />);
+    expect(screen.getByRole('button', { name: 'Light' })).not.toHaveClass('flex-1');
+  });
 });

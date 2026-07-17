@@ -155,6 +155,7 @@ The frontend framework decision is settled (React 19 + Vite) and `clearline-web`
 - **EPIC-CW-010** — Vendor management & reconciliation (nightly bank-feed reconciliation with exact + fuzzy matching, an actionable exceptions queue, confirm/reject fuzzy suggestions with a similarity breakdown, manual split-match with exact-sum validation, and a Fatal-tier ledger-balance-integrity guard that withholds a balance that doesn't net)
 - **EPIC-CW-019** — Account owner provisioning at KYB approval
 - **EPIC-CW-020** — Reassign approver for blocked approvals
+- **EPIC-CW-021** — Sidebar navigation shell (top-nav → side-nav migration: persistent left rail with role-scoped vertical nav, a user-identity footer showing role + approval limit, the relocated theme control, and a narrow-viewport off-canvas drawer)
 
 **Planned** (see `specs/epics/clearline-web/`): AI invoice coding, AI spend insights (streaming), budget management, organization & team management, plus cross-cutting accessibility (WCAG 2.1 AA) and audit logging.
 

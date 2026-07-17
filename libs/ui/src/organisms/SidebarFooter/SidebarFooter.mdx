@@ -1,0 +1,33 @@
+import { Meta, Stories } from '@storybook/addon-docs/blocks';
+import * as SidebarFooterStories from './SidebarFooter.stories';
+
+<Meta of={SidebarFooterStories} />
+
+# SidebarFooter
+
+The user-identity block pinned to the bottom of the sidebar rail (design §3.1): avatar initials,
+name, and the role followed by an authority detail (`$10k limit`, `Unlimited`, or an `Admin`
+indicator). Purely presentational — it renders the values it is given, owns no authorization
+decision, and needs no auth / routing / ThemeProvider ancestor.
+
+## User story
+
+**US-CW-032 — Persistent Sidebar App Shell & User-Identity Footer**
+
+As a Clearline user with an assigned role, I want my identity, role and approval limit pinned at the
+bottom of the sidebar, so that I can always see who I'm signed in as and what authority I hold.
+
+## Acceptance criteria
+
+- **AC-04 — Identity footer.** Shows avatar initials, name, and role with the approval limit
+  (`$10k limit` / `Unlimited`) or an Admin indicator where applicable — derived from the live session
+  (via `useAuthorization()`) at the app layer and passed in as already-formatted values.
+
+### Edge cases covered here
+
+- **Session not yet loaded** — a `loading` placeholder renders instead of a flash of the wrong
+  identity (the `Loading` story).
+- **Very long name / wide detail** — the name truncates with an ellipsis (and keeps its full value in
+  a `title`) without breaking the rail width (the `LongName` story).
+
+<Stories />

@@ -21,17 +21,16 @@ export interface NavigationShellProps {
  */
 export function NavigationShell({ items, activeId, onNavigate }: NavigationShellProps) {
   return (
-    <nav aria-label="Main" className="flex items-center gap-1">
+    <nav aria-label="Main" className="flex flex-col gap-0.75">
       {items.map((item) => (
-        <div key={item.id} className="w-fit">
-          <NavItem
-            icon={item.icon}
-            label={item.label}
-            badge={item.badge}
-            active={item.id === activeId}
-            onClick={() => onNavigate?.(item.id)}
-          />
-        </div>
+        <NavItem
+          key={item.id}
+          icon={item.icon}
+          label={item.label}
+          badge={item.badge}
+          active={item.id === activeId}
+          onClick={() => onNavigate?.(item.id)}
+        />
       ))}
     </nav>
   );

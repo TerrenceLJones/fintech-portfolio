@@ -4,6 +4,14 @@ import { NavigationShell, type NavigationShellItem } from './NavigationShell';
 const meta: Meta<typeof NavigationShell> = {
   title: 'Organisms/NavigationShell',
   component: NavigationShell,
+  decorators: [
+    // Framed in a fixed-width rail so the vertical stack and full-width active item read in context.
+    (Story) => (
+      <div className="bg-cl-surface border-cl-border w-53 rounded-xl border p-3">
+        <Story />
+      </div>
+    ),
+  ],
 };
 export default meta;
 

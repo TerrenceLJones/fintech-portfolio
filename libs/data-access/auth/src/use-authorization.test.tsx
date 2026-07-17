@@ -22,6 +22,7 @@ function mockSession(overrides: Partial<SessionResponse>) {
         displayName: 'Marcus Okafor',
         role: 'employee',
         approvalLimit: null,
+        currency: 'USD',
         isAdmin: false,
         isOwner: false,
         ...overrides,
@@ -72,5 +73,31 @@ describe('useAuthorization', () => {
   it('defaults isOwner to false while no session is loaded', () => {
     const { result } = renderHook(() => useAuthorization(), { wrapper });
     expect(result.current.isOwner).toBe(false);
+  });
+
+  it('surfaces the session displayName for the identity footer (US-CW-032)', async () => {
+    mockSession({ displayName: 'Priya Nair' });
+    const { result } = renderHook(() => useAuthorization(), { wrapper });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.displayName).toBe('Priya Nair');
+  });
+
+  it('defaults displayName to null while no session is loaded', () => {
+    const { result } = renderHook(() => useAuthorization(), { wrapper });
+    expect(result.current.displayName).toBeNull();
+  });
+
+  it('surfaces the organization currency from the session (not assumed USD)', async () => {
+    mockSession({ role: 'finance_manager', approvalLimit: 1_000_000, currency: 'EUR' });
+    const { result } = renderHook(() => useAuthorization(), { wrapper });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.currency).toBe('EUR');
+  });
+
+  it('defaults currency to null while no session is loaded', () => {
+    const { result } = renderHook(() => useAuthorization(), { wrapper });
+    expect(result.current.currency).toBeNull();
   });
 });

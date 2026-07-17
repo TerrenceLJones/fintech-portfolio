@@ -26,6 +26,7 @@ function mockRole(role: Role, isAdmin = false) {
         displayName: 'Marcus Okafor',
         role,
         approvalLimit: role === 'finance_manager' ? 1_000_000 : null,
+        currency: 'USD',
         isAdmin,
       }),
     ),
@@ -86,6 +87,33 @@ describe('AppChrome role-scoped navigation', () => {
 
     await waitFor(() => expect(screen.getByText('Team')).toBeInTheDocument());
     expect(screen.queryByText('Approvals')).not.toBeInTheDocument();
+  });
+});
+
+describe('AppChrome identity footer', () => {
+  it('shows the name, role and compact approval limit for a Finance Manager (AC-04)', async () => {
+    mockRole('finance_manager');
+    renderChrome();
+
+    await waitFor(() => expect(screen.getByText('Marcus Okafor')).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByText('Finance Manager · $10k limit')).toBeInTheDocument(),
+    );
+  });
+
+  it('shows just the role for an Employee with no approval authority', async () => {
+    mockRole('employee');
+    renderChrome();
+
+    await waitFor(() => expect(screen.getByText('Marcus Okafor')).toBeInTheDocument());
+    expect(screen.getByText('Employee')).toBeInTheDocument();
+  });
+
+  it('shows Unlimited for a Controller', async () => {
+    mockRole('controller');
+    renderChrome();
+
+    await waitFor(() => expect(screen.getByText('Controller · Unlimited')).toBeInTheDocument());
   });
 });
 

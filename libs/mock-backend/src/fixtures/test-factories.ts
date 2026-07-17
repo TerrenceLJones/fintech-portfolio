@@ -141,6 +141,7 @@ export function buildSessionResponse(overrides: Partial<SessionResponse> = {}): 
     displayName: 'Demo User',
     role: 'finance_manager',
     approvalLimit: 1_000_000,
+    currency: 'USD',
     isAdmin: false,
     isOwner: false,
     ...overrides,

@@ -77,6 +77,8 @@ export { AccessDenied } from './organisms/AccessDenied';
 export type { AccessDeniedProps } from './organisms/AccessDenied';
 export { NavigationShell } from './organisms/NavigationShell';
 export type { NavigationShellProps, NavigationShellItem } from './organisms/NavigationShell';
+export { SidebarFooter } from './organisms/SidebarFooter';
+export type { SidebarFooterProps, SidebarIdentity } from './organisms/SidebarFooter';
 export { BulkActionResult } from './organisms/BulkActionResult';
 export type { BulkActionResultProps, BulkActionFailure } from './organisms/BulkActionResult';
 export { DataTable } from './organisms/DataTable';

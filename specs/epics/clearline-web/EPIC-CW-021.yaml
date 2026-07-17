@@ -1,0 +1,99 @@
+epic_id: 'EPIC-CW-021'
+title: 'Sidebar Navigation Shell (Top-Nav → Side-Nav Migration)'
+app: 'clearline-web'
+feature_area: 'core'
+status: 'IMPLEMENTED'
+approved_date: '2026-07-17'
+implementation_date: '2026-07-17'
+created_date: '2026-07-16'
+source_reference: >
+  specs/designs/Clearline Design System - Consolidated.dc.html. Every full product-screen shell in the
+  design is drawn as a persistent LEFT SIDEBAR, not the horizontal top bar the app ships today:
+  §3.1 "Main navigation & approval queue by role" (the Employee / Finance Manager / Controller / Employee-Admin
+  shells) renders a 212px-wide left rail — brand at the top, role-scoped nav items stacked vertically, and a
+  user-identity block (avatar initials · name · role/limit) pinned to the bottom via margin-top:auto — with the
+  page content in a separate scroll region to its right. The same rail chrome recurs in §9.1 "Dashboard · loaded"
+  (the "09 Spend Dashboard (Migrated)" screen explicitly cited as the reference full screen "rebuilt on AppShell")
+  and in §18 "Organization & Team Management". The decorators blurb still describes AppShell as owning "the tokens,
+  theme and top bar" — that wording is stale relative to the product mockups; this epic reconciles the shipped
+  shell to the sidebar the product screens have always specified.
+package_location: 'apps/clearline-web/'
+deployment_unit: 'apps/clearline-web/'
+tdr_reference: 'TDR-CW-WEB-001'
+depends_on_epics: ['EPIC-CW-000', 'EPIC-CW-003']
+extends_stories: ['US-CW-006', 'US-CW-025', 'US-CW-028']
+reuses_from:
+  - 'NavigationShell organism + NavItem molecule from EPIC-CW-003 (US-CW-028) — reoriented from a horizontal row to a vertical rail; the role-scoped item list it receives is unchanged'
+  - 'nav-items.ts role→item table + navItemsForPermissions / navIdForPath / navPathForId + AppChrome wiring from EPIC-CW-003 (US-CW-006) — the sidebar consumes the same permission-filtered item list, so RBAC nav gating (AC-01..AC-05) is untouched'
+  - 'AppShell decorator + useTheme() shared theme state + SegmentedControl (Light/Dark) from US-CW-025 — the theme control moves from the top bar into the sidebar footer, still backed by the same app-wide theme state'
+  - 'useAuthorization() session (role, approvalLimit, isOwner/isAdmin) from EPIC-CW-003 (US-CW-006) — feeds the new identity footer; no new session fields required'
+  - 'Text / Container / Icon atoms and the @clearline/design-tokens surface/accent/border variables (--cl-surface, --cl-accent-weak, --cl-accent-text, --cl-border) from EPIC-CW-000'
+has_ui: true
+ui_library: '@clearline/ui'
+changes:
+  adds:
+    - story_id: 'US-CW-032'
+      story_path: '/specs/user-stories/clearline-web/US-CW-032.yaml'
+      title: 'Persistent Sidebar App Shell & User-Identity Footer'
+  updates:
+    - story_id: 'US-CW-028'
+      story_path: '/specs/user-stories/clearline-web/US-CW-028.yaml'
+      title: 'Role-Aware Navigation Shell'
+      reason: >
+        Reorients the presentational NavigationShell from a horizontal row (`<nav class="flex items-center gap-1">`)
+        to a vertical stacked rail matching design §3.1, and gives the active item the design's accent treatment
+        (accent-weak background + accent-text) plus aria-current="page". The component stays purely presentational
+        and dependency-free (AC-04/AC-06): it still renders exactly the NavigationShellItem[] it is given, so the
+        role-scoped item sets (AC-01/02/03), the empty-list-without-crash behaviour, and mid-session downgrade
+        removal (AC-05) all hold — only the axis and active styling change. The existing NavigationShell.stories
+        and unit tests are updated to assert the vertical orientation and aria-current.
+    - story_id: 'US-CW-025'
+      story_path: '/specs/user-stories/clearline-web/US-CW-025.yaml'
+      title: 'Component library — organisms & decorators'
+      reason: >
+        Rewrites AppShell's layout contract (AC-06) from "sticky top bar with a Light/Dark toggle" to a
+        two-column layout: a persistent left sidebar rail (brand slot · role-scoped vertical NavigationShell ·
+        footer holding the relocated theme control) and a scrollable content region rendering the page `<Outlet/>`.
+        The narrower guarantees are preserved verbatim — AppShell still consumes theme state via useTheme() (never
+        creating a ThemeProvider), the toggle still drives `data-theme` on document.documentElement app-wide, and a
+        consuming screen still writes only `<AppShell title="...">` with zero per-page token/theme boilerplate. The
+        access-changed `banner` slot (US-CW-006 AC-05) and usePageTitle-driven heading survive the move into the
+        content column. AppShell.mdx/stories are updated to the sidebar layout.
+  deprecates: []
+  removes: []
+notes: >
+  A UI-only, structural re-layout of the authenticated app shell — no domain, data-access, contract, or mock-backend
+  change. The horizontal top bar (logo + inline nav + theme toggle, content centered below) becomes the sidebar the
+  design has specified all along: a fixed-width left rail with brand at the top, the role-scoped nav stacked
+  vertically, and a user-identity + theme-control footer pinned to the bottom, beside a scrollable content region.
+
+  Decomposition. One new story, US-CW-032, owns the sidebar shell as a whole plus the genuinely-net-new
+  user-identity footer (avatar initials · name · role · approval limit / Admin badge) drawn in §3.1/§9.1 but absent
+  from today's top bar. Two presentational stories are updated in place: US-CW-028 (NavigationShell reoriented
+  vertical + active/aria-current treatment) and US-CW-025 (AppShell's top-bar layout contract rewritten to the
+  sidebar). The RBAC decision layer is deliberately NOT reopened: nav-items.ts and AppChrome keep computing the same
+  permission-filtered item list, so US-CW-006's role gating and the "your access changed" banner are reused
+  unchanged — this epic changes where and along which axis the links render, never which links a role may see.
+
+  Theme control. The design sidebar mockups omit a theme toggle, but the app must keep one. It relocates from the
+  top bar into the sidebar footer, still backed by the shared useTheme() state (US-CW-025), so no theme capability
+  is lost in the move.
+
+  Responsiveness. The 212px rail is fixed on wide viewports; US-CW-032 adds a narrow-viewport treatment (the rail
+  collapses behind a toggle / off-canvas drawer) so the shell does not strand content on small screens — a concern
+  the horizontal top bar never had to answer. Full WCAG 2.1 AA conformance remains the cross-cutting EPIC-CW-014
+  concern; this epic only owns the sidebar's own landmark (`<nav aria-label>`), aria-current, and keyboard/focus
+  behaviour.
+
+  Status is IMPLEMENTED (2026-07-17): US-CW-032 was built and the declared changes.updates for US-CW-028 and
+  US-CW-025 were applied to those records. AppShell became a two-column sidebar (rail: brand · vertical
+  NavigationShell · footer with the relocated theme control + new SidebarFooter identity block; content column
+  scrolls), NavigationShell was reoriented vertical with the accent/aria-current active treatment, and a new
+  presentational SidebarFooter organism (ships stories + mdx) renders avatar · name · role · approval-limit/Admin.
+  AppChrome feeds it the live session identity via useAuthorization().displayName (an existing session field, newly
+  surfaced on the hook). To stop the app assuming USD for money figures, the org currency was added to SessionResponse
+  and surfaced on useAuthorization().currency; the footer formats the approver's limit in that currency (compact, one
+  fractional digit so a non-round limit stays accurate), and ApprovalsPage + the login beacon read it too instead of a
+  hardcoded 'USD'.
+  A narrow-viewport off-canvas drawer (hamburger + backdrop + Escape/close) satisfies AC-07. RBAC (nav-items.ts +
+  AppChrome permission filtering) was left untouched, so US-CW-006's gating and the access-changed banner still hold.

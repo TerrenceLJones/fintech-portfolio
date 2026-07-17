@@ -24,3 +24,15 @@ export const ThemeToggle: Story = {
   },
 };
 export const DensityToggle: Story = { args: { options: ['Comfortable', 'Compact'] } };
+
+/** Stretched to fill its container with evenly-sized segments — as used in the sidebar rail footer. */
+export const FullWidth: Story = {
+  args: { options: ['Light', 'Dark'], fullWidth: true },
+  decorators: [
+    (Story) => (
+      <div className="w-53">
+        <Story />
+      </div>
+    ),
+  ],
+};

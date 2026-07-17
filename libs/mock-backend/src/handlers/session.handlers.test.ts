@@ -3,6 +3,7 @@ import { setupServer } from 'msw/node';
 import { createSessionHandlers } from './session.handlers';
 import { AuthService } from '../services/auth.service';
 import { SEED_USERS, DEMO_USER_PASSWORD } from '../fixtures/users.fixture';
+import { EXPENSE_CURRENCY } from '../fixtures/expenses.fixture';
 
 const [user] = SEED_USERS;
 const IP = '127.0.0.1 (mocked)';
@@ -129,6 +130,7 @@ describe('GET /api/auth/session', () => {
       displayName: user!.displayName,
       role: user!.role,
       approvalLimit: user!.approvalLimit,
+      currency: EXPENSE_CURRENCY,
       isAdmin: user!.isAdmin,
       isOwner: user!.isOwner,
     });
