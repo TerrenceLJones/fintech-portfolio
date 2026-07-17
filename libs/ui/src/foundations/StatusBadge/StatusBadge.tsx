@@ -10,6 +10,8 @@ export type StatusKey =
   | 'active'
   | 'paid'
   | 'reconciled'
+  | 'matched'
+  | 'unmatched'
   | 'rejected'
   | 'reversed'
   | 'frozen'
@@ -33,6 +35,8 @@ const STATUS: Record<StatusKey, StatusDefinition> = {
   active: { icon: 'check', label: 'Active', tone: 'positive' },
   paid: { icon: 'arrow-right-circle', label: 'Paid', tone: 'paid' },
   reconciled: { icon: 'double-check', label: 'Reconciled', tone: 'reconciled' },
+  matched: { icon: 'check', label: 'Matched', tone: 'positive' },
+  unmatched: { icon: 'triangle-alert', label: 'Unmatched', tone: 'warning' },
   rejected: { icon: 'x-circle', label: 'Rejected', tone: 'negative' },
   reversed: { icon: 'arrow-left', label: 'Reversed', tone: 'warning' },
   frozen: { icon: 'snowflake', label: 'Frozen', tone: 'neutral' },

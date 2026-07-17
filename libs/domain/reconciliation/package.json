@@ -1,0 +1,22 @@
+{
+  "name": "@clearline/domain-reconciliation",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Pure, framework-agnostic bank-feed reconciliation rules — counterparty name similarity (Dice coefficient), the exact/fuzzy/ambiguous/unmatched match classifier a reconciliation run applies per bank line, split-amount validation (portions must sum exactly to the source transaction, to the cent), and internal ledger-balance integrity (postings net to the derived balance). No data-access or UI dependencies, mirrors libs/domain/payments.",
+  "main": "src/index.ts",
+  "scripts": {
+    "lint": "eslint .",
+    "type-check": "tsc --noEmit",
+    "test": "vitest run",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@clearline/contracts": "workspace:*"
+  },
+  "devDependencies": {},
+  "metadata": {
+    "package_type": "shared",
+    "app": "clearline-web",
+    "scope": "Domain lib for EPIC-CW-010 (US-CW-016 Bank Feed Reconciliation)."
+  }
+}

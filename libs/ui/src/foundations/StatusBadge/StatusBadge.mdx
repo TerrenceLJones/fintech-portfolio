@@ -5,10 +5,11 @@ import * as StatusBadgeStories from './StatusBadge.stories';
 
 # StatusBadge
 
-Renders one of the 10 ledger-entry status keys (`draft`, `pending-l1`, `pending-l2`, `approved`,
-`paid`, `reconciled`, `rejected`, `reversed`, `frozen`, `under-review`) as an icon + text label
-pair, colored by tone. Status is a compliance-relevant signal, so it is never conveyed by color
-alone.
+Renders one of the ledger-entry status keys (`draft`, `pending-l1`, `pending-l2`, `approved`,
+`active`, `paid`, `reconciled`, `matched`, `unmatched`, `rejected`, `reversed`, `frozen`,
+`under-review`) as an icon + text label pair, colored by tone. `matched` / `unmatched` are the
+bank-feed reconciliation states (US-CW-016). Status is a compliance-relevant signal, so it is never
+conveyed by color alone.
 
 ## User story
 
@@ -34,7 +35,8 @@ and risk missing an accessibility or formatting rule the design system already s
 
 ### Edge case covered here
 
-All 10 status keys (`draft`, `pending-l1`, `pending-l2`, `approved`, `paid`, `reconciled`,
-`rejected`, `reversed`, `frozen`, `under-review`) must each render a distinct icon + label pair.
+Every status key (`draft`, `pending-l1`, `pending-l2`, `approved`, `active`, `paid`, `reconciled`,
+`matched`, `unmatched`, `rejected`, `reversed`, `frozen`, `under-review`) must each render a
+distinct icon + label pair.
 
 <Stories />

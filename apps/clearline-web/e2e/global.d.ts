@@ -47,6 +47,15 @@ declare global {
           'summary' | 'spend-by-category' | 'by-department' | 'top-vendors' | 'recent-activity',
         armed: boolean,
       ) => void;
+      /** Arms/disarms a reconciliation panel's simulated 500 so its isolated error + scoped retry can be exercised (US-CW-016 AC-05). Invalidates reconciliation so the panel refetches without a reload. */
+      setReconciliationSectionFailureForE2E: (
+        section: 'summary' | 'exceptions' | 'matched' | 'balance',
+        armed: boolean,
+      ) => void;
+      /** Arms/disarms the ledger balance-integrity discrepancy so the Fatal-tier withheld-balance state can be exercised (US-CW-016 AC-04). Invalidates reconciliation so the balance panel refetches. */
+      setReconciliationBalanceFailureForE2E: (armed: boolean) => void;
+      /** Re-runs the nightly reconciliation and invalidates reconciliation so every panel reflects the fresh run. */
+      runReconciliationForE2E: () => void;
     };
   }
 }

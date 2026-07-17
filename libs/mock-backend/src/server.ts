@@ -10,6 +10,7 @@ import { paymentsHandlers } from './handlers/payments.handlers';
 import { expensesHandlers } from './handlers/expenses.handlers';
 import { cardsHandlers, cardsFeedHandler } from './handlers/cards.handlers';
 import { analyticsHandlers } from './handlers/analytics.handlers';
+import { reconciliationHandlers } from './handlers/reconciliation.handlers';
 
 export const server = setupServer(
   ...authHandlers,
@@ -23,4 +24,5 @@ export const server = setupServer(
   ...cardsHandlers,
   cardsFeedHandler,
   ...analyticsHandlers,
+  ...reconciliationHandlers,
 );

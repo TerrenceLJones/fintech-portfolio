@@ -29,6 +29,9 @@ async function bootstrap() {
       simulateRoleChangeForE2E,
       simulatePaymentReversalForE2E,
       setAnalyticsSectionFailureForE2E,
+      setReconciliationSectionFailureForE2E,
+      setReconciliationBalanceFailureForE2E,
+      runReconciliationForE2E,
     } = await import('@clearline/mock-backend/browser');
     await worker.start({ onUnhandledRequest: 'bypass' });
     // With the mock backend in play there's no real ID-verification vendor, so swap the browser
@@ -59,6 +62,23 @@ async function bootstrap() {
       setAnalyticsSectionFailureForE2E: (section, armed) => {
         setAnalyticsSectionFailureForE2E(section, armed);
         void queryClient.invalidateQueries({ queryKey: ['analytics'] });
+      },
+      // Arm/disarm a reconciliation panel's simulated failure, then invalidate so it refetches and
+      // shows (or clears) its isolated error without a reload (US-CW-016 AC-05, mirrors analytics).
+      setReconciliationSectionFailureForE2E: (section, armed) => {
+        setReconciliationSectionFailureForE2E(section, armed);
+        void queryClient.invalidateQueries({ queryKey: ['reconciliation'] });
+      },
+      // Arm/disarm the ledger balance-integrity discrepancy, then invalidate so the balance panel
+      // re-fetches into (or out of) the Fatal-tier withheld state without a reload (US-CW-016 AC-04).
+      setReconciliationBalanceFailureForE2E: (armed) => {
+        setReconciliationBalanceFailureForE2E(armed);
+        void queryClient.invalidateQueries({ queryKey: ['reconciliation'] });
+      },
+      // Re-run the nightly reconciliation, then invalidate so every panel reflects the fresh run.
+      runReconciliationForE2E: () => {
+        runReconciliationForE2E();
+        void queryClient.invalidateQueries({ queryKey: ['reconciliation'] });
       },
     };
   }

@@ -17,7 +17,14 @@ import {
   setAnalyticsSectionFailure,
   type AnalyticsSection,
 } from './handlers/analytics.handlers';
+import {
+  reconciliationHandlers,
+  isReconciliationSectionFailureArmed,
+  setReconciliationSectionFailure,
+  type ReconciliationSection,
+} from './handlers/reconciliation.handlers';
 import { sharedAnalyticsService } from './services/shared-analytics-service';
+import { sharedReconciliationService } from './services/shared-reconciliation-service';
 import { sharedAuthService } from './services/shared-auth-service';
 import { sharedCardsService } from './services/shared-cards-service';
 import {
@@ -43,6 +50,7 @@ export const worker = setupWorker(
   ...cardsHandlers,
   cardsFeedHandler,
   ...analyticsHandlers,
+  ...reconciliationHandlers,
 );
 
 // Seed the demo user as an already-approved, fully-onboarded business so signing in as it lands on
@@ -318,4 +326,41 @@ export function isAnalyticsSectionFailureArmedForE2E(section: AnalyticsSection):
  */
 export function backdateAnalyticsRefreshForE2E(minutes = 10): void {
   sharedAnalyticsService.backdateRefresh(minutes);
+}
+
+/**
+ * Dev/demo control for US-CW-016 AC-05: arms/disarms a 500 on a single reconciliation panel (e.g.
+ * "exceptions") so a viewer can watch it fail behind its own error boundary while the summary, matched
+ * and balance panels render independently. A persistent flag the Beacon toggle mirrors and can turn
+ * back OFF. Demo-only, behind import.meta.env.DEV.
+ */
+export function setReconciliationSectionFailureForE2E(
+  section: ReconciliationSection,
+  armed: boolean,
+): void {
+  setReconciliationSectionFailure(section, armed);
+}
+
+/** Current armed state of a reconciliation panel's simulated failure — lets the Beacon toggle mirror reality. */
+export function isReconciliationSectionFailureArmedForE2E(section: ReconciliationSection): boolean {
+  return isReconciliationSectionFailureArmed(section);
+}
+
+/**
+ * Dev/demo control for US-CW-016 AC-04: arms/disarms the ledger balance-integrity discrepancy so a
+ * viewer can see the Fatal-tier "we're double-checking your balance" state — the balance withheld,
+ * only a support reference shown — instead of the normal number. Demo-only, behind import.meta.env.DEV.
+ */
+export function setReconciliationBalanceFailureForE2E(armed: boolean): void {
+  sharedReconciliationService.setBalanceIntegrityFailure(armed);
+}
+
+/** Current armed state of the balance-integrity discrepancy — lets the Beacon toggle mirror reality. */
+export function isReconciliationBalanceFailureArmedForE2E(): boolean {
+  return sharedReconciliationService.isBalanceIntegrityFailureArmed();
+}
+
+/** Re-run the nightly reconciliation on demand — the "Run again" control's demo/e2e entry point. */
+export function runReconciliationForE2E(): void {
+  sharedReconciliationService.runReconciliation();
 }

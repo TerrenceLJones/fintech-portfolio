@@ -12,6 +12,7 @@
     { "path": "../domain/cards" },
     { "path": "../domain/expenses" },
     { "path": "../domain/onboarding" },
-    { "path": "../domain/payments" }
+    { "path": "../domain/payments" },
+    { "path": "../domain/reconciliation" }
   ]
 }

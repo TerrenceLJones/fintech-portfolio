@@ -55,6 +55,19 @@ export const test = base.extend<{ mockBackend: MockBackend }>({
             window.__e2eMockBackend!.setAnalyticsSectionFailureForE2E(section, armed),
           { section, armed },
         ),
+      setReconciliationSectionFailureForE2E: (section, armed) =>
+        page.evaluate(
+          ({ section, armed }) =>
+            window.__e2eMockBackend!.setReconciliationSectionFailureForE2E(section, armed),
+          { section, armed },
+        ),
+      setReconciliationBalanceFailureForE2E: (armed) =>
+        page.evaluate(
+          (armed) => window.__e2eMockBackend!.setReconciliationBalanceFailureForE2E(armed),
+          armed,
+        ),
+      runReconciliationForE2E: () =>
+        page.evaluate(() => window.__e2eMockBackend!.runReconciliationForE2E()),
     });
   },
 });

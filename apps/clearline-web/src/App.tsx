@@ -15,6 +15,7 @@ import { CardWalletPage } from './pages/cards/CardWalletPage';
 import { IssueCardPage } from './pages/cards/IssueCardPage';
 import { CardDetailPage } from './pages/cards/CardDetailPage';
 import { DashboardPage } from './pages/dashboard/DashboardPage';
+import { ReconciliationPage } from './pages/reconciliation/ReconciliationPage';
 import { PlaceholderPage } from './pages/PlaceholderPage';
 import { BusinessInfoStepPage } from './pages/onboarding/BusinessInfoStepPage';
 import { BeneficialOwnersStepPage } from './pages/onboarding/BeneficialOwnersStepPage';
@@ -131,20 +132,11 @@ export function App() {
                     element={
                       <RequirePermission
                         permission="reconciliation:view"
-                        apiPath="/api/reconciliation"
+                        apiPath="/api/reconciliation/summary"
                       />
                     }
                   >
-                    <Route
-                      path="/reconciliation"
-                      element={
-                        <PlaceholderPage
-                          title="Reconciliation"
-                          icon="refresh"
-                          body="Match transactions to expenses and close the books here."
-                        />
-                      }
-                    />
+                    <Route path="/reconciliation" element={<ReconciliationPage />} />
                   </Route>
                   <Route
                     element={<RequirePermission permission="budget:view" apiPath="/api/budgets" />}

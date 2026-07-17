@@ -17,6 +17,8 @@ describe('StatusBadge', () => {
       'active',
       'paid',
       'reconciled',
+      'matched',
+      'unmatched',
       'rejected',
       'reversed',
       'frozen',
@@ -35,5 +37,12 @@ describe('StatusBadge', () => {
     render(<StatusBadge status="approved" label="Custom label" />);
     expect(screen.getByText('Custom label')).toBeInTheDocument();
     expect(screen.queryByText('Approved')).not.toBeInTheDocument();
+  });
+
+  it('renders the reconciliation match states with their own labels (US-CW-016)', () => {
+    const { rerender } = render(<StatusBadge status="matched" />);
+    expect(screen.getByText('Matched')).toBeInTheDocument();
+    rerender(<StatusBadge status="unmatched" />);
+    expect(screen.getByText('Unmatched')).toBeInTheDocument();
   });
 });

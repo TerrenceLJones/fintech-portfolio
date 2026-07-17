@@ -63,6 +63,7 @@ It's a standalone, project-agnostic library (`libs/demo-beacon`, `@clearline/dem
 - **Approvals** — the seeded queue and which items trip the over-limit (Escalate) and self-approval (Reassign) guardrails.
 - **New payment** — the full account/routing numbers (the page shows only masked forms) for the "Recipient not listed?" hand-entry flow, and the amount thresholds that trip the daily-limit / insufficient-funds blocks.
 - **Onboarding** — the EINs the mock registry accepts, and the names/EINs that route to manual review.
+- **Reconciliation** — the seeded exceptions (a fuzzy suggestion, an unmatched line, a splittable transaction, a duplicate), with one-click toggles to break a panel or trip the Fatal-tier balance-integrity state.
 
 **How it works:** each page calls `useDemoBeacon(config)` to register its guide while mounted; a single `DemoBeaconProvider` in `App.tsx` owns the store and renders the launcher. Anything side-effectful (navigation, backend simulation, reset) crosses the boundary as a callback the app supplies. Config lives beside each page in colocated `*.beacon.ts` files (`apps/clearline-web/src/**/*.beacon.ts`) and shared helpers in `src/dev/beacon/`.
 
@@ -86,11 +87,13 @@ clearline/
       auth/                  # @clearline/domain-auth        — pure auth/session rules
       onboarding/            # @clearline/domain-onboarding  — pure KYB rules
       payments/              # @clearline/domain-payments    — validatePayment, idempotency keys, retry policy
+      reconciliation/        # @clearline/domain-reconciliation — name similarity, match classifier, split + balance-integrity rules
     data-access/
       auth/                  # @clearline/data-access-auth
       approvals/             # @clearline/data-access-approvals
       onboarding/            # @clearline/data-access-onboarding
       payments/              # @clearline/data-access-payments
+      reconciliation/        # @clearline/data-access-reconciliation
     util/
       money/                 # @clearline/money — currency minor-unit conversion, shared once
     contracts/               # @clearline/contracts — API contract types (no Pact, see ADR-006)
@@ -149,10 +152,11 @@ The frontend framework decision is settled (React 19 + Vite) and `clearline-web`
 - **EPIC-CW-007** — Batch operations (partial-failure batch approve/reject, per-item idempotency keys, mid-batch resume)
 - **EPIC-CW-008** — Card management (virtual card issuance with limits + MCC restrictions, real-time WebSocket transaction feed, freeze controls, security-gated declines)
 - **EPIC-CW-009** — Real-time spend dashboard & analytics (category/department/vendor breakdowns, anomaly flags with AI confidence, per-section error boundaries with scoped retry, date-range filtering, data-freshness with manual refresh)
+- **EPIC-CW-010** — Vendor management & reconciliation (nightly bank-feed reconciliation with exact + fuzzy matching, an actionable exceptions queue, confirm/reject fuzzy suggestions with a similarity breakdown, manual split-match with exact-sum validation, and a Fatal-tier ledger-balance-integrity guard that withholds a balance that doesn't net)
 - **EPIC-CW-019** — Account owner provisioning at KYB approval
 - **EPIC-CW-020** — Reassign approver for blocked approvals
 
-**Planned** (see `specs/epics/clearline-web/`): vendor management & reconciliation, AI invoice coding, AI spend insights (streaming), budget management, organization & team management, plus cross-cutting accessibility (WCAG 2.1 AA) and audit logging.
+**Planned** (see `specs/epics/clearline-web/`): AI invoice coding, AI spend insights (streaming), budget management, organization & team management, plus cross-cutting accessibility (WCAG 2.1 AA) and audit logging.
 
 ---
 

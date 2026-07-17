@@ -149,6 +149,9 @@ importers:
       '@clearline/data-access-payments':
         specifier: workspace:*
         version: link:../../libs/data-access/payments
+      '@clearline/data-access-reconciliation':
+        specifier: workspace:*
+        version: link:../../libs/data-access/reconciliation
       '@clearline/demo-beacon':
         specifier: workspace:*
         version: link:../../libs/demo-beacon
@@ -170,6 +173,9 @@ importers:
       '@clearline/domain-payments':
         specifier: workspace:*
         version: link:../../libs/domain/payments
+      '@clearline/domain-reconciliation':
+        specifier: workspace:*
+        version: link:../../libs/domain/reconciliation
       '@clearline/icons':
         specifier: workspace:*
         version: link:../../libs/icons
@@ -466,6 +472,37 @@ importers:
         specifier: ^2.14.6
         version: 2.14.6(@types/node@24.13.2)(typescript@6.0.3)
 
+  libs/data-access/reconciliation:
+    dependencies:
+      '@clearline/contracts':
+        specifier: workspace:*
+        version: link:../../contracts
+      '@clearline/data-access-auth':
+        specifier: workspace:*
+        version: link:../auth
+      '@tanstack/react-query':
+        specifier: ^5.101.2
+        version: 5.101.2(react@19.2.7)
+      react:
+        specifier: ^19.2.0
+        version: 19.2.7
+      react-dom:
+        specifier: ^19.2.0
+        version: 19.2.7(react@19.2.7)
+    devDependencies:
+      '@clearline/mock-backend':
+        specifier: workspace:*
+        version: link:../../mock-backend
+      '@types/react':
+        specifier: ^19.2.17
+        version: 19.2.17
+      '@types/react-dom':
+        specifier: ^19.2.3
+        version: 19.2.3(@types/react@19.2.17)
+      msw:
+        specifier: ^2.14.6
+        version: 2.14.6(@types/node@24.13.2)(typescript@6.0.3)
+
   libs/demo-beacon:
     dependencies:
       '@radix-ui/react-dialog':
@@ -517,6 +554,12 @@ importers:
         specifier: workspace:*
         version: link:../../contracts
 
+  libs/domain/reconciliation:
+    dependencies:
+      '@clearline/contracts':
+        specifier: workspace:*
+        version: link:../../contracts
+
   libs/icons: {}
 
   libs/mock-backend:
@@ -539,6 +582,9 @@ importers:
       '@clearline/domain-payments':
         specifier: workspace:*
         version: link:../domain/payments
+      '@clearline/domain-reconciliation':
+        specifier: workspace:*
+        version: link:../domain/reconciliation
     devDependencies:
       msw:
         specifier: ^2.14.6

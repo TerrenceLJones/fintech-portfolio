@@ -15,6 +15,7 @@
     { "path": "../../libs/domain/expenses" },
     { "path": "../../libs/domain/onboarding" },
     { "path": "../../libs/domain/payments" },
+    { "path": "../../libs/domain/reconciliation" },
     { "path": "../../libs/mock-backend" },
     { "path": "../../libs/util/money" },
     { "path": "../../libs/data-access/auth" },
@@ -23,6 +24,7 @@
     { "path": "../../libs/data-access/cards" },
     { "path": "../../libs/data-access/expenses" },
     { "path": "../../libs/data-access/onboarding" },
-    { "path": "../../libs/data-access/payments" }
+    { "path": "../../libs/data-access/payments" },
+    { "path": "../../libs/data-access/reconciliation" }
   ]
 }
