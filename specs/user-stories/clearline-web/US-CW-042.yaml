@@ -1,0 +1,156 @@
+# User Story Registry Record
+# User stories are the source of truth for what the application supports.
+# Epics declare changes to these records via their changes.adds/updates/deprecates/removes sections.
+
+# Identity
+id: 'US-CW-042'
+app: 'clearline-web'
+feature_area: 'core'
+title: 'Billing & Plan'
+
+# Lifecycle status
+status: 'DRAFT'
+story_points: 13
+dependencies: ['US-CW-033', 'US-CW-006', 'US-CW-027']
+
+# Provenance — immutable after creation
+created_by_epic: 'EPIC-CW-022'
+created_date: '2026-07-17'
+
+# Provenance history — append-only record of every epic that has touched this story
+history:
+  - epic_id: 'EPIC-CW-022'
+    action: 'created'
+    date: '2026-07-17'
+
+# Status timestamps — set when status transitions occur
+approved_date: null
+implementation_date: null
+deprecated_date: null
+removed_date: null
+
+# User Story
+user_story:
+  persona: 'Admin or Owner of a Clearline Organization'
+  capability: 'view the current plan and usage against limits, update the subscription payment method through Stripe hosted fields, download past invoices, and cancel the subscription through a deliberate, typed-confirmation flow with a grace period'
+  business_value: 'Administrators manage the commercial relationship with full visibility into usage headroom, card data never touches Clearline (PCI scope reduction), and cancellation is a considered, reversible-until-period-end action rather than a one-click accident'
+  description: |
+    As an Admin or Owner
+    I want a Billing & Plan settings page
+    So that I can see plan/usage with approaching-limit warnings, update the payment method via Stripe Elements (card data never touching our servers), download invoices, and cancel through a multi-step, type-the-company-name confirmation that preserves read-only data access until the period ends
+
+# Acceptance Criteria
+acceptance_criteria:
+  - id: 'AC-01'
+    description: |
+      Given I am an Admin or Owner on Settings → Billing
+      When the page loads
+      Then I see the current plan name, billing cycle (monthly/annual), next billing date, and amount due
+      And a usage summary shows active members vs plan limit, active cards vs limit, and transactions this period
+      vs included limit, with an amber "Approaching limit" indicator as any usage nears its limit (icon + text,
+      not color alone)
+    status: 'active'
+  - id: 'AC-02'
+    description: |
+      Given I am on Billing
+      When I click "Update payment method"
+      Then a Stripe Elements hosted card form opens inside a Stripe iframe — card data never touches Clearline's
+      servers (the same PCI scope-reduction pattern used elsewhere) — and on success the displayed method updates
+      to the new card's masked PAN, expiry, and brand logo
+    status: 'active'
+  - id: 'AC-03'
+    description: |
+      Given I am updating the payment method
+      When I enter a card that is declined
+      Then Stripe Elements shows "Your card was declined." and the current payment method remains unchanged
+    status: 'active'
+  - id: 'AC-04'
+    description: |
+      Given past invoices are listed
+      When I click "Download" on a specific invoice
+      Then a PDF invoice downloads immediately with a filename including the billing period (e.g.
+      "clearline-invoice-2026-03.pdf")
+    status: 'active'
+  - id: 'AC-05'
+    description: |
+      Given I am on Billing
+      When I click "Cancel subscription"
+      Then a multi-step flow opens — Step 1 lists what will be lost (all card programs deactivated, API keys
+      revoked, data export available for 30 days); Step 2 requires typing the company name exactly to confirm
+      And the final "Cancel subscription" button stays disabled until the company name is typed exactly
+    status: 'active'
+  - id: 'AC-06'
+    description: |
+      Given I complete the cancellation confirmation
+      When I confirm
+      Then the subscription is scheduled to cancel at the end of the current billing period and a final
+      confirmation email is sent to all admins
+    status: 'active'
+  - id: 'AC-07'
+    description: |
+      Given a subscription has been cancelled but the billing period has not ended
+      When I access Clearline
+      Then I see a persistent banner "Your subscription was cancelled. You have access until {date}. Export your
+      data before then.", read-only access to all data is available, and no new transactions, cards, or approvals
+      can be created
+    status: 'active'
+  - id: 'AC-08'
+    description: |
+      Given I am an Employee, or a Controller who is not also Admin/Owner
+      When I attempt to reach /settings/billing
+      Then the item is absent from SettingsNav, direct navigation shows AccessDenied, and the API returns 403
+      independently (US-CW-033 AC-03/AC-04) — this is an Admin/Owner-only surface
+    status: 'active'
+  - id: 'AC-09'
+    description: |
+      Given any billing change occurs (payment method updated, subscription cancelled)
+      When it succeeds
+      Then an immutable audit event records actor, action, and before → after (US-CW-021 / EPIC-CW-015), never
+      recording raw card data (which Clearline never receives)
+    status: 'active'
+
+# Technical Notes
+technical_notes: |
+  Gated by `billing:manage` (Admin | Owner only) from the EPIC-CW-022 → US-CW-006 update — the third
+  Admin/Owner-only org surface (with Security & Compliance and Developer). Money figures (amount due, usage,
+  invoice totals) render via the shared formatMoney / minor-unit utilities (US-CW-027) — no separate billing
+  formatting path.
+
+  Payment method (AC-02/AC-03) uses Stripe Elements hosted fields so card data never touches Clearline —
+  the PCI scope-reduction pattern the plan calls out ("Tokens not in localStorage · PCI scope reduction via
+  hosted fields"). Declines surface Stripe's own error and leave the existing method intact.
+
+  Usage indicators (AC-01) are never color-only — the "Approaching limit" state carries an icon + text badge
+  (US-CW-020). Cancellation (AC-05/AC-06) is a deliberate multi-step, type-the-company-name confirmation (a
+  stronger variant of the §19.9 named-destruction doctrine): the final button is disabled until the exact
+  company name is typed, cancellation is scheduled for period-end (not immediate), and all admins are emailed.
+  The post-cancellation grace period (AC-07) drops the org into read-only with a persistent banner and a 30-day
+  export window; no new financial objects can be created.
+
+  Invoices (AC-04) download as period-named PDFs. Stripe, invoicing, usage metering, and the cancellation
+  lifecycle are backed by the MSW mock service layer (Stripe test mode where a real Elements iframe is used).
+  Audit via AuditTrail (US-CW-021); raw card data is never received and never audited (AC-09).
+
+# Edge Cases
+edge_cases: |
+  - Card declined on payment-method update — Stripe error shown; existing method unchanged (AC-03)
+  - Usage at/over a plan limit — "Approaching limit" (then over-limit) indicator with icon + text (AC-01)
+  - Cancellation confirmed but company name mistyped — final button stays disabled; no cancellation (AC-05)
+  - Access during the post-cancellation grace period — read-only, persistent banner, no new objects (AC-07)
+  - Re-download the same invoice — identical period-named filename, replacing the prior download rather than
+    "(1)" (AC-04)
+  - Controller (not Admin/Owner) deep-links /settings/billing — AccessDenied + 403 (AC-08)
+  - (inferred) Cancellation scheduled, then the admin wants to keep the plan before period-end — a re-subscribe/
+    undo path should exist; absent one, the banner's export guidance still holds (flagged for product)
+  - (inferred) Payment method updated during the grace period — allowed (to settle final charges) but does not
+    by itself un-cancel the subscription
+
+# Implementation Status
+implementation_status: |
+  🚧 Not yet implemented — DRAFT authored 2026-07-17 (EPIC-CW-022), specs-only for review.
+  Source: specs/designs/Clearline Design System - Consolidated.dc.html §19.1 (Billing & Plan item) and Gherkin
+  §26 (current plan + usage with approaching-limit indicators; Stripe Elements payment-method update incl.
+  decline; invoice download; multi-step type-the-company-name cancellation; post-cancellation grace-period
+  read-only access). Anticipated new surface: /settings/billing (Admin/Owner-only) with a plan/usage summary,
+  a Stripe Elements payment form, an invoice history table, and the cancellation flow, backed by MSW +
+  Stripe test mode.

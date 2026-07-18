@@ -6,205 +6,135 @@
 id: 'US-CW-031'
 app: 'clearline-web'
 feature_area: 'core'
-title: 'Team Member Invitations & Management'
+title: 'Team Management: Invite, Role Assignment & Removal'
 
 # Lifecycle status
-status: 'DRAFT'
-story_points: 13
-dependencies: ['US-CW-030', 'US-CW-006', 'US-CW-003', 'US-CW-029', 'US-CW-004']
+status: 'APPROVED'
+story_points: 8
+dependencies: ['US-CW-030', 'US-CW-006', 'US-CW-001']
 
 # Provenance — immutable after creation
-created_by_epic: 'EPIC-CW-018'
-created_date: '2026-07-07'
+created_by_epic: 'EPIC-CW-017'
+created_date: '2026-07-06'
 
 # Provenance history — append-only record of every epic that has touched this story
 history:
-  - epic_id: 'EPIC-CW-018'
+  - epic_id: 'EPIC-CW-017'
     action: 'created'
-    date: '2026-07-07'
+    date: '2026-07-06'
+  - epic_id: 'EPIC-CW-017'
+    action: 'approved'
+    date: '2026-07-06'
 
 # Status timestamps — set when status transitions occur
-approved_date: null
+approved_date: '2026-07-06'
 implementation_date: null
 deprecated_date: null
 removed_date: null
 
 # User Story
 user_story:
-  persona: 'Owner or Admin of an approved Clearline Organization'
-  capability: 'invite teammates by work email with an approval-tier role and optional Admin grant, and manage the resulting membership — resend or revoke pending invites, change roles, and remove members — with every change audited'
-  business_value: 'I can build and maintain my team by invitation only, without exposing whether an email already has a Clearline account, while the approval ladder and team-management authority stay cleanly separate and every change leaves an audit trail'
+  persona: "Owner or Admin managing their organization's team"
+  capability: "invite teammates to my organization by email with an assigned role, change any member's role, and remove members — the only way anyone ever joins an organization they did not create"
+  business_value: 'I can grow my team on Clearline with confidence that membership is fully under my control, and that no one can attach themselves to my organization without my say-so'
   description: |
-    As an Owner or Admin of an approved Organization
-    I want to invite teammates by email and role via a single-use, time-limited link, and manage members and pending invites
-    So that membership is invite-only and controlled, new people join by setting their own password without any KYB onboarding, and role changes and removals are safe, reversible-by-re-invite, and fully audited
+    As an Owner or Admin of a Clearline organization
+    I want to invite teammates by email with an assigned role, change existing members' roles, and remove members
+    So that my organization's roster and access levels stay exactly as I intend, with no path for an outside person to join without an explicit invitation from me
 
 # Acceptance Criteria
 acceptance_criteria:
   - id: 'AC-01'
     description: |
-      Given I am an Owner or Admin on the team roster
-      When I open "Invite teammate" and enter a work email, pick an approval-tier role (Employee, Finance Manager, or Controller), and optionally check "Also grant Admin"
-      And I send the invite
-      Then a single-use invitation valid for 7 days is created for that email with the chosen role and admin flag
-      And the invitee appears in the roster as "Pending"
+      Given I am an Owner or Admin
+      When I invite a teammate by work email and assign them a role (Employee, Finance Manager, or Controller)
+      Then an enumeration-safe response is shown regardless of whether that email already has a Clearline account
+      And if the email has no account, a time-limited, single-use invite link is emailed to it
     status: 'active'
   - id: 'AC-02'
     description: |
-      Given I have sent an invite
-      When the confirmation is shown
-      Then it reads identically whether or not that email already has a Clearline account (enumeration-safe, mirroring sign-up messaging): "If that email isn't already on a team, we've sent them an invite to join as {role}. The link is single-use and valid for 7 days."
-      And no part of the response reveals whether the email was already registered
+      Given I received a valid, unexpired invite link
+      When I click it and (if I have no existing account) set a password
+      Then I am added to the inviting organization with the role specified in the invite
+      And I am logged in and redirected to my role-appropriate dashboard, bypassing business onboarding entirely (onboarding is a one-time, per-organization step already completed by the Owner)
     status: 'active'
   - id: 'AC-03'
     description: |
-      Given I am on the team roster as an Owner or Admin
-      When I view a pending invite
-      Then I can Resend it (issuing a fresh single-use link) or Revoke it (invalidating the outstanding link and removing the pending row)
-      And a revoked or superseded link grants no membership if later clicked
+      Given I click an invite link more than 7 days after it was sent
+      Then I see "This invite has expired. Ask an admin to resend it."
+      And no organization membership is granted
     status: 'active'
   - id: 'AC-04'
     description: |
-      Given I have received an invitation email with a valid, unexpired link
-      When I open it
-      Then I see who invited me, to which Organization, and as what role, and I am prompted to set a password meeting complexity requirements (>= 12 chars, upper & lowercase, a number, a symbol)
-      When I set a valid password
-      Then my membership is activated with the invited role/flags, I am logged in, and I land on my role dashboard — never the KYB onboarding wizard (see US-CW-030 AC-04)
+      Given I am an Owner or Admin
+      When I change an existing member's role
+      Then the change takes effect on that member's next request, per US-CW-006 AC-05's mid-session degradation handling
+      And an audit event records the prior role, new role, actor, and timestamp (US-CW-021 AC-04)
     status: 'active'
   - id: 'AC-05'
     description: |
-      Given I received an invitation more than 7 days ago
-      When I open the link
-      Then I see "This invite has expired. Ask an admin to resend it."
-      And no membership is granted
-      And the same applies to a link that has already been used once or has been revoked (single-use)
+      Given I am an Owner or Admin
+      When I remove a member from the organization
+      Then that member's session is invalidated on their next request and they are signed out
+      And they can no longer log in to this organization
+      And removing the Owner is not offered as an available action to anyone, including another Admin (US-CW-030 AC-03)
     status: 'active'
   - id: 'AC-06'
     description: |
-      Given I am an Owner or Admin
-      When I change a member's approval-tier role
-      Then a confirmation dialog states the before -> after roles and that the change takes effect on the member's next request
-      And on confirm the member's role is updated, taking effect on their next request (mid-session, per US-CW-006 AC-05)
-      And the Owner cannot be a target of demotion (US-CW-030 AC-03)
+      Given I sign up (US-CW-029) with a work email whose domain matches an existing organization
+      Then I am not automatically added to that organization
+      And I am routed into standard business onboarding (US-CW-004) as if starting a new, separate organization
+      And joining an existing organization is only ever possible via an invite from that organization's Owner or Admin
     status: 'active'
   - id: 'AC-07'
     description: |
-      Given I am an Owner or Admin
-      When I remove a non-Owner member
-      Then a destructive confirmation warns the action can't be undone and that re-adding requires a fresh invite
-      And on confirm the member loses all access to the Organization and is signed out on their next request (their session is invalidated)
-      And no "Remove" action is ever offered for the Owner, and the API rejects any attempt to remove the Owner (US-CW-030 AC-03)
-    status: 'active'
-  - id: 'AC-08'
-    description: |
-      Given I am a member who holds neither Owner nor Admin (e.g. a Finance Manager)
-      When I use the app
-      Then no Team navigation item, invite control, or roster is rendered for me
-      And if I navigate directly to /settings/team I see an access-denied screen, and the team API endpoints independently return 403 regardless of client routing
-    status: 'active'
-  - id: 'AC-09'
-    description: |
-      Given any team-management action succeeds (invite sent, invite revoked, role changed, member removed)
-      When the action is recorded
-      Then an immutable audit event captures the timestamp, actor, action, and before -> after state (US-CW-021 / design §08 · §18)
-    status: 'active'
-  - id: 'AC-10'
-    description: |
-      Given I joined my Organization by accepting an invitation (not as its creator)
-      When I use the app
-      Then I have no KYB onboarding record of my own, and the onboarding route guard (US-CW-004 AC-09 / RequireOnboarded) admits me to the app rather than redirecting me into the wizard — I inherit my Organization's approved onboarding status
-      And onboarding remains a once-per-Organization activity performed only by the creator (moved here from the provisioning story US-CW-030)
-    status: 'active'
-  - id: 'AC-11'
-    description: |
-      Given a business with an EIN that already belongs to an existing Organization (US-CW-004 AC-07 duplicate-EIN detection)
-      When a DIFFERENT person attempts to onboard that same business
-      Then they are told their business already has a Clearline account and that the way in is an invitation from an admin — no "Sign in" call to action and no credentials
-      And no second Organization, account, or onboarding record is created for that EIN
+      Given I am an Employee, Finance Manager, or Controller (not Owner or Admin)
+      Then I do not see any team-management navigation or actions
+      And the invite, role-change, and removal endpoints independently reject my requests server-side regardless of client state
     status: 'active'
 
 # Technical Notes
 technical_notes: |
-  Invitation token (AC-01/AC-04/AC-05) reuses the single-use, cryptographically-random, stored-hashed token
-  shape already established for the US-CW-029 email-verification token and the US-CW-003 password-reset token
-  (OWASP Forgot Password Cheat Sheet) — no new token machinery should be written. Expiry is 7 days (longer than
-  verification's 24h and reset's 1h): an invite link only lets someone set a password on an email an admin
-  already chose to grant access to, and admins need a realistic acceptance window. Single-use: accepting,
-  revoking, or resending invalidates the prior link. Resend issues a fresh token; Revoke invalidates without
-  reissue.
+  Invite tokens follow the same shape US-CW-029 already established for verification tokens and
+  US-CW-003 for reset tokens: single-use, cryptographically random, stored hashed at rest. Expiry is
+  set to 7 days (longer than sign-up's 24-hour verification window and materially longer than
+  password-reset's 1-hour window) since an invite link is typically sent to someone who isn't
+  expecting it and may not act on it immediately, and a compromised invite link only grants the role
+  the inviter chose — not account takeover of an existing identity.
 
-  Enumeration-safety (AC-02) mirrors US-CW-029/US-CW-003 exactly: identical confirmation copy and asynchronous
-  email dispatch so neither content nor timing leaks whether the invited email already has an account. If the
-  email already belongs to a Clearline user, the product decision for how that person joins a second
-  Organization is deferred — this story only guarantees the inviter learns nothing.
+  This is the first story to give AuthService's user record a role and an orgId (see US-CW-030's
+  technical_notes on SeedUser's current { id, email, passwordHash, verified } shape having neither).
+  Invite acceptance for a brand-new email follows the same account-creation mechanics as US-CW-029
+  (password complexity, PBKDF2-HMAC-SHA256 hashing) but skips onboarding entirely and sets orgId/role
+  directly from the invite record — onboarding (US-CW-004) is a per-organization, not per-user, step
+  and must never run twice for the same org.
 
-  Credential issuance is self-set-password (AC-04), NOT a temporary password: the invitee sets their own
-  password via the link, hashed with the same PBKDF2-HMAC-SHA256 helper as US-CW-001/US-CW-029. No credential
-  is ever transmitted by email. Acceptance activates membership with the invited { role, isAdmin } and, per
-  US-CW-030 AC-04, bypasses KYB onboarding entirely.
+  AC-06 is the concrete answer to whether a user can ever associate themselves with an org someone
+  else created: no. Domain-matching at sign-up was considered (auto-suggesting "join Acme's
+  organization?") and explicitly excluded from this story's scope — see EPIC-CW-017's notes for the
+  fraud-vector rationale. AC-06 exists specifically to close off any implicit assumption that matching
+  work-email domains implies shared organization membership.
 
-  Authorization (AC-08): team-management surface and endpoints authorize on isOwner OR isAdmin (US-CW-030
-  technical_notes). The nav item is gated by the `team:view` permission — which US-CW-030 extends to be granted
-  by isOwner as well as isAdmin — and hidden entirely when absent (not merely disabled), reusing the
-  US-CW-028 nav-gating and US-CW-006 RequirePermission / AccessDenied patterns. Client hides, server decides:
-  the invite, resend, revoke, change-role, and remove endpoints are each independently authorized and return
-  403 regardless of client state, exactly like the existing approvals handler re-checks permissionsForRole.
+  Role-change (AC-04) is the concrete actor behind US-CW-006 AC-05's previously-unspecified "an admin
+  downgrades my role" — this story is what US-CW-006 AC-05 was always describing the effect of, now
+  with an actual mechanism.
 
-  Role change and removal (AC-06/AC-07) reuse the ConfirmationDialog organism (design §11). Role change takes
-  effect on the member's next request, consistent with US-CW-006 AC-05 mid-session role-change handling and its
-  "Your access changed" banner (useAccessChanged). Removal invalidates the member's session so they are signed
-  out on their next request. Both operations, plus invite send/revoke, must be blocked against an Owner target
-  (US-CW-030 AC-03).
-
-  Audit (AC-09) writes to the same AuditTrail as US-CW-021; team events record actor, action, and before->after
-  (e.g. Finance Manager -> Controller; Employee -> Removed), matching the design §18 audit tie-in rows.
-
-  Organization entity (this epic introduces it): the distinct Organization record — members belong to it,
-  invites target it, the roster lists it — is introduced here rather than in the provisioning story US-CW-030,
-  which deliberately shipped ownership as a flag on the creator's account. When this story lands, the creator's
-  existing Owner membership is attached to the Organization; provisioning (US-CW-030) does not need to change,
-  only be joined to the new entity.
-
-  Invited-member onboarding admission (AC-10): US-CW-004's RequireOnboarded guard keys off a per-user
-  onboarding status, so an invited user (who has no onboarding record) would today be redirected INTO the KYB
-  wizard — the opposite of intended. This story resolves onboarding-admission at the Organization level for
-  invited members: they inherit their Organization's approved status and the guard admits them without a
-  synthetic per-user onboarding record. This is the load-bearing change that makes "onboarding applies only to
-  account creators" actually true, and it is why RequireOnboarded is touched here and NOT in US-CW-030.
-
-  Non-owner duplicate-EIN branch (AC-11): US-CW-004 AC-07 blocks a duplicate EIN only for the creator
-  re-onboarding ("Sign in instead"). The design's non-owner branch — "your business already has an account, ask
-  your admin to invite you," no sign-in CTA, no credentials — only makes sense once invites exist (otherwise it
-  dead-ends), so it lands in this epic, not the provisioning slice. EPIC-CW-018 declares the corresponding
-  US-CW-004 update.
+  Ownership transfer (reassigning Owner to a different member, e.g. before the original Owner is
+  removed) is explicitly out of scope for this story, consistent with US-CW-030 AC-03's non-removability
+  guarantee having no escape hatch yet. Flagged here as a real follow-up gap, not dropped silently:
+  without it, an Owner who needs to leave the organization entirely has no supported path today.
 
 # Edge Cases
 edge_cases: |
-  - Invite link clicked after > 7 days, after it was already used once, or after it was revoked — no membership
-    granted, expired/invalid screen shown (AC-05)
-  - Invited email already belongs to a Clearline account — confirmation is identical (enumeration-safe); how
-    that person joins a second Organization is deferred (AC-02)
-  - Two admins act on the same pending invite concurrently (resend vs revoke) — last write wins, but a revoked
-    link must never be resurrected by a race
-  - Role change or removal targeting the Owner — always rejected (AC-06/AC-07, US-CW-030 AC-03)
-  - Removed member with an active session — access ends on their next request via session invalidation (AC-07)
-  - Non-admin deep-links to /settings/team or calls a team API directly — access-denied UI + independent 403
-    (AC-08)
-  - (inferred) Invite sent to an email that is later also used to attempt sign-up before acceptance — sign-up
-    is the owner-only path (US-CW-029) and must not collide with a pending invite
-  - (inferred) Changing a member's role while they hold a mid-flight request — new authority applies from the
-    next request, not retroactively (US-CW-006 AC-05)
-  - An invited member deep-links to an onboarding wizard URL — admitted to / redirected into the app, never
-    funneled into KYB (AC-10)
-  - A second person attempts to onboard a business whose EIN is already claimed — routed to "ask your admin to
-    invite you," not to sign-in, with no new records created (AC-11)
+  - Invite sent to an email that already has a Clearline account (in this org or another) — must not silently create a duplicate account or grant unintended cross-org access
+  - Invite link clicked after 7-day expiry
+  - Invite link reused after already being consumed once
+  - Role change or removal targeting the Owner, which must be rejected/unavailable regardless of who initiates it
+  - Removed member with an active session continuing to act until their next request surfaces the revocation
+  - Sign-up with a work-email domain matching an existing organization, which must route to standalone onboarding rather than implicit membership (AC-06)
+  - Non-Owner/Admin attempting invite, role-change, or removal actions via direct API call, bypassing UI (AC-07)
+  - (inferred) Inviting an email that is already a pending (unaccepted) invite to the same organization — should not create a second outstanding invite/token
 
 # Implementation Status
 implementation_status: |
-  🚧 Not yet implemented — DRAFT authored 2026-07-07 (EPIC-CW-018), specs-only for review.
-  Source: specs/designs/Clearline Design System - Consolidated.dc.html §18.1–18.5 (team roster, invite modal,
-  enumeration-safe confirmation, invite acceptance / set-password, expired link, role change & removal,
-  non-admin enforcement, audit tie-in). Anticipated new surface: an invite endpoint + single-use token
-  (reusing US-CW-003/US-CW-029 token machinery), an /invite acceptance + set-password page, a
-  /settings/team roster with invite/resend/revoke/change-role/remove, and team API handlers authorized on
-  isOwner OR isAdmin. Paired with US-CW-030 (provisioning + Owner identity).
+  Not yet implemented. This story is APPROVED and ready for implementation planning — no application code exists yet.

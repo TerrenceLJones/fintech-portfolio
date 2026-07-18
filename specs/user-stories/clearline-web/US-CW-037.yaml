@@ -1,0 +1,165 @@
+# User Story Registry Record
+# User stories are the source of truth for what the application supports.
+# Epics declare changes to these records via their changes.adds/updates/deprecates/removes sections.
+
+# Identity
+id: 'US-CW-037'
+app: 'clearline-web'
+feature_area: 'core'
+title: 'Approval Policies & Spend Controls'
+
+# Lifecycle status
+status: 'DRAFT'
+story_points: 13
+dependencies: ['US-CW-033', 'US-CW-006', 'US-CW-012', 'US-CW-011', 'US-CW-019']
+
+# Provenance — immutable after creation
+created_by_epic: 'EPIC-CW-022'
+created_date: '2026-07-17'
+
+# Provenance history — append-only record of every epic that has touched this story
+history:
+  - epic_id: 'EPIC-CW-022'
+    action: 'created'
+    date: '2026-07-17'
+
+# Status timestamps — set when status transitions occur
+approved_date: null
+implementation_date: null
+deprecated_date: null
+removed_date: null
+
+# User Story
+user_story:
+  persona: 'Controller, Admin, or Owner of a Clearline Organization'
+  capability: 'configure the approval-limit tiers that route expenses by amount, and the spend controls (receipt/memo thresholds, out-of-policy behavior, per-category monthly caps) — with gap/overlap validation so the policy is always coherent'
+  business_value: 'The same amount-tier policy the approval state machine enforces is edited here in one place; administrators cannot save a policy with coverage gaps or overlaps, so every expense always routes to a defined approver'
+  description: |
+    As a Controller, Admin, or Owner
+    I want to manage approval-limit tiers and spend controls
+    So that expenses route to the correct approver level by amount, receipt/memo requirements and per-category caps are enforced at submission, and the policy model I edit is the exact one the XState approvals machine consumes — with validation that prevents gaps or overlapping ranges
+
+# Acceptance Criteria
+acceptance_criteria:
+  - id: 'AC-01'
+    description: |
+      Given I am a Controller, Admin, or Owner on Settings → Approval Policies
+      When I view the policy table
+      Then I see one PolicyRuleRow per tier showing the amount range, the required approver level, and Edit/Delete
+      actions, and the tiers collectively cover all amounts from $0 upward with no gaps
+    status: 'active'
+  - id: 'AC-02'
+    description: |
+      Given the current policy has tiers $0–$1,000 (auto-approve) and $1,000–$10,000 (Finance Manager)
+      When I click "+ Add tier", enter range "$10,000–$50,000" with approver "Controller", and Save
+      Then the new tier is saved and appears in the table in correct range order
+    status: 'active'
+  - id: 'AC-03'
+    description: |
+      Given a tier exists for $1,000–$10,000
+      When I add a new tier with range $5,000–$25,000 and Save
+      Then I see the inline validation error "This range overlaps with an existing tier ($1,000–$10,000). Adjust
+      the amounts to eliminate the overlap." and the tier is not saved until the overlap is resolved
+    status: 'active'
+  - id: 'AC-04'
+    description: |
+      Given deleting a tier would leave a gap (e.g. $0–$1,000 and $10,001–unlimited)
+      When I Save
+      Then I see the warning "Your policy has a gap between $1,000 and $10,001. Expenses in this range won't route
+      correctly." and I am offered the option to add a tier to fill the gap before saving
+    status: 'active'
+  - id: 'AC-05'
+    description: |
+      Given I am on Approval Policies
+      When I click "Reset to defaults"
+      Then a confirmation dialog states what the default policy is, and on confirm the table reverts to the default
+      tiers and all custom tiers are removed
+    status: 'active'
+  - id: 'AC-06'
+    description: |
+      Given I am on Settings → Spend Controls
+      When I set "Receipts required for expenses over" to "$75" and "Memo required for expenses over" to "$200" and save
+      Then the expense submission form and dashboard enforce these thresholds, flagging over-threshold expenses that
+      lack a receipt/memo at submission (consistent with Gherkin §6 policy-violation handling)
+    status: 'active'
+  - id: 'AC-07'
+    description: |
+      Given out-of-policy behavior is currently "Allow with flag"
+      When I change it to "Block entirely" and save
+      Then a confirmation warns "Setting this to Block entirely will prevent any out-of-policy expense submission.
+      Employees will not be able to submit expenses that exceed policy limits.", and on confirm out-of-policy
+      submissions receive a hard block rather than a warning
+    status: 'active'
+  - id: 'AC-08'
+    description: |
+      Given I am on Spend Controls
+      When I set a "$300" monthly limit for the "Dining" category and save
+      Then employees cannot submit dining expenses that would push their monthly dining total over $300, and the
+      Dining budget gauge reflects the limit
+      And clicking "Restore unlimited" for a category removes its cap and shows "Unlimited" in the limit column
+    status: 'active'
+  - id: 'AC-09'
+    description: |
+      Given I am an Employee
+      When I attempt to reach /settings/approval-policies or /settings/spend-controls
+      Then the items are absent from SettingsNav, direct navigation shows AccessDenied, and the API returns 403
+      independently (US-CW-033 AC-02/AC-04)
+    status: 'active'
+  - id: 'AC-10'
+    description: |
+      Given any policy or spend-control change is saved
+      When it succeeds
+      Then an immutable audit event records actor, action, and before → after (US-CW-021 / EPIC-CW-015)
+      And the persisted policy is the single source consumed by the approval-routing logic — the UI and the
+      business logic share one policy model (no divergent copy)
+    status: 'active'
+
+# Technical Notes
+technical_notes: |
+  Gated by the `policies:manage` permission (Controller | Admin | Owner) from the EPIC-CW-022 → US-CW-006
+  update. PolicyRuleRow is the design component: amount range + required approver level + edit/delete, visible
+  only to Controllers/Admins/Owners.
+
+  The load-bearing invariant (AC-10): the tier configuration edited here IS the policy the XState approvals
+  routing machine consumes (US-CW-012 Expense Approval Workflow, EPIC-CW-006). There must be ONE policy model —
+  editing here changes routing behavior directly, with no second hand-maintained copy. This is the "the UI and
+  the business logic share the same policy model" differentiator from the plan (Story G · Approval Policies).
+
+  Gap/overlap validation (AC-03/AC-04) operates on integer minor units (never floats), consistent with the
+  money type used across the domain. Tiers must tile [$0, ∞) with no overlap and no gap; the validator runs
+  before save and produces the specific overlap/gap message. "Reset to defaults" (AC-05) restores the documented
+  default ladder and confirms first.
+
+  Spend controls (AC-06/AC-07/AC-08) feed the expense submission + dashboard enforcement already specified in
+  US-CW-011 (Expense Submission & Policy Enforcement) and US-CW-019 (Department Budget Management). Receipt/memo
+  thresholds and per-category monthly caps are minor-unit values; "Block entirely" vs "Allow with flag" changes
+  submission from a soft warning to a hard block. Category caps interact with the budget gauges (US-CW-019).
+
+  Reuses the shared UnsavedChangesFooter (US-CW-034) for the spend-control forms and ConfirmationDialog for the
+  destructive/consequential confirmations (reset, block-entirely). Audit via AuditTrail (US-CW-021).
+
+# Edge Cases
+edge_cases: |
+  - New tier overlaps an existing tier — blocked with the specific overlap message (AC-03)
+  - Deleting a tier opens a coverage gap — warned with the specific gap range; offered a fill-the-gap tier (AC-04)
+  - Tier with inverted range (max < min) or zero-width range — rejected by the validator
+  - "Block entirely" enabled while employees have out-of-policy drafts — new submissions hard-blocked from save;
+    existing drafts cannot be submitted until brought into policy (AC-07)
+  - Category cap set below a category's already-incurred monthly spend — new submissions blocked; historical
+    spend is not retroactively invalidated (AC-08)
+  - "Restore unlimited" on a category — cap removed, "Unlimited" shown, budget gauge reverts (AC-08)
+  - Employee deep-links either page — absent from nav + AccessDenied + 403 (AC-09)
+  - (inferred) Policy edited while an expense is mid-routing — the new policy applies to routing decisions made
+    after save, not retroactively to an in-flight approval (consistent with US-CW-006 mid-session semantics)
+  - (inferred) Concurrent Controllers editing the tier table — last coherent save wins; a save that would create
+    a gap/overlap against the other's committed change is re-validated and rejected
+
+# Implementation Status
+implementation_status: |
+  🚧 Not yet implemented — DRAFT authored 2026-07-17 (EPIC-CW-022), specs-only for review.
+  Source: specs/designs/Clearline Design System - Consolidated.dc.html §19.1 (Approval Policies + Spend Controls
+  items; PolicyRuleRow component) and Gherkin §21 (approval policy tiers with overlap/gap validation and reset;
+  spend controls — receipt/memo thresholds, out-of-policy block-vs-flag, per-category monthly caps). Anticipated
+  new surface: /settings/approval-policies + /settings/spend-controls pages editing the shared approval-policy
+  model (US-CW-023 / EPIC-CW-006) and the category-cap model (EPIC-CW-013), with a gap/overlap validator on
+  minor units.

@@ -1,0 +1,191 @@
+# User Story Registry Record
+# User stories are the source of truth for what the application supports.
+# Epics declare changes to these records via their changes.adds/updates/deprecates/removes sections.
+
+# Identity
+id: 'US-CW-035'
+app: 'clearline-web'
+feature_area: 'core'
+title: 'Account Security — Password, 2FA, Sessions & Trusted Devices'
+
+# Lifecycle status
+status: 'DRAFT'
+story_points: 13
+dependencies: ['US-CW-033', 'US-CW-001', 'US-CW-003', 'US-CW-040']
+
+# Provenance — immutable after creation
+created_by_epic: 'EPIC-CW-022'
+created_date: '2026-07-17'
+
+# Provenance history — append-only record of every epic that has touched this story
+history:
+  - epic_id: 'EPIC-CW-022'
+    action: 'created'
+    date: '2026-07-17'
+
+# Status timestamps — set when status transitions occur
+approved_date: null
+implementation_date: null
+deprecated_date: null
+removed_date: null
+
+# User Story
+user_story:
+  persona: 'Any authenticated Clearline user'
+  capability: 'change my password, enable authenticator-app two-factor authentication through a guided generate → verify → complete flow with one-time backup codes, review and revoke my active sessions, and remove trusted devices'
+  business_value: 'I control the security posture of my own account: my password change never silently signs me out elsewhere unless I choose it, my 2FA secret never leaves my browser before setup, and I can see and sign out any device on my account'
+  description: |
+    As any authenticated user
+    I want a Security settings page for password changes, TOTP 2FA setup, active-session management, and trusted devices
+    So that I can strengthen and audit my own account: enable 2FA only after proving I can generate a valid code, keep my backup codes (shown exactly once), and revoke any session or trusted device — while I can never accidentally sign out the very session I'm using
+
+# Acceptance Criteria
+acceptance_criteria:
+  - id: 'AC-01'
+    description: |
+      Given I am on Settings → Security
+      When I enter my current password, a valid new password, and a matching confirmation, and click "Update password"
+      Then my password is updated, a "Password updated" toast appears, my current session stays active (no forced
+      re-login on this device), and other active sessions are NOT automatically revoked
+    status: 'active'
+  - id: 'AC-02'
+    description: |
+      Given I am changing my password
+      When my current password is wrong
+      Then I see the inline error "Incorrect password", the current-password field is cleared, and the new-password
+      fields are preserved
+      And when the two new-password values differ, I see "Passwords don't match" on the confirm field and nothing
+      is saved
+      And while the new password is below the minimum strength, the strength meter shows the level and "Update
+      password" stays disabled until it reaches "Strong" or better (>= 12 chars, upper & lower, number, symbol)
+    status: 'active'
+  - id: 'AC-03'
+    description: |
+      Given 2FA is not enabled and I click "Enable authenticator app"
+      When Step 1 (generate) opens
+      Then a QR code is rendered CLIENT-SIDE as an SVG with no external request, a copyable manual-entry code is
+      shown, and a "I can't scan a QR code" toggle reveals the manual section
+      And the TOTP secret is never transmitted to any third-party image service
+    status: 'active'
+  - id: 'AC-04'
+    description: |
+      Given I have advanced to Step 2 (verify)
+      When I enter a correct 6-digit code and click "Verify"
+      Then Step 3 (complete) opens showing 10 backup codes in a grid with "Copy all" and "Print", a bold warning
+      "Store these somewhere safe — they won't be shown again", and a "Done" button that closes the flow and shows
+      "Authenticator app" as enabled in the 2FA section
+    status: 'active'
+  - id: 'AC-05'
+    description: |
+      Given I am on Step 2 of TOTP setup
+      When I enter an incorrect 6-digit code and click "Verify"
+      Then I see "Incorrect code — check your authenticator app and try again.", the field is cleared, and I remain
+      on Step 2 — 2FA cannot be enabled with an unverified secret
+    status: 'active'
+  - id: 'AC-06'
+    description: |
+      Given I completed TOTP setup and dismissed the backup-codes step
+      When I return to the Security page
+      Then the backup codes are not shown or recoverable anywhere in the UI, and there is no "Show backup codes"
+      or "Regenerate codes" control (regenerating requires re-doing setup)
+    status: 'active'
+  - id: 'AC-07'
+    description: |
+      Given 2FA is enabled and my organization has NOT enforced 2FA
+      When I click "Disable"
+      Then a confirmation warns "Are you sure you want to disable two-factor authentication? Your account will be
+      less secure." and on confirm 2FA is disabled and the enable CTA reappears
+      And when my organization HAS enforced 2FA (US-CW-040), the "Disable" control is not rendered and I instead
+      see "Required by your organization — contact your admin to change this."
+    status: 'active'
+  - id: 'AC-08'
+    description: |
+      Given I am on the "Active sessions" section
+      When it renders
+      Then one SessionCard appears per active session, sorted most-recently-active first, each showing a device-type
+      icon, browser, approximate city/country (never street-level), and last-active relative time
+      And the current session shows a "This device" badge and its "Sign out this device" button is DISABLED (rendered,
+      not absent) with a tooltip "You're currently using this session — use the main menu to sign out"
+    status: 'active'
+  - id: 'AC-09'
+    description: |
+      Given I see a SessionCard for another device
+      When I click "Sign out this device"
+      Then a confirmation "Sign out {browser} on {city}?" appears, and on confirm the card is removed, a "Device
+      signed out" toast appears, and that session is immediately invalidated server-side
+      And "Sign out all other devices" confirms "This will sign out N other devices. You'll stay signed in here.",
+      revokes every session except the current one, and leaves "No other active sessions"
+    status: 'active'
+  - id: 'AC-10'
+    description: |
+      Given I have a device in the "Trusted devices" section (marked "Remember this device" during a 2FA login and
+      thereby exempt from 2FA on later logins)
+      When I click "Remove" next to it
+      Then the device is removed from the trusted list and the next login from that device prompts for 2FA again
+    status: 'active'
+  - id: 'AC-11'
+    description: |
+      Given any security-sensitive action occurs (password changed, 2FA enabled/disabled, session revoked, trusted
+      device removed)
+      When it succeeds
+      Then an immutable audit event records the actor, action, timestamp, and before → after where applicable
+      (US-CW-021 / EPIC-CW-015), without ever recording the password, the TOTP secret, or backup codes
+    status: 'active'
+
+# Technical Notes
+technical_notes: |
+  TOTPSetupFlow (AC-03/04/05) is the design §19.2 XState v5 machine: generate → verify → complete, reusing the
+  project's existing XState v5 setup (payments/approvals). The QR is a client-rendered SVG (otpauth + qrcode
+  per the plan's Spike) so the secret never reaches a third-party image service — this is a hard requirement,
+  asserted by a test that no network request carries the secret. The machine cannot reach `complete` without a
+  server-verified correct OTP (AC-05); backup codes are generated at completion and shown exactly once
+  (AC-04/AC-06) — there is no re-reveal or regenerate affordance, matching the reveal-once secrets doctrine of
+  design §19.
+
+  Password change (AC-01/AC-02) hashes with the same PBKDF2-HMAC-SHA256 helper as US-CW-001. Deliberately does
+  NOT revoke other sessions (contrast with US-CW-003 password RESET, which does) — changing your password from
+  Security settings is not a compromise signal, so other sessions persist unless the user explicitly uses
+  session management. Strength meter + complexity gate mirror US-CW-001/US-CW-003 (>= 12 chars, mixed case,
+  number, symbol).
+
+  SessionCard (AC-08/AC-09) is design §19.4: most-recently-active first, city/country only (never street),
+  current session's sign-out DISABLED WITH A REASON (not omitted) so a user cannot accidentally revoke
+  themselves. Revoking another session invalidates it server-side immediately; "Sign out all other devices"
+  revokes all but current. Reuses the ConfirmationDialog organism.
+
+  Trusted devices (AC-10): a device flagged via "Remember this device" at a 2FA login is exempt from the 2FA
+  challenge on later logins; removing it re-arms the challenge for that device. This ties to the org 2FA
+  enforcement in US-CW-040 (AC-07's org-enforced branch) — hence the dependency.
+
+  Audit (AC-11) writes to the same AuditTrail as US-CW-021 (EPIC-CW-015). Secrets (password, TOTP secret,
+  backup codes) are never included in audit payloads.
+
+  All of TOTP validation, session storage, and trusted-device exemption are backed by the MSW mock service
+  layer — this is the frontend's responsibility surface, not a production identity provider.
+
+# Edge Cases
+edge_cases: |
+  - Wrong current password / mismatched new passwords / too-weak new password — specific inline errors, correct
+    fields preserved, submit gated (AC-02)
+  - Incorrect OTP at Step 2 — cannot complete setup; secret stays unverified (AC-05)
+  - Backup codes: user closes Step 3 without saving them — no way to recover; must re-run setup (AC-06)
+  - Org enforces 2FA — "Disable" is absent, replaced by the admin-contact message (AC-07, US-CW-040)
+  - Attempt to sign out the current session from its card — disabled with tooltip, never actionable (AC-08)
+  - Revoke a session that has already expired/been revoked concurrently — idempotent; the card is gone either
+    way, no error surfaced to the user
+  - Remove a trusted device currently in an active session — that session persists, but its next LOGIN re-prompts
+    for 2FA (AC-10)
+  - (inferred) Password change while other tabs hold the old session — those sessions remain valid (AC-01), by
+    design distinct from password reset
+  - (inferred) 2FA setup abandoned mid-flow (browser closed at Step 2) — no partial enablement; the unverified
+    secret is discarded, account stays 2FA-off
+
+# Implementation Status
+implementation_status: |
+  🚧 Not yet implemented — DRAFT authored 2026-07-17 (EPIC-CW-022), specs-only for review.
+  Source: specs/designs/Clearline Design System - Consolidated.dc.html §19.2 (TOTPSetupFlow · generate → verify →
+  complete, client-side QR, backup codes shown once) and §19.4 (SessionCard · active sessions, disabled
+  current-session sign-out), and Gherkin §19 (password management, TOTP enable/disable incl. org-enforced,
+  backup codes once, session management, trusted devices). Anticipated new surface: /settings/security page, a
+  TOTPSetupFlow XState machine + client-side QR renderer, SessionCard list, trusted-devices list, and a
+  password-change form reusing US-CW-001 hashing.

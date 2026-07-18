@@ -1,0 +1,157 @@
+# User Story Registry Record
+# User stories are the source of truth for what the application supports.
+# Epics declare changes to these records via their changes.adds/updates/deprecates/removes sections.
+
+# Identity
+id: 'US-CW-038'
+app: 'clearline-web'
+feature_area: 'core'
+title: 'Card Program Defaults & Connected Bank Accounts'
+
+# Lifecycle status
+status: 'DRAFT'
+story_points: 13
+dependencies: ['US-CW-033', 'US-CW-014', 'US-CW-016']
+
+# Provenance — immutable after creation
+created_by_epic: 'EPIC-CW-022'
+created_date: '2026-07-17'
+
+# Provenance history — append-only record of every epic that has touched this story
+history:
+  - epic_id: 'EPIC-CW-022'
+    action: 'created'
+    date: '2026-07-17'
+
+# Status timestamps — set when status transitions occur
+approved_date: null
+implementation_date: null
+deprecated_date: null
+removed_date: null
+
+# User Story
+user_story:
+  persona: 'Controller, Admin, or Owner of a Clearline Organization'
+  capability: 'set the default limits, MCC restrictions, and issuance policy applied to newly issued virtual cards, and connect / verify / remove the organization''s bank accounts via Plaid or manual micro-deposit verification'
+  business_value: 'New cards inherit sane program defaults without per-card setup, card-request rights are controlled, and the organization''s funding/reconciliation bank accounts are connected through the same trusted flows used elsewhere in the product'
+  description: |
+    As a Controller, Admin, or Owner
+    I want Card Program defaults and Connected Accounts management
+    So that newly issued cards start with the org's default monthly/per-transaction limits and MCC restrictions, only authorized roles can request cards, and bank accounts are linked via Plaid or verified manually — with removals that never disrupt in-flight payments
+
+# Acceptance Criteria
+acceptance_criteria:
+  - id: 'AC-01'
+    description: |
+      Given I am a Controller, Admin, or Owner on Settings → Card Program
+      When I set the default monthly limit to $2,000 and per-transaction limit to $500 and save
+      Then newly issued virtual cards start with these defaults, and a note reads "Existing cards are not
+      affected. You can customize limits per card after issuance."
+    status: 'active'
+  - id: 'AC-02'
+    description: |
+      Given I am on Card Program
+      When I select "Software & Cloud Services" and "Office Supplies" from the MCC restriction list and save
+      Then new cards are restricted to only those merchant categories by default, and the MCC list is searchable
+      by category name or MCC code
+    status: 'active'
+  - id: 'AC-03'
+    description: |
+      Given I am on Card Program
+      When I change "Who can request a new card" from "Everyone" to "Finance Managers and above" and save
+      Then Employees no longer see the "Request a card" action, and a Finance Manager or Controller must issue
+      cards on their behalf
+    status: 'active'
+  - id: 'AC-04'
+    description: |
+      Given I am on Settings → Connected Accounts
+      When I click "Connect account" and choose "Connect via Plaid"
+      Then the Plaid Link flow opens (matching the product's existing Plaid pattern), and on success the account
+      appears with institution name, masked account number, and a "Connected via Plaid" indicator
+    status: 'active'
+  - id: 'AC-05'
+    description: |
+      Given I choose "Enter account details manually"
+      When I submit a routing number and account number
+      Then two micro-deposits are sent within 1–2 business days and the account shows "Verification pending"
+      When I later enter the two micro-deposit amounts correctly
+      Then the account status becomes "Verified" and is available for ACH transfers
+    status: 'active'
+  - id: 'AC-06'
+    description: |
+      Given I am verifying a manually-connected account
+      When I enter incorrect micro-deposit amounts
+      Then I see "Those amounts don't match. Check your bank statement and try again.", and I have 3 attempts
+      before verification is locked and must be restarted
+    status: 'active'
+  - id: 'AC-07'
+    description: |
+      Given a connected bank account exists
+      When I click "Remove"
+      Then a confirmation names the account "Remove {Account Name} ••••1234? This account will no longer be
+      available for ACH transfers.", and on confirm the account is removed, no in-flight payments are affected,
+      and only future transfers are blocked
+    status: 'active'
+  - id: 'AC-08'
+    description: |
+      Given a Plaid-connected account shows "Reconnect needed" (ITEM_LOGIN_REQUIRED)
+      When I click "Reconnect"
+      Then Plaid Link opens in update mode, and after re-authentication the account status returns to "Connected"
+    status: 'active'
+  - id: 'AC-09'
+    description: |
+      Given I am an Employee
+      When I attempt to reach /settings/card-program or /settings/connected-accounts
+      Then the items are absent from SettingsNav, direct navigation shows AccessDenied, and the API returns 403
+      independently (US-CW-033 AC-02/AC-04)
+    status: 'active'
+  - id: 'AC-10'
+    description: |
+      Given any card-program or connected-account change is saved (defaults, MCC, issuance policy, connect,
+      verify, remove)
+      When it succeeds
+      Then an immutable audit event records actor, action, and before → after (US-CW-021 / EPIC-CW-015)
+    status: 'active'
+
+# Technical Notes
+technical_notes: |
+  Gated by `card-program:manage` and `bank-accounts:manage` (Controller | Admin | Owner) from the EPIC-CW-022 →
+  US-CW-006 update. Card Program defaults (AC-01/02/03) set the seed values consumed by virtual-card issuance
+  (US-CW-014) — issuance reads these defaults; existing cards are untouched (AC-01). The issuance-policy setting
+  (AC-03) gates the "Request a card" affordance in Card Management by role, filtered the same way as nav
+  permissions.
+
+  Connected Accounts (AC-04–AC-08) reuse the Plaid Link pattern already in the product for the reconciliation
+  bank feed (US-CW-016) — same Link component, sandbox credentials (user_good/pass_good) per the plan. Manual
+  micro-deposit verification is the standard two-deposit challenge with a 3-attempt lock (AC-06). Removal
+  (AC-07) uses the design §19.9 destructive-confirmation doctrine — the dialog names the exact account and
+  masks the account number — and must not disturb in-flight payments (only future transfers are blocked).
+  Reconnect (AC-08) opens Plaid Link in update mode on ITEM_LOGIN_REQUIRED.
+
+  All money values (card limits) are integer minor units. MCC restriction data reuses the card MCC model from
+  US-CW-014. Audit via AuditTrail (US-CW-021). Plaid, micro-deposits, and ACH availability are backed by the
+  MSW mock service layer.
+
+# Edge Cases
+edge_cases: |
+  - Default limits changed — only NEW cards inherit them; existing cards keep their configured limits (AC-01)
+  - MCC search by numeric code vs category name — both resolve (AC-02)
+  - Issuance policy tightened while an Employee has the request form open — the action disappears on next
+    render; a submitted request under the old policy is handled per US-CW-014 rules (AC-03)
+  - Micro-deposit amounts wrong 3× — verification locked; must restart the manual connection (AC-06)
+  - Remove an account with an in-flight ACH payment — payment proceeds; only future transfers blocked (AC-07)
+  - Plaid account needs reconnect — update-mode Link, status returns to Connected without re-adding (AC-08)
+  - Employee deep-links either page — absent from nav + AccessDenied + 403 (AC-09)
+  - (inferred) Attempt to remove the only verified funding account while transfers depend on it — allowed, but
+    future transfers surface "no funding account" until another is connected (no silent data loss)
+  - (inferred) Duplicate connection of the same bank account (same routing+masked account) — surfaced as
+    already-connected rather than creating a second entry
+
+# Implementation Status
+implementation_status: |
+  🚧 Not yet implemented — DRAFT authored 2026-07-17 (EPIC-CW-022), specs-only for review.
+  Source: specs/designs/Clearline Design System - Consolidated.dc.html §19.1 (Card Program + Connected Accounts
+  items) and Gherkin §22 (card program defaults — limits, MCC, issuance policy; connected accounts — Plaid link,
+  manual micro-deposit verification with 3-attempt lock, removal, Plaid reconnect). Anticipated new surface:
+  /settings/card-program (seeding US-CW-014 issuance) and /settings/connected-accounts (reusing the US-CW-016
+  Plaid Link + a manual micro-deposit flow).

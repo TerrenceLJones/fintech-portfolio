@@ -1,0 +1,172 @@
+# User Story Registry Record
+# User stories are the source of truth for what the application supports.
+# Epics declare changes to these records via their changes.adds/updates/deprecates/removes sections.
+
+# Identity
+id: 'US-CW-041'
+app: 'clearline-web'
+feature_area: 'core'
+title: 'Developer Settings — API Keys & Webhooks'
+
+# Lifecycle status
+status: 'DRAFT'
+story_points: 13
+dependencies: ['US-CW-033', 'US-CW-006']
+
+# Provenance — immutable after creation
+created_by_epic: 'EPIC-CW-022'
+created_date: '2026-07-17'
+
+# Provenance history — append-only record of every epic that has touched this story
+history:
+  - epic_id: 'EPIC-CW-022'
+    action: 'created'
+    date: '2026-07-17'
+
+# Status timestamps — set when status transitions occur
+approved_date: null
+implementation_date: null
+deprecated_date: null
+removed_date: null
+
+# User Story
+user_story:
+  persona: 'Admin or Owner of a Clearline Organization'
+  capability: 'create scoped API keys shown exactly once, revoke them, and configure webhook endpoints with a reveal-once signing secret, a delivery log, resend, and an HMAC verification reference'
+  business_value: 'Developers get least-privilege programmatic access with secrets that are never re-displayable, and a transparent webhook delivery surface with the exact means to verify authenticity — matching how production fintech developer settings behave'
+  description: |
+    As an Admin or Owner
+    I want Developer settings for API keys and webhooks
+    So that I can issue scope-limited keys revealed once at creation, revoke them permanently, register HTTPS webhook endpoints with a once-shown signing secret, watch deliveries succeed or fail, resend failures, and hand developers a copy-paste HMAC verification snippet
+
+# Acceptance Criteria
+acceptance_criteria:
+  - id: 'AC-01'
+    description: |
+      Given I am an Admin or Owner on Settings → Developer
+      When I click "Create new key", name it "Production — Read Only", select scopes read:transactions and
+      read:cards, and click "Create"
+      Then a reveal-once modal shows the full API key with a copy button and a bold warning "This is the only
+      time you'll see this key. Copy it now and store it securely.", and after dismissal the key appears in the
+      list masked as "sk_live_••••••••••••••ab3f"
+    status: 'active'
+  - id: 'AC-02'
+    description: |
+      Given an API key was created and its reveal-once modal dismissed
+      When I view the Developer page
+      Then only the masked key is shown, there is no "Reveal key" / "Show full key" control anywhere, and the
+      full key cannot be recovered — a lost key must be revoked and recreated
+    status: 'active'
+  - id: 'AC-03'
+    description: |
+      Given a read-only API key (scopes: read:transactions) is used in a request
+      When the request attempts an operation requiring write:transfers
+      Then the server returns HTTP 403 with a scope-specific message "This key does not have write:transfers
+      permission. Generate a new key with the required scope." — never a generic auth error
+    status: 'active'
+  - id: 'AC-04'
+    description: |
+      Given an active API key exists
+      When I click "Revoke" on its APIKeyCard
+      Then a confirmation names it "Revoke 'Production — Read Only'? Any system using this key will immediately
+      lose access.", and on confirm the key is revoked immediately, removed from the active list, and any
+      in-flight request using it returns 401
+    status: 'active'
+  - id: 'AC-05'
+    description: |
+      Given no API keys exist
+      When I view the Developer page
+      Then I see the empty state "No API keys yet. Create a key to access the Clearline API programmatically."
+      with a "Create new key" button
+    status: 'active'
+  - id: 'AC-06'
+    description: |
+      Given I am adding a webhook
+      When I enter a valid HTTPS endpoint URL and select events (transfer.completed, expense.approved,
+      card.transaction.declined) and click "Save"
+      Then a signing-secret reveal-once modal appears with the full secret, a copy button, and the warning "This
+      secret is shown once. Use it to verify that webhook events are from Clearline.", and after dismissal the
+      webhook appears with its URL, event count, and "Active" status
+    status: 'active'
+  - id: 'AC-07'
+    description: |
+      Given I am creating a webhook
+      When I enter an HTTP (non-HTTPS) URL
+      Then I see the inline validation error "Webhook endpoints must use HTTPS." and the webhook cannot be saved
+      until a valid HTTPS URL is provided
+    status: 'active'
+  - id: 'AC-08'
+    description: |
+      Given a webhook is configured
+      When a subscribed event fires
+      Then the delivery log records event type, HTTP status, timestamp, and response time
+      And a delivery that receives a non-2xx shows a red "500" status badge (icon + text, not color alone), a
+      "Resend" button, and the inline retry schedule "Clearline retries failed deliveries at 1m, 5m, 30m, 2h,
+      and 8h intervals."
+    status: 'active'
+  - id: 'AC-09'
+    description: |
+      Given a failed delivery entry exists
+      When I click "Resend"
+      Then Clearline immediately re-sends the same event payload and a new delivery log entry shows the resend
+      attempt and its status
+      And a reference HMAC-SHA256 verification snippet is shown so developers can verify Clearline signatures on
+      their end
+    status: 'active'
+  - id: 'AC-10'
+    description: |
+      Given I am an Employee, or a Controller who is not also Admin/Owner
+      When I attempt to reach /settings/developer
+      Then the item is absent from SettingsNav, direct navigation shows AccessDenied, and the API returns 403
+      independently (US-CW-033 AC-03/AC-04) — this is an Admin/Owner-only surface
+      And any key creation, revocation, webhook create/delete, or resend also emits an immutable audit event
+      (US-CW-021 / EPIC-CW-015), never recording the full key or signing secret
+    status: 'active'
+
+# Technical Notes
+technical_notes: |
+  Gated by `developer:manage` (Admin | Owner only) from the EPIC-CW-022 → US-CW-006 update. This surface is the
+  archetype for the design §19 reveal-once secrets doctrine: APIKeyCard (§19.3) and WebhookConfigForm (§19.5)
+  both show their secret exactly once in a reveal-once modal and store only a masked form thereafter — there is
+  NO re-reveal path anywhere (AC-02), and a lost secret is recovered only by revoke + recreate.
+
+  API-key scopes (AC-01/AC-03) are least-privilege tokens; a scope-insufficient request returns 403 with a
+  message naming the MISSING scope (never a generic auth error) — the developer-diagnosability requirement from
+  Gherkin §25. Revocation (AC-04) is immediate and permanent, confirmed with the §19.9 named-consequence dialog;
+  in-flight requests with a revoked key get 401.
+
+  Webhooks (AC-06–AC-09): endpoint URLs must be HTTPS (AC-07); the signing secret is reveal-once like API keys.
+  The delivery log shows per-attempt status/response-time; failures carry a Resend action and the documented
+  exponential-backoff retry schedule (1m/5m/30m/2h/8h). The HMAC-SHA256 verification snippet (design §19.5, the
+  Node example using createHmac('sha256', WEBHOOK_SIGNING_SECRET)) is a static reference so integrators can
+  verify authenticity — it is documentation, not executed by Clearline.
+
+  Delivery status badges are never color-only (AC-08), consistent with US-CW-020. Keys, secrets, deliveries,
+  and 403/401 scope enforcement are backed by the MSW mock service layer. Audit via AuditTrail (US-CW-021),
+  with secrets excluded from payloads (AC-10).
+
+# Edge Cases
+edge_cases: |
+  - Reveal-once modal dismissed without copying the key/secret — unrecoverable; must revoke + recreate (AC-02)
+  - Read-only key used for a write op — 403 naming the missing scope, not a generic auth error (AC-03)
+  - In-flight request with a just-revoked key — 401 (AC-04)
+  - Empty state with zero keys — friendly empty state + create CTA (AC-05)
+  - HTTP (non-HTTPS) webhook URL — inline validation blocks save (AC-07)
+  - Endpoint returns non-2xx or is unreachable — logged with status (or "Connection refused"), Resend offered,
+    auto-retry schedule shown (AC-08)
+  - Resend a delivery whose endpoint is still down — a new failed log entry is appended; the original remains
+    (AC-09)
+  - Controller (not Admin/Owner) deep-links /settings/developer — AccessDenied + 403 (AC-10)
+  - (inferred) Two admins revoke the same key concurrently — idempotent; the key is gone either way, no error
+    surfaced
+  - (inferred) A webhook subscribed to an event type that is later removed from the product — existing log
+    entries persist; no new deliveries for the retired event
+
+# Implementation Status
+implementation_status: |
+  🚧 Not yet implemented — DRAFT authored 2026-07-17 (EPIC-CW-022), specs-only for review.
+  Source: specs/designs/Clearline Design System - Consolidated.dc.html §19.3 (APIKeyCard · reveal-once key) and
+  §19.5 (WebhookConfigForm · delivery log & HMAC reference), and Gherkin §25 (API key create/reveal-once/mask/
+  scope-403/revoke/empty-state; webhook create/HTTPS-only/reveal-once secret/delivery log/resend/retry schedule).
+  Anticipated new surface: /settings/developer (Admin/Owner-only) with APIKeyCard, WebhookConfigForm, a
+  delivery-log table, and reveal-once modals, all backed by MSW scope-aware handlers.

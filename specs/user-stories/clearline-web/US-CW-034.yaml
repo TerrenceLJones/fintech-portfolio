@@ -1,0 +1,171 @@
+# User Story Registry Record
+# User stories are the source of truth for what the application supports.
+# Epics declare changes to these records via their changes.adds/updates/deprecates/removes sections.
+
+# Identity
+id: 'US-CW-034'
+app: 'clearline-web'
+feature_area: 'core'
+title: 'Personal Profile & Notification Preferences'
+
+# Lifecycle status
+status: 'DRAFT'
+story_points: 8
+dependencies: ['US-CW-033', 'US-CW-029', 'US-CW-003']
+
+# Provenance — immutable after creation
+created_by_epic: 'EPIC-CW-022'
+created_date: '2026-07-17'
+
+# Provenance history — append-only record of every epic that has touched this story
+history:
+  - epic_id: 'EPIC-CW-022'
+    action: 'created'
+    date: '2026-07-17'
+
+# Status timestamps — set when status transitions occur
+approved_date: null
+implementation_date: null
+deprecated_date: null
+removed_date: null
+
+# User Story
+user_story:
+  persona: 'Any authenticated Clearline user'
+  capability: 'update my personal profile (name, contact, job title, avatar), change my login email through a verified confirmation flow, and control which notifications I receive, on which channels, at what frequency'
+  business_value: 'I keep my own identity and contact details current without an administrator, my email can never be silently changed out from under me, and I control my own notification noise'
+  description: |
+    As any authenticated user
+    I want to manage my personal information, avatar, email (with verification), and notification preferences
+    So that my profile stays accurate, an email change is only applied after I confirm the new address, and I decide how and how often Clearline contacts me — with an unsaved-changes safety net on every edit
+
+# Acceptance Criteria
+acceptance_criteria:
+  - id: 'AC-01'
+    description: |
+      Given I am on Settings → Personal Info
+      When I edit my full name, phone number, and/or job title and click "Save changes"
+      Then the changes are persisted, a "Profile updated" success toast appears, and the unsaved-changes footer
+      bar disappears
+    status: 'active'
+  - id: 'AC-02'
+    description: |
+      Given I am on a settings form page
+      When I change any field without saving
+      Then a sticky "Save changes" / "Discard" footer bar appears and remains visible regardless of scroll
+      And "Discard" reverts every field to its last saved value and dismisses the footer
+      And attempting to navigate away with unsaved changes warns me before I lose them
+    status: 'active'
+  - id: 'AC-03'
+    description: |
+      Given I am on Personal Info
+      When I enter a new email address and click "Update email"
+      Then I see "We've sent a confirmation link to {new email}. Your email won't change until you confirm it."
+      And my current email continues to work for login until confirmation
+      And a "Pending: {new email}" indicator with a "Cancel change" option appears below the email field
+    status: 'active'
+  - id: 'AC-04'
+    description: |
+      Given a pending email change exists and its confirmation link has expired (after 24 hours) or I click a
+      link that was already used
+      When I open the link
+      Then I see "This link has expired. Request a new confirmation from your profile settings."
+      And the pending change is cleared and my current email remains unchanged
+    status: 'active'
+  - id: 'AC-05'
+    description: |
+      Given I am on Personal Info
+      When I upload a valid image (JPG, PNG, or WebP, >= 256x256px)
+      Then a crop/resize dialog opens, and after I confirm the crop the avatar updates in the settings page and
+      in the sidebar identity footer, replacing the previous avatar
+    status: 'active'
+  - id: 'AC-06'
+    description: |
+      Given I am uploading an avatar
+      When the file exceeds 5 MB
+      Then I see "This file is too large. Maximum size is 5 MB." before any upload is attempted
+      And when I have a photo set and click "Remove photo", a "Remove your profile photo?" confirmation appears
+      and on confirm the avatar reverts to my initials
+    status: 'active'
+  - id: 'AC-07'
+    description: |
+      Given I am on Settings → Notifications
+      When I toggle a channel (Email / In-App) on or off for a notification type
+      Then the preference is saved immediately with no explicit Save button (toggles are not part of the
+      unsaved-changes footer), and a subtle confirmation of the new state is shown
+    status: 'active'
+  - id: 'AC-08'
+    description: |
+      Given a notification type has at least one channel enabled and supports frequency
+      When I change its frequency selector (Instant / Daily Digest / Weekly Digest)
+      Then the preference is saved
+      And when I turn OFF all channels for a type, I see "You won't be notified about this" and the frequency
+      selector disappears (no frequency when no channels are active)
+    status: 'active'
+  - id: 'AC-09'
+    description: |
+      Given a bulk Notification Summary setting (e.g. "Weekly Digest") is applied
+      When I view the preference table
+      Then every frequency-supporting row reflects that setting as its current value, rows that don't support
+      frequency (e.g. "Security alerts") are unaffected, and I can still override individual rows afterward
+    status: 'active'
+  - id: 'AC-10'
+    description: |
+      Given I am any role
+      When I access Personal Info, Security, and Notifications
+      Then no special permission is required — every authenticated user manages their own profile — and these
+      three sections are always present in SettingsNav (US-CW-033 AC-01)
+    status: 'active'
+
+# Technical Notes
+technical_notes: |
+  Email-change verification (AC-03/AC-04) reuses the single-use, cryptographically-random, stored-hashed token
+  + async email dispatch established for US-CW-029 (email verification) and US-CW-003 (password reset). Expiry
+  is 24h (matching verification). The pending new email is held separately from the active login email; the
+  swap happens only on confirmation, so login continues to work against the old address until then (AC-03).
+  "Cancel change" invalidates the outstanding token. Enumeration-safety is not the concern here (the actor
+  already owns the account), but the confirmation-link mechanics are identical machinery — no new token code.
+
+  Unsaved-changes footer (AC-02) is a shared organism established by this story and reused by every other
+  form-bearing settings page (Company Profile, Approval Policies, Spend Controls, Card Program, etc.). It tracks
+  form dirtiness, offers Save/Discard, pins to the viewport bottom, and integrates a route-leave guard. Toggle
+  controls (notifications, AC-07) are deliberately OUTSIDE this pattern — they auto-save per-interaction.
+
+  Avatar (AC-05/AC-06): client-side crop/resize dialog; validate MIME (JPG/PNG/WebP), min dimension 256x256,
+  max size 5 MB BEFORE upload. On success the new avatar propagates to the SidebarFooter identity chip
+  (US-CW-032) — a single avatar source of truth. "Remove photo" falls back to the initials avatar the footer
+  already renders when no photo is set.
+
+  Notifications (AC-07/AC-08/AC-09) use the NotificationToggle row component (design: label + Email/In-App
+  channel toggles + frequency selector). Frequency is only meaningful when a channel is on; hide it when all
+  channels are off. The org-level Notification Summary bulk-apply (AC-09) writes each frequency-supporting
+  row's current value while leaving non-frequency rows (security alerts) untouched, and per-row overrides win.
+
+  No new RBAC permission (AC-10): the Profile group is universal. This is the story that also establishes the
+  reusable avatar-crop and unsaved-changes conventions for the epic.
+
+# Edge Cases
+edge_cases: |
+  - Navigate away with unsaved profile edits — leave-guard warns before discarding (AC-02)
+  - Email-change link opened after 24h, after use, or after "Cancel change" — expired/invalid screen, current
+    email unchanged (AC-04)
+  - New email equals current email — rejected with an inline message, no confirmation sent
+  - Avatar upload > 5 MB or wrong MIME — blocked before upload with a specific message (AC-06)
+  - Non-square avatar — crop dialog constrains to a square before save (AC-05)
+  - All channels toggled off for a type — "You won't be notified", frequency selector removed (AC-08)
+  - Bulk Notification Summary applied, then a single row overridden — override persists over the bulk value
+    (AC-09)
+  - (inferred) Two browser tabs editing Personal Info — last successful save wins; the stale tab's footer
+    reflects it lost on next interaction
+  - (inferred) Pending email change still open when the user initiates a second email change — the first
+    pending token is superseded/invalidated so only one pending address exists at a time
+
+# Implementation Status
+implementation_status: |
+  🚧 Not yet implemented — DRAFT authored 2026-07-17 (EPIC-CW-022), specs-only for review.
+  Source: specs/designs/Clearline Design System - Consolidated.dc.html §19 (Settings & Profile; NotificationToggle
+  in the component set) and Gherkin §18 (Profile & Personal Settings — personal info, unsaved-changes footer,
+  email change with verification and expiry, avatar upload/crop/remove, notification channel/frequency prefs,
+  notification summary override). Anticipated new surface: /settings/personal + /settings/notifications pages, a
+  reusable UnsavedChangesFooter + AvatarCropDialog, NotificationToggle rows, and an email-change confirmation
+  flow reusing US-CW-029/US-CW-003 token machinery.

@@ -1,0 +1,162 @@
+# User Story Registry Record
+# User stories are the source of truth for what the application supports.
+# Epics declare changes to these records via their changes.adds/updates/deprecates/removes sections.
+
+# Identity
+id: 'US-CW-033'
+app: 'clearline-web'
+feature_area: 'core'
+title: 'Settings Shell & Role-Scoped SettingsNav'
+
+# Lifecycle status
+status: 'DRAFT'
+story_points: 8
+dependencies: ['US-CW-006', 'US-CW-028', 'US-CW-032', 'US-CW-031']
+
+# Provenance — immutable after creation
+created_by_epic: 'EPIC-CW-022'
+created_date: '2026-07-17'
+
+# Provenance history — append-only record of every epic that has touched this story
+history:
+  - epic_id: 'EPIC-CW-022'
+    action: 'created'
+    date: '2026-07-17'
+
+# Status timestamps — set when status transitions occur
+approved_date: null
+implementation_date: null
+deprecated_date: null
+removed_date: null
+
+# User Story
+user_story:
+  persona: 'Any authenticated Clearline user (Employee, Finance Manager, Controller; optionally Admin/Owner)'
+  capability: 'reach a dedicated /settings area with a two-tier sidebar (Profile group + Organization group) that shows only the sections my role and admin/owner status permit, and navigate between sections without losing my place'
+  business_value: 'Everyone can manage their own account, org administrators get every organization control in one predictable place, and no one is shown — or can reach — a settings surface they are not authorized for'
+  description: |
+    As any authenticated Clearline user
+    I want a /settings area with a role-scoped two-tier SettingsNav and a stable content layout
+    So that the Profile group is always available to me, the Organization group appears only if I am a Controller, Admin, or Owner (never merely disabled or locked), and directly typing an unauthorized settings URL is refused by both the UI and the API
+
+# Acceptance Criteria
+acceptance_criteria:
+  - id: 'AC-01'
+    description: |
+      Given I am any authenticated user
+      When I open Settings from the sidebar
+      Then I land on /settings with a two-tier SettingsNav rendered inside the persistent AppShell (US-CW-032)
+      And the Profile group is always present with: Personal Info, Security, Notifications
+      And the default section is Personal Info
+    status: 'active'
+  - id: 'AC-02'
+    description: |
+      Given I am an Employee (no org-settings permission and not Admin/Owner)
+      When I view SettingsNav
+      Then the Organization group is NOT RENDERED at all — it is absent, not shown disabled or locked
+      And only the Profile group is visible
+    status: 'active'
+  - id: 'AC-03'
+    description: |
+      Given I am a Controller, Admin, or Owner
+      When I view SettingsNav
+      Then the Organization group renders beneath the Profile group with only the items my permissions grant:
+        Company Profile, Team & Members (team:view), Approval Policies, Spend Controls, Card Program,
+        Connected Accounts, Integrations, Notifications (org), Security & Compliance, Developer, Billing & Plan
+      And Admin/Owner-only items (Security & Compliance, Developer, Billing & Plan) are hidden from a Controller
+      who is not also an Admin or Owner
+    status: 'active'
+  - id: 'AC-04'
+    description: |
+      Given I am an Employee
+      When I navigate directly to any Organization-group URL (e.g. /settings/billing, /settings/developer,
+      /settings/approval-policies)
+      Then I am shown the AccessDenied screen ("You don't have access to this. Ask an admin if you need it.")
+      And the underlying settings API independently returns 403 regardless of how I reached the route
+    status: 'active'
+  - id: 'AC-05'
+    description: |
+      Given I am on a settings section
+      When I select a different section in SettingsNav
+      Then the content region swaps to that section without a full-page reload
+      And the active item is styled with the design's accent treatment (accent-weak background + accent-text)
+      and carries aria-current="page"
+      And the browser URL updates to a deep-linkable /settings/{section} path
+    status: 'active'
+  - id: 'AC-06'
+    description: |
+      Given my role or admin status changes mid-session while I am on a settings page (US-CW-006 AC-05)
+      When my next request resolves
+      Then a section I no longer have permission for is removed from SettingsNav, and if I was viewing it I see the
+      "Your access changed" banner and am moved to a section I still hold (or to Personal Info)
+      And no hard crash occurs
+    status: 'active'
+  - id: 'AC-07'
+    description: |
+      Given I open Settings on a narrow viewport
+      When SettingsNav cannot sit beside the content
+      Then the section list collapses to an accessible menu/drawer (consistent with the app-shell off-canvas
+      pattern, US-CW-032) and the current section remains reachable and labeled
+    status: 'active'
+  - id: 'AC-08'
+    description: |
+      Given SettingsNav renders
+      When navigated by keyboard or screen reader
+      Then the two groups expose accessible group labels ("Profile", "Organization"), each item is a focusable
+      link with a visible >= 3px focus ring, and the active section is announced via aria-current
+    status: 'active'
+
+# Technical Notes
+technical_notes: |
+  SettingsNav is the design §19.1 two-tier, role-scoped sidebar. It is driven by the same permission-filtered
+  approach as the primary NavigationShell (apps/clearline-web/src/rbac/nav-items.ts): a static SETTINGS_SECTIONS
+  list, each row carrying an optional `permission` token, filtered through useAuthorization().can before render
+  — an item with no permission (the three Profile items) always renders, an item with a permission renders only
+  when granted. This makes "not rendered for Employees" fall out of the filter, exactly matching the "client
+  hides, server decides" model, rather than a special-cased disabled state.
+
+  New permission tokens (added to the `Permission` union in @clearline/contracts and granted by
+  permissionsForRole via the EPIC-CW-022 → US-CW-006 update): `org-profile:manage`, `policies:manage`,
+  `card-program:manage`, `bank-accounts:manage`, `integrations:manage` (Controller | Admin | Owner) and
+  `org-security:manage`, `developer:manage`, `billing:manage` (Admin | Owner only). The Organization group
+  header renders iff the user holds ANY org-scoped permission. `team:view` (isOwner OR isAdmin, from US-CW-031)
+  is reused unchanged for Team & Members; that section's page is owned by US-CW-031, this story only lists it.
+
+  Routing: /settings with nested routes /settings/personal, /settings/security, /settings/notifications,
+  /settings/company, /settings/team (US-CW-031), /settings/approval-policies, /settings/spend-controls,
+  /settings/card-program, /settings/connected-accounts, /settings/integrations, /settings/org-notifications,
+  /settings/security-compliance, /settings/developer, /settings/billing. Each Organization route is wrapped in
+  a RequirePermission guard (US-CW-006) that renders AccessDenied on failure; the matching MSW/API handler
+  re-checks permissionsForRole and returns 403 independently (AC-04), mirroring the approvals handler.
+
+  The shell mounts inside the persistent AppShell/sidebar from US-CW-032 (the settings entry point is added to
+  the primary sidebar per the EPIC-CW-022 → US-CW-028 update). SettingsNav is the SECONDARY nav within the
+  content region; it must not duplicate the primary rail. Active styling + aria-current reuse the treatment
+  established for NavigationShell in US-CW-032.
+
+  Mid-session change (AC-06) reuses the useAccessChanged hook + "Your access changed" banner from US-CW-006
+  AC-05; the SettingsNav filter re-runs on the new permission set so a now-forbidden section simply disappears.
+
+# Edge Cases
+edge_cases: |
+  - Employee deep-links to /settings/billing (or any org route) — AccessDenied UI + independent 403 (AC-04)
+  - Controller (not Admin/Owner) deep-links to /settings/developer or /settings/billing — AccessDenied + 403,
+    because those are Admin/Owner-only even within the org group (AC-03/AC-04)
+  - Role downgraded from Controller to Employee while viewing an org section — section vanishes from nav, banner
+    shown, moved to Personal Info, no crash (AC-06)
+  - Owner who is not otherwise an Admin — still sees the full org group incl. Admin/Owner-only items (owner
+    supersedes, per US-CW-030/US-CW-031 gating)
+  - Unknown /settings/{section} slug — routed to a not-found within the settings shell, not a blank content
+    region
+  - Narrow viewport — SettingsNav collapses to a drawer/menu; current section still labeled and reachable (AC-07)
+  - (inferred) A Team & Members item is shown by SettingsNav but its page/logic belongs to US-CW-031 — this
+    story must not re-implement team management, only route to it
+
+# Implementation Status
+implementation_status: |
+  🚧 Not yet implemented — DRAFT authored 2026-07-17 (EPIC-CW-022), specs-only for review.
+  Source: specs/designs/Clearline Design System - Consolidated.dc.html §19.1 (SettingsNav · role-scoped two-tier
+  sidebar; Employee "Profile only" vs Admin/Controller "Profile + Org" views) and Gherkin §20 (Employee cannot
+  see Organization settings; direct nav to an Organization URL returns 403). Anticipated new surface: a
+  SettingsNav organism in @clearline/ui, a /settings route tree with RequirePermission-guarded Organization
+  routes, the settings permission tokens in @clearline/contracts, and MSW handlers that re-check authorization.

@@ -6,130 +6,99 @@
 id: 'US-CW-030'
 app: 'clearline-web'
 feature_area: 'core'
-title: 'Account Owner Provisioning at KYB Approval'
+title: 'Organization Provisioning & Owner Role Assignment'
 
 # Lifecycle status
-status: 'IMPLEMENTED'
-story_points: 3
-dependencies: ['US-CW-004', 'US-CW-006', 'US-CW-029']
+status: 'APPROVED'
+story_points: 5
+dependencies: ['US-CW-004']
 
 # Provenance — immutable after creation
-created_by_epic: 'EPIC-CW-019'
-created_date: '2026-07-07'
+created_by_epic: 'EPIC-CW-017'
+created_date: '2026-07-06'
 
 # Provenance history — append-only record of every epic that has touched this story
 history:
-  - epic_id: 'EPIC-CW-019'
+  - epic_id: 'EPIC-CW-017'
     action: 'created'
-    date: '2026-07-07'
-  - epic_id: 'EPIC-CW-019'
+    date: '2026-07-06'
+  - epic_id: 'EPIC-CW-017'
     action: 'approved'
-    date: '2026-07-07'
-  - epic_id: 'EPIC-CW-019'
-    action: 'implemented'
-    date: '2026-07-07'
+    date: '2026-07-06'
 
 # Status timestamps — set when status transitions occur
-approved_date: '2026-07-07'
-implementation_date: '2026-07-07'
+approved_date: '2026-07-06'
+implementation_date: null
 deprecated_date: null
 removed_date: null
 
 # User Story
 user_story:
-  persona: 'business owner who has just completed KYB verification for my company'
-  capability: "be provisioned as my account's Owner the moment my business is approved — given the top approval tier and an Owner flag — so that I hold full financial authority over the account I created"
-  business_value: 'The account is unambiguously mine from the moment verification clears: I get Controller-level authority instead of being left as a default employee, and my ownership is recorded as a first-class, protected attribute rather than an afterthought'
+  persona: 'business owner whose KYB onboarding has just been approved'
+  capability: 'have an Organization record created for my business the moment onboarding is approved, with myself assigned as its Owner — the one role with non-removable, non-self-demotable authority over the org'
+  business_value: 'my business has a durable account entity distinct from my own login, with clear, defensible authority over who can join it and what they can do, from the moment my business is verified'
   description: |
-    As a business owner who has just completed KYB verification
-    I want to be elevated to Owner (Controller approval tier plus an Owner flag) atomically when my business is approved
-    So that I own and can fully operate the account I created, rather than being stranded with the default employee permissions the sign-up flow assigns
+    As a business owner whose KYB onboarding has just been approved
+    I want an Organization record to be created for my business, with myself assigned the Owner role on it
+    So that my business has a real account entity with an accountable controlling person, ready to have teammates added to it, consistent with the beneficial-ownership identity I already verified during onboarding
 
 # Acceptance Criteria
 acceptance_criteria:
   - id: 'AC-01'
     description: |
-      Given I am the account creator and my KYB review reaches an approved outcome (US-CW-004 AC-08)
-      When my business is approved
-      Then I am provisioned as the account's Owner atomically with that approval
-      And there is never an approved business whose creator is left without Owner status
+      Given my onboarding review completes successfully (US-CW-004 AC-08)
+      When full transacting capability is unlocked
+      Then an Organization record is created, keyed to the business I onboarded (its legal name and EIN)
+      And I am assigned the Owner role on that Organization
+      And this happens atomically with the approval — no state exists where the business is approved but has no Organization or no Owner
     status: 'active'
   - id: 'AC-02'
     description: |
-      Given I am provisioned as Owner at approval
-      When my membership is set
-      Then my approval tier is Controller (the top of the Employee -> Finance Manager -> Controller ladder, with no approval limit)
-      And I am flagged as the Owner (isOwner), an attribute orthogonal to the approval ladder and to the Admin flag
+      Given I am the Owner of an Organization
+      Then I hold every capability Controller holds (US-CW-006), plus exclusive organization-administration authority: inviting teammates, assigning or changing roles, and removing members (US-CW-031)
     status: 'active'
   - id: 'AC-03'
     description: |
-      Given ownership is provisioned at approval
-      When the account exists
-      Then exactly one Owner is established, and no path in this story creates a second Owner or clears an Owner's flag
-      And the Owner is designated non-removable and non-demotable — the enforcement of that designation against removal and role-change actions is realized when team management ships (US-CW-031)
+      Given I am the Owner of an Organization
+      Then I cannot be removed from the organization by anyone, including another Admin
+      And I cannot demote myself out of the Owner role
+      And no capability in this story or US-CW-031 offers an action that would leave the Organization without an Owner
+    status: 'active'
+  - id: 'AC-04'
+    description: |
+      Given an Organization already exists for a given EIN
+      When onboarding for that same EIN reaches the approval step a second time
+      Then no second Organization is created
+      And this case is prevented upstream by US-CW-004 AC-07's duplicate-EIN check, before onboarding ever reaches approval
     status: 'active'
 
 # Technical Notes
 technical_notes: |
-  This is the minimal slice that resolves the RBAC/KYB interaction left open by EPIC-CW-002 (onboarding) and
-  EPIC-CW-003 (RBAC): onboarding is a business-level concern and RBAC is a per-person concern, and the two meet
-  exactly once — at approval, when the creator becomes the Owner. Deliberately scoped to owner provisioning
-  only; the invite flow, the team-management surface, the distinct Organization entity, and everything that
-  depends on non-creator members are all deferred to EPIC-CW-018 (US-CW-031).
+  No Organization/Org/Tenant type exists anywhere in the codebase today — this story introduces it.
+  The nearest existing entity is the onboarding domain's business record (libs/contracts/src/onboarding.ts:
+  BusinessInfo, OnboardingStatusResponse.businessId), which is a distinct, unconnected concept from the
+  auth domain's SeedUser (libs/mock-backend/src/fixtures/users.fixture.ts: { id, email, passwordHash,
+  verified } — no role or orgId field). This story's Organization record should key off the same
+  businessId onboarding already produces, rather than minting a new identifier space, and should extend
+  SeedUser (or its persistence wrapper) with an orgId and a role field rather than duplicating identity
+  data. AuthService currently has no concept of role at all; this is the first story to add one.
 
-  Gap this closes: today AuthService seeds every signed-up account as role 'employee', approvalLimit null,
-  isAdmin false (auth.service.ts signUp), and the onboarding flow never touches the role — so a real business
-  owner who signs up and completes KYB is left as a plain 'employee' with only expenses:view + cards:view. The
-  seeded demo user masks this by being pre-seeded as finance_manager. AC-01/AC-02 fix it.
+  Atomicity matters here specifically because approval (US-CW-004 AC-08) and Organization/Owner creation
+  are two separate writes against the mock backend's in-memory store — they must be committed as a single
+  transition (or the approval step itself must not be considered complete until both succeed) so a partial
+  failure can never leave an approved business with no accountable Owner. This is the same "no dangling
+  state" concern EPIC-CW-016's enumeration-safety work already applied to sign-up.
 
-  Provisioning hook (AC-01/AC-02): the approval branch in OnboardingService — the same one that emits the
-  US-CW-004 AC-08 approval NotificationEvent — calls the existing setUserRole seam (auth.service.ts) to set the
-  creator to { role: 'controller', approvalLimit: null, isOwner: true }. Sign-up keeps its 'employee' default;
-  the elevation happens only at approval and only for the creator, tying top authority to "you proved you own
-  this business."
-
-  New orthogonal flag (AC-02): `isOwner: boolean` rides on the session exactly like `isAdmin` already does
-  (SessionResponse in libs/contracts/src/session.ts; add alongside isAdmin in rbac.ts if the session shape is
-  typed there), and is surfaced through useAuthorization() so the app can read it. Like isAdmin it is NOT a
-  fourth role in the Role union. In THIS story isOwner grants no new permissions and renders no new UI — the
-  `team:view`/team-management consequences of ownership are deferred to EPIC-CW-018, which has the actual team
-  surface to gate. Adding the flag now (unused by UI) keeps the contract and the provisioning correct without
-  shipping a nav item that points at a page that doesn't exist yet.
-
-  Owner singleton (AC-03): provisioning creates exactly one Owner; there is no self-clear or transfer path in
-  this story. The non-removable / non-demotable ENFORCEMENT lives with the removal and role-change actions,
-  which don't exist until US-CW-031 — so this story only establishes the invariant, and US-CW-031 AC-06/AC-07
-  enforce it. Ownership TRANSFER remains out of scope across both stories (a future epic must add it before an
-  Owner can ever leave an account).
-
-  RequireOnboarded is intentionally NOT changed by this story: with no invited members yet, every user is a
-  creator who still flows through onboarding exactly as today. The invited-member onboarding bypass is a
-  US-CW-031 concern.
+  Owner's non-removability (AC-03) has no ownership-transfer escape hatch in this story or US-CW-031 —
+  deliberately deferred as a follow-up, flagged in US-CW-031's technical_notes, since nothing in the
+  current registry exercises a scenario requiring one (e.g. the original Owner leaving the company).
 
 # Edge Cases
 edge_cases: |
-  - KYB approval fires but the owner-elevation step fails — must be atomic with approval, never an approved
-    business whose creator is still a default employee (AC-01)
-  - The creator's role was manually changed between sign-up and approval — the approval elevation to
-    Controller + Owner is authoritative and still yields exactly one Owner (AC-02/AC-03)
-  - (deferred, flagged) Removal or demotion targeting the Owner — no such path exists in this story; enforced
-    in US-CW-031 (AC-03)
-  - (out of scope, flagged) Ownership transfer / Owner offboarding — no mechanism in either story; a future
-    epic must add transfer before an Owner can leave an account
+  - Onboarding approval succeeding but Organization/Owner creation failing partway through, which must not be reachable as a persisted state
+  - A second onboarding attempt for a business whose EIN already has an approved Organization (prevented upstream by US-CW-004 AC-07, not by this story)
+  - (inferred) Any future action attempting to remove the Owner or leave an Organization Owner-less must be rejected at the data-access layer, not merely hidden in the UI
 
 # Implementation Status
 implementation_status: |
-  ✅ Implemented 2026-07-07 (EPIC-CW-019).
-  - AC-01: the creator is elevated to Owner atomically on the KYB-approval transition. The mock-backend
-    OnboardingService fires owner elevation as a one-time side effect only on the finalizing approval
-    (finalizedNow), idempotent on any re-submission, so there is never an approved business whose creator
-    is left a default employee.
-  - AC-02: elevation applies ownerProvisioning() → { role: 'controller', approvalLimit: null, isOwner: true }
-    (@clearline/domain-auth) via authService.setUserRole; the orthogonal isOwner flag rides the session
-    (libs/contracts/src/session.ts), is plumbed through auth.service + session handler, and is surfaced by
-    useAuthorization(). isOwner is not a role in the Role union and grants no permissions/UI in this slice.
-  - AC-03: provisioning establishes exactly one Owner with no self-clear/transfer path here; non-removable /
-    non-demotable enforcement is deferred to US-CW-031 (EPIC-CW-018).
-  Covered by owner-provisioning-policy.test.ts and onboarding.handlers.test.ts (post-approval session asserts
-  role 'controller', approvalLimit null, isOwner true). The invite/team-management half (US-CW-031) remains in
-  EPIC-CW-018. Source: specs/designs/Clearline Design System - Consolidated.dc.html §18 — provisioning half only.
+  Not yet implemented. This story is APPROVED and ready for implementation planning — no application code exists yet.

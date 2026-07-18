@@ -1,0 +1,165 @@
+# User Story Registry Record
+# User stories are the source of truth for what the application supports.
+# Epics declare changes to these records via their changes.adds/updates/deprecates/removes sections.
+
+# Identity
+id: 'US-CW-040'
+app: 'clearline-web'
+feature_area: 'core'
+title: 'Organization Security & Compliance'
+
+# Lifecycle status
+status: 'DRAFT'
+story_points: 13
+dependencies: ['US-CW-033', 'US-CW-002', 'US-CW-035']
+
+# Provenance — immutable after creation
+created_by_epic: 'EPIC-CW-022'
+created_date: '2026-07-17'
+
+# Provenance history — append-only record of every epic that has touched this story
+history:
+  - epic_id: 'EPIC-CW-022'
+    action: 'created'
+    date: '2026-07-17'
+
+# Status timestamps — set when status transitions occur
+approved_date: null
+implementation_date: null
+deprecated_date: null
+removed_date: null
+
+# User Story
+user_story:
+  persona: 'Admin or Owner of a Clearline Organization'
+  capability: 'configure organization-wide security controls: SSO/SAML single sign-on, mandatory 2FA for all members, the idle session-timeout duration, and an IP allowlist — each with guardrails that prevent locking the organization or the acting admin out'
+  business_value: 'The organization can enforce its security posture centrally, but every high-blast-radius control (SSO cutover, forced 2FA, IP allowlist) is gated behind explicit confirmation and self-lockout protection'
+  description: |
+    As an Admin or Owner
+    I want an organization Security & Compliance page
+    So that I can set up and enable SSO only after a passing connection test, require 2FA org-wide (gating members who haven't set it up), change the org idle-timeout, and manage an IP allowlist that refuses to lock out my own current IP
+
+# Acceptance Criteria
+acceptance_criteria:
+  - id: 'AC-01'
+    description: |
+      Given I am an Admin or Owner on Settings → Security & Compliance
+      When I enter the SAML metadata URL, entity ID, and upload the IdP certificate and click "Test connection"
+      Then Clearline attempts a SAML handshake and I see "Connection successful" if it passes
+      And if it fails I see the specific reason (e.g. "Certificate validation failed" or "Metadata URL
+      unreachable") and the "Enable" toggle stays unavailable until a test passes
+    status: 'active'
+  - id: 'AC-02'
+    description: |
+      Given SSO configuration is saved and the connection test has passed
+      When I toggle SSO "Enabled"
+      Then a confirmation warns "Enabling SSO will redirect all members to your identity provider for login.
+      Password-based login will be disabled for all members except emergency admin accounts.", and on confirm
+      SSO is enabled and members visiting the login page are redirected to the IdP
+    status: 'active'
+  - id: 'AC-03'
+    description: |
+      Given I am an Admin or Owner
+      When I toggle "Require 2FA for all members" ON
+      Then a confirmation explains "Members without 2FA will be prompted to set it up on their next login. They
+      cannot access Clearline until 2FA is configured.", and on confirm unenrolled members hit a 2FA setup gate
+      on their next login
+    status: 'active'
+  - id: 'AC-04'
+    description: |
+      Given the org has enabled required 2FA
+      When a member who has not set up 2FA completes password authentication
+      Then they are immediately redirected into the TOTP setup flow (US-CW-035) before any other screen and
+      cannot access any Clearline page until setup is complete
+    status: 'active'
+  - id: 'AC-05'
+    description: |
+      Given I am on Security & Compliance
+      When I change the idle session timeout from "15 minutes" to "1 hour" and save
+      Then every member's auto-logoff timer uses 1 hour of inactivity, and the per-user inactivity auto-logoff
+      (US-CW-002) reads this org-configured value
+    status: 'active'
+  - id: 'AC-06'
+    description: |
+      Given I am on Security & Compliance
+      When I enter a CIDR range (e.g. "203.0.113.0/24") in the IP allowlist and click "Add"
+      Then the range is added and a "Test my current IP" button shows whether my current IP falls within any
+      allowlisted range
+    status: 'active'
+  - id: 'AC-07'
+    description: |
+      Given I am adding an IP allowlist rule
+      When the resulting allowlist would exclude my current IP address
+      Then before saving I see "Your current IP address (203.0.113.42) is not in any allowlisted range. Saving
+      this would lock you out of Clearline. Add your IP before saving.", and saving is blocked until my current
+      IP is added or the allowlist is cleared
+    status: 'active'
+  - id: 'AC-08'
+    description: |
+      Given an IP range is in the allowlist
+      When I click "Remove" next to it
+      Then a confirmation "Remove 203.0.113.0/24 from the IP allowlist?" appears, and on confirm the range is
+      removed and members previously excluded by it can access Clearline from those IPs again
+    status: 'active'
+  - id: 'AC-09'
+    description: |
+      Given I am an Employee, or a Controller who is not also Admin/Owner
+      When I attempt to reach /settings/security-compliance
+      Then the item is absent from SettingsNav, direct navigation shows AccessDenied, and the API returns 403
+      independently (US-CW-033 AC-03/AC-04) — this is an Admin/Owner-only surface
+    status: 'active'
+  - id: 'AC-10'
+    description: |
+      Given any org security change occurs (SSO config/enable, 2FA enforcement, timeout change, allowlist add/
+      remove)
+      When it succeeds
+      Then an immutable audit event records actor, action, and before → after (US-CW-021 / EPIC-CW-015), never
+      storing the uploaded IdP private material beyond what is needed to verify the handshake
+    status: 'active'
+
+# Technical Notes
+technical_notes: |
+  Gated by `org-security:manage` (Admin | Owner only) from the EPIC-CW-022 → US-CW-006 update — this is one of
+  the three Admin/Owner-only org surfaces (with Developer and Billing), hidden even from a bare Controller
+  (AC-09). Reuses the ConfirmationDialog organism for every consequential toggle.
+
+  SSO (AC-01/AC-02): the Enable toggle is inert until a connection test passes — the test gates the cutover.
+  Enabling SSO disables password login for all but emergency admin accounts; the confirmation spells this out.
+  2FA enforcement (AC-03/AC-04) drives the org-enforced branch of US-CW-035 AC-07 (no self-disable) and injects
+  a setup gate into login for unenrolled members, reusing the US-CW-035 TOTPSetupFlow.
+
+  Org idle-timeout (AC-05) is the single source for the per-user inactivity auto-logoff in US-CW-002 — the
+  session-lifecycle timer reads this org value rather than a hardcoded 15 minutes. IP allowlist (AC-06–AC-08)
+  operates on CIDR ranges with a self-lockout guard (AC-07): a save that would exclude the acting admin's
+  current IP is blocked with the specific IP named — the highest-blast-radius guardrail on the page. Removal is
+  confirmed and named (§19.9 doctrine).
+
+  SSO handshakes, TOTP validation, session timers, and IP evaluation are all backed by the MSW mock service
+  layer — the frontend models the configuration surface and its guardrails, not a production SAML broker.
+  Audit via AuditTrail (US-CW-021); uploaded IdP certificate material is handled as a secret and not echoed
+  into audit payloads.
+
+# Edge Cases
+edge_cases: |
+  - SSO test fails (bad cert, unreachable metadata) — specific reason shown; Enable stays unavailable (AC-01)
+  - SSO enabled — all members redirected to IdP; emergency admin accounts retain password login (AC-02)
+  - 2FA enforced while a member is mid-session without 2FA — gated into TOTP setup on their NEXT login, not
+    mid-session forcibly (AC-04)
+  - IP allowlist save that would exclude the acting admin's current IP — blocked with the named-IP warning
+    (AC-07)
+  - Remove the last allowlisted range — allowlist becomes empty (all IPs allowed again), confirmed (AC-08)
+  - Controller (not Admin/Owner) deep-links the page — AccessDenied + 403, because this is Admin/Owner-only
+    (AC-09)
+  - (inferred) Timeout lowered dramatically (e.g. to a few minutes) — applies from members' next timer reset;
+    active users are not retroactively logged off mid-action
+  - (inferred) SSO enabled AND 2FA enforced together — SSO members satisfy MFA via the IdP; Clearline's own 2FA
+    gate applies to any non-SSO/emergency accounts
+
+# Implementation Status
+implementation_status: |
+  🚧 Not yet implemented — DRAFT authored 2026-07-17 (EPIC-CW-022), specs-only for review.
+  Source: specs/designs/Clearline Design System - Consolidated.dc.html §19 (Settings & Profile; the org 2FA-
+  enforcement note under §19.2) and Gherkin §24 (SSO/SAML config + test + enable, org-wide 2FA enforcement and
+  the member setup gate, org session timeout, IP allowlist with self-lockout protection). Anticipated new
+  surface: /settings/security-compliance (Admin/Owner-only) wiring the org 2FA flag into US-CW-035 and the org
+  timeout into US-CW-002, all backed by MSW.

@@ -9,7 +9,7 @@ feature_area: 'core'
 title: 'Business Onboarding Flow'
 
 # Lifecycle status
-status: 'IMPLEMENTED'
+status: 'APPROVED'
 story_points: 8
 dependencies: []
 
@@ -25,13 +25,13 @@ history:
   - epic_id: 'EPIC-CW-002'
     action: 'approved'
     date: '2026-06-30'
-  - epic_id: 'EPIC-CW-002'
+  - epic_id: 'EPIC-CW-017'
     action: 'updated'
-    date: '2026-07-07'
+    date: '2026-07-06'
 
 # Status timestamps — set when status transitions occur
 approved_date: '2026-06-30'
-implementation_date: '2026-07-06'
+implementation_date: null
 deprecated_date: null
 removed_date: null
 
@@ -83,7 +83,7 @@ acceptance_criteria:
       Given I am on the Beneficial Owners step
       When I add an owner with 25% or greater ownership
       Then that owner is flagged as requiring individual identity verification (KYC)
-      And I must provide their first name, last name, date of birth, and SSN/ITIN
+      And I must provide their name, date of birth, and SSN/ITIN
     status: 'active'
   - id: 'AC-06'
     description: |
@@ -96,44 +96,31 @@ acceptance_criteria:
     description: |
       Given a business with the same EIN already has a Clearline account
       When I attempt to onboard that same business
+      And I am the Owner of that existing account
       Then I see "It looks like your business already has an account. Sign in instead."
       And a "Sign in" call to action is shown
     status: 'active'
   - id: 'AC-08'
+    description: |
+      Given a business with the same EIN already has a Clearline account
+      When I attempt to onboard that same business
+      And I am not the Owner of that existing account (I have no Clearline credentials of my own)
+      Then I see "Your business already has a Clearline account. Ask your organization's admin to invite you."
+      And no "Sign in" call to action is shown, since I have no account to sign in with
+      And no second Organization or duplicate onboarding record is created
+    status: 'active'
+  - id: 'AC-09'
     description: |
       Given all verification steps pass
       When the review is completed
       Then I receive an email and in-app notification "Your account is approved"
       And full transacting capability (payments, card issuance) is unlocked
     status: 'active'
-  - id: 'AC-09'
-    description: |
-      Given I have created a Clearline account and have not yet completed onboarding
-      When I navigate directly to the dashboard or any other main application page
-      Then I am redirected to my current step in the KYB onboarding wizard
-      And I cannot reach the dashboard until onboarding is complete
-    status: 'active'
   - id: 'AC-10'
     description: |
-      Given my onboarding is complete and my account is approved
-      When I navigate directly to any KYB wizard step URL (e.g. /onboarding/business)
-      Then I am redirected to the dashboard
-      And I am not shown the onboarding wizard again
-    status: 'active'
-  - id: 'AC-11'
-    description: |
-      Given I have submitted my application and it is under review
-      When I navigate directly to a KYB wizard step URL
-      Then I am redirected to the onboarding status page, not an editable wizard step
-      And I can still reach non-financial areas of the product, including the dashboard,
-      while my review is pending (see US-CW-005 AC-05)
-    status: 'active'
-  - id: 'AC-12'
-    description: |
-      Given I have not yet submitted my application
-      When I navigate directly to the onboarding status page
-      Then I am redirected to my current step in the KYB onboarding wizard
-      And I am not shown an empty or terminal status screen
+      Given my review completes successfully (AC-09)
+      Then an Organization record is created for my business and I am assigned the Owner role on it (US-CW-030)
+      And I can now invite teammates to join it (US-CW-031)
     status: 'active'
 
 # Technical Notes
@@ -142,26 +129,9 @@ technical_notes: |
   sessions and devices, with resumption always routing to the last successfully completed step. Business Info
   submission requires a synchronous integration with a business registry / EIN verification service, and
   beneficial owner records with ownership >= 25% must trigger a downstream individual KYC verification workflow
-  capturing first name, last name, date of birth, and SSN/ITIN. Beneficial owner names are captured as discrete
-  first-name and last-name fields (not a single free-text full-name input) for every owner, with a full name
-  derived from the two parts wherever a combined display value is needed. Session activity must be tracked with
-  a 30-minute inactivity
+  capturing name, date of birth, and SSN/ITIN. Session activity must be tracked with a 30-minute inactivity
   timeout that invalidates the in-progress step without discarding previously saved steps. EIN uniqueness must
   be enforced at submission time to detect duplicate business accounts before a new onboarding record is created.
-
-  Onboarding-completion routing (AC-09..AC-12) is gated entirely off the server-authoritative onboarding
-  status — never client-side flags — so it stays correct across devices and reloads exactly like save-and-resume.
-  A single pure resolver maps a status to where that user belongs (in_progress -> wizard, under_review /
-  documents_blocked -> status page, approved -> app), and three route guards read it: (1) the dashboard/app routes
-  gain an onboarding guard that redirects anyone who has not completed onboarding to their current wizard step
-  (AC-09) — the same guard is what makes a not-yet-onboarded user who lands on "/" after login end up in the
-  wizard rather than a half-usable dashboard; (2) the existing wizard-step guard redirects an approved user to the
-  dashboard instead of the status page (AC-10) and still routes under_review / documents_blocked to the status page
-  (AC-11); (3) the status page redirects an in_progress user to their current wizard step instead of rendering an
-  empty screen (AC-12). Dashboard access is deliberately permitted for both approved AND under_review so a pending
-  compliance review never blocks non-financial areas of the product (US-CW-005 AC-05); only in_progress (not yet
-  submitted) and documents_blocked (hard stop, contact support) are kept out of the app. All redirects use replace
-  navigation so the browser back button cannot re-enter a route the user was just redirected out of.
 
   Form library decision deferred to this story: clearline-web's login screen (US-CW-001) hand-rolled its form
   state with plain useState, which was fine for a 2-field form with no client-side validation beyond HTML5
@@ -171,88 +141,26 @@ technical_notes: |
   pays for itself — evaluate react-hook-form (+ zod, already a project dependency per TDR-CW-WEB-001's
   ai_integration structured-outputs decision) before hand-rolling this wizard's state.
 
+  Amended by EPIC-CW-017: AC-07's original single-branch "Sign in instead" message presumed whoever
+  re-onboards a duplicate-EIN business is that account's own Owner — true for the business owner
+  re-attempting their own onboarding, but wrong for any other person at the same company, who has no
+  Clearline credentials to sign in with. Split into AC-07 (Owner branch, message unchanged) and AC-08
+  (everyone else, new) rather than editing AC-07 in place, so the original, already-approved behavior
+  stays traceable. AC-10 (new) closes the second gap this epic found: this story never specified that
+  approval (AC-09, renumbered from AC-08) actually brings an Organization entity into existence or
+  assigns anyone authority over it — see US-CW-030 for the full mechanics. This story's own
+  `dependencies` field is intentionally left unchanged (not pointing at US-CW-030), matching the
+  precedent EPIC-CW-016 set for this same story: formalizing the link would mean editing an
+  already-APPROVED story's dependency graph, which stays a decision for whoever implements it.
+
 # Edge Cases
 edge_cases: |
   - EIN entered does not match any registered business (failed registry verification)
   - Session inactive for over 30 minutes during onboarding, requiring resumption from last completed step
-  - Duplicate business account detected via matching EIN
+  - Duplicate business account detected via matching EIN, submitted by that account's own Owner (AC-07)
+  - Duplicate business account detected via matching EIN, submitted by someone other than that account's Owner, who has no account of their own to sign in with (AC-08)
   - Browser closed mid-flow before later steps are completed, requiring resume logic on next login
   - Beneficial owner added at or above the 25% ownership threshold requiring additional KYC data collection
   - (inferred) Network or registry-service outage during Business Info submission preventing entity verification
   - (inferred) Concurrent onboarding attempts for the same EIN from two different sessions
-  - Not-yet-onboarded user lands on or deep-links to the dashboard (e.g. immediately after login) and must be
-    routed into the wizard at their current step (AC-09)
-  - Approved user returns to a bookmarked or back-button wizard step URL and must be routed to the dashboard (AC-10)
-  - Under-review or documents-blocked user opens a wizard step URL and must be routed to the status page, not an
-    editable step (AC-11)
-  - In-progress user deep-links to the onboarding status page before submitting and must be routed back into the
-    wizard rather than shown a blank terminal screen (AC-12)
-
-# Implementation Status
-implementation_status: |
-  ✅ Implemented: 2026-07-06 (EPIC-CW-002, PR #11)
-  📁 Files created/modified (grouped by area):
-    - libs/domain/onboarding/src/{ein-format-policy,ownership-threshold-policy,
-      onboarding-inactivity-policy}.ts — pure logic: EIN format, 25% KYC ownership threshold,
-      30-minute onboarding-inactivity timeout
-    - libs/mock-backend/src/services/onboarding.service.ts — OnboardingService: save-and-resume
-      step state (server-authoritative currentStep/lastCompletedStep), mock EIN-registry
-      verification, duplicate-EIN detection (userIdByEin), 30-min timeout rollback on getStatus,
-      approval NotificationEvent (AC-08); shared-onboarding-service.ts — sessionStorage-persisted
-      variant mirroring PersistedAuthService
-    - libs/mock-backend/src/handlers/onboarding.handlers.ts — GET /api/onboarding/status,
-      POST /api/onboarding/{business,owners,steps/:step/complete,review/submit}
-    - libs/data-access/onboarding/src/use-{onboarding-status,submit-business-info,add-owner,
-      complete-step,submit-review}.ts — React Query hooks; each mutation invalidates the shared
-      onboarding-status query so the route guard reads fresh progress
-    - apps/clearline-web/src/pages/onboarding/{BusinessInfoStepPage,BeneficialOwnersStepPage,
-      ReviewStepPage,OnboardingStatusPage}.tsx, schemas.ts (react-hook-form + zod — new pattern
-      for this repo), wizard-steps.ts; routes/OnboardingProgressBoundary.tsx (new — one guard
-      drives both step-resume and 30-min-timeout resume); App.tsx (updated)
-  🧪 Test coverage: full unit/component suite green across all Nx projects, plus 6 Playwright
-  e2e tests in apps/clearline-web/e2e/onboarding.spec.ts covering AC-01/02/03/04/05/07/08. AC-06
-  (30-minute real-time inactivity) is covered at the component level only
-  (OnboardingProgressBoundary.test.tsx sets sessionTimedOut and asserts the timeout banner),
-  not e2e — a real 30-minute wait per run wasn't judged worth the added coverage, mirroring
-  US-CW-002's AC-04/05 rationale.
-
-  🔁 Updated: 2026-07-06 (EPIC-CW-002 follow-up) — beneficial owner name is now captured as
-  discrete firstName/lastName fields instead of a single "Owner name" input (AC-05). The server
-  derives fullName = `${firstName} ${lastName}` on BeneficialOwner, so all combined-name displays
-  (owner cards + avatar initials, review summary, per-owner document labels) and the sanctions
-  screening are unchanged. Touched libs/contracts/src/onboarding.ts (BeneficialOwnerInput +
-  BeneficialOwner), apps/clearline-web/src/pages/onboarding/{schemas.ts,BeneficialOwnersStepPage.tsx}
-  (two "First name"/"Last name" TextFields), libs/mock-backend/src/services/onboarding.service.ts
-  (addOwner), and the corresponding unit/component/e2e tests. Design: BATCH 03 of
-  specs/designs/Clearline Design System - Consolidated.dc.html gains an expanded "Add owner" form
-  showing the First name / Last name fields.
-
-  🔁 Updated: 2026-07-07 (EPIC-CW-002 follow-up) — onboarding-completion route gating (AC-09..AC-12),
-  all keyed off the server-authoritative onboarding status.
-    - apps/clearline-web/src/pages/onboarding/onboarding-routing.ts (new) — pure onboardingDestination
-      (in_progress→wizard, under_review/documents_blocked→status, approved→app) + canAccessApp
-      (approved || under_review, so a pending review never blocks non-financial areas — US-CW-005 AC-05).
-    - apps/clearline-web/src/routes/RequireOnboarded.tsx (new) — guard on the dashboard/app routes:
-      admits approved/under_review, redirects in_progress to the current wizard step (AC-09) and
-      documents_blocked to the status page. This is also what lands a freshly signed-up/verified user
-      (US-CW-029 AC-03) in the wizard rather than a half-usable dashboard. App.tsx wraps "/" with it.
-    - OnboardingProgressBoundary.tsx — approved now redirects to "/" (dashboard, AC-10) instead of the
-      status page; under_review/documents_blocked still route to the status page (AC-11).
-    - OnboardingStatusPage.tsx — an in_progress user is redirected to their current wizard step (AC-12);
-      that redirect waits out an in-flight refetch (status.isFetching) so the post-submit approval/
-      under-review screen (AC-08) isn't skipped on stale in_progress data.
-    - ReviewStepPage.tsx + use-submit-review.ts — the review mutation no longer self-invalidates; the
-      page navigates to the status route BEFORE invalidating, so the freshly-terminal status is
-      refetched off the guarded wizard route (otherwise the wizard guard redirects approved straight to
-      the dashboard and skips the approval screen).
-    - use-onboarding-status.ts — a 30s staleTime + refetchOnWindowFocus:false keep this query out of
-      useSession's cross-device-revocation choreography (US-CW-002 AC-01/AC-06) while still refetching
-      after the 30-minute inactivity window so the server-side currentStep rollback is observed.
-    - libs/mock-backend: OnboardingService.seedApprovedAccount + browser.ts seed the demo user as an
-      already-approved business (so auth/session e2e still land on the dashboard); onboarding.fixture.ts
-      gains DEMO_ONBOARDED_BUSINESS.
-  🧪 Test coverage: new onboarding-routing.test.ts (9) and RequireOnboarded.test.tsx (6); updated
-  OnboardingProgressBoundary / OnboardingStatusPage / onboarding.service / use-submit-review specs; and
-  apps/clearline-web/e2e/onboarding.spec.ts now drives fresh signed-up users per test (the demo user is
-  approved) with dedicated AC-09/AC-10 e2e. signup.spec.ts asserts the post-verify wizard landing. Full
-  unit/component suite, lint, type-check, and all 39 Playwright e2e green.
+  - (inferred) Approval succeeding but Organization/Owner-role creation failing partway through, which must not be reachable as a persisted state (see US-CW-030 AC-01)

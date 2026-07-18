@@ -1,0 +1,151 @@
+epic_id: 'EPIC-CW-022'
+title: 'Settings & Profile'
+app: 'clearline-web'
+feature_area: 'core'
+status: 'APPROVED'
+approved_date: null
+created_date: '2026-07-17'
+source_reference: >
+  specs/designs/Clearline Design System - Consolidated.dc.html §19 "Settings & Profile" (the eight
+  settings-specific components and their security-critical states: SettingsNav §19.1, TOTPSetupFlow §19.2,
+  APIKeyCard §19.3, SessionCard §19.4, WebhookConfigForm §19.5, IntegrationCard §19.8, and the
+  destructive-confirmation dialogs §19.9), paired with the Gherkin user stories §18–§26
+  (Profile & Personal Settings, Security Settings, Company Profile, Approval Policies & Spend Controls,
+  Card Program & Connected Accounts, Integrations & Org Notifications, Security & Compliance, Developer
+  Settings, Billing & Plan). Formalizes the entire /settings surface, which existed only as design mockups
+  and Gherkin specs with no backlog record. Excludes the Team & Members surface, which is already owned by
+  EPIC-CW-018 / US-CW-031.
+package_location: 'apps/clearline-web/'
+deployment_unit: 'apps/clearline-web/'
+tdr_reference: 'TDR-CW-WEB-001'
+depends_on_epics:
+  [
+    'EPIC-CW-021',
+    'EPIC-CW-003',
+    'EPIC-CW-001',
+    'EPIC-CW-016',
+    'EPIC-CW-019',
+    'EPIC-CW-018',
+    'EPIC-CW-015',
+  ]
+extends_stories: ['US-CW-006', 'US-CW-028', 'US-CW-032']
+reuses_from:
+  - 'RBAC permission model (permissionsForRole, hasPermission, Permission/Role in @clearline/contracts, RequirePermission guard, AccessDenied organism, useAuthorization, permission-filtered nav) from EPIC-CW-003 (US-CW-006 / US-CW-028)'
+  - 'Persistent sidebar AppShell + role-scoped NavigationShell + user-identity SidebarFooter from EPIC-CW-021 (US-CW-028 / US-CW-032) — the /settings surface mounts inside this shell and the settings entry point lives in it'
+  - 'isOwner / isAdmin flags + owner provisioning from EPIC-CW-019 (US-CW-030) and the Organization entity + team:view = isOwner OR isAdmin gating from EPIC-CW-018 (US-CW-031)'
+  - 'Single-use, hashed-at-rest, enumeration-safe token machinery + async email dispatch from US-CW-029 (email verification) and US-CW-003 (password reset), reused for the personal email-change confirmation link'
+  - 'PBKDF2-HMAC-SHA256 password-hashing helper from @clearline/domain-auth (US-CW-001) for the Security password-change flow'
+  - 'ConfirmationDialog organism (design §11 / §19.9) for every destructive settings action; AuditTrail (US-CW-021, EPIC-CW-015) for security- and org-config audit events'
+  - 'XState v5 (already used for payments/approvals) for the TOTPSetupFlow generate → verify → complete machine'
+  - 'Plaid Link connection pattern (US-CW-011 connected-accounts / reconciliation bank feed) for Connected Accounts'
+  - 'Stripe Elements hosted-fields PCI-scope-reduction pattern (payments) for the Billing subscription payment method'
+has_ui: true
+ui_library: '@clearline/ui'
+changes:
+  adds:
+    - story_id: 'US-CW-033'
+      story_path: '/specs/user-stories/clearline-web/US-CW-033.yaml'
+      title: 'Settings Shell & Role-Scoped SettingsNav'
+    - story_id: 'US-CW-034'
+      story_path: '/specs/user-stories/clearline-web/US-CW-034.yaml'
+      title: 'Personal Profile & Notification Preferences'
+    - story_id: 'US-CW-035'
+      story_path: '/specs/user-stories/clearline-web/US-CW-035.yaml'
+      title: 'Account Security — Password, 2FA, Sessions & Trusted Devices'
+    - story_id: 'US-CW-036'
+      story_path: '/specs/user-stories/clearline-web/US-CW-036.yaml'
+      title: 'Company Profile'
+    - story_id: 'US-CW-037'
+      story_path: '/specs/user-stories/clearline-web/US-CW-037.yaml'
+      title: 'Approval Policies & Spend Controls'
+    - story_id: 'US-CW-038'
+      story_path: '/specs/user-stories/clearline-web/US-CW-038.yaml'
+      title: 'Card Program Defaults & Connected Bank Accounts'
+    - story_id: 'US-CW-039'
+      story_path: '/specs/user-stories/clearline-web/US-CW-039.yaml'
+      title: 'Accounting Integrations & Organization Notifications'
+    - story_id: 'US-CW-040'
+      story_path: '/specs/user-stories/clearline-web/US-CW-040.yaml'
+      title: 'Organization Security & Compliance'
+    - story_id: 'US-CW-041'
+      story_path: '/specs/user-stories/clearline-web/US-CW-041.yaml'
+      title: 'Developer Settings — API Keys & Webhooks'
+    - story_id: 'US-CW-042'
+      story_path: '/specs/user-stories/clearline-web/US-CW-042.yaml'
+      title: 'Billing & Plan'
+  updates:
+    - story_id: 'US-CW-006'
+      story_path: '/specs/user-stories/clearline-web/US-CW-006.yaml'
+      title: 'Role-Based Navigation & Approval Authority'
+      reason: >
+        Extends the RBAC model with the settings permission tokens this epic introduces, added to the
+        `Permission` union in @clearline/contracts and granted by permissionsForRole: the Controller/Admin/Owner
+        org-config set — `org-profile:manage`, `policies:manage`, `card-program:manage`, `bank-accounts:manage`,
+        `integrations:manage` — and the Admin/Owner-only set — `org-security:manage`, `developer:manage`,
+        `billing:manage`. Personal-settings surfaces (Personal Info, Security, Notifications) need NO new
+        permission — every authenticated user manages their own. The existing `team:view` (isOwner OR isAdmin)
+        is reused unchanged for the Team & Members item. The mid-session role-change handling (US-CW-006 AC-05)
+        and "Your access changed" banner apply as-is when a change removes an org-settings permission while the
+        user sits on that settings page. Declared here but applied at implementation time.
+    - story_id: 'US-CW-028'
+      story_path: '/specs/user-stories/clearline-web/US-CW-028.yaml'
+      title: 'Role-Aware Navigation Shell'
+      reason: >
+        Adds a Settings entry point to the primary sidebar (a gear item, or a Settings action in the
+        SidebarFooter identity menu) routing to /settings. It is visible to every authenticated user because the
+        Profile group is universal; whether the Organization group renders is decided inside /settings by
+        SettingsNav (US-CW-033), not by the primary nav. The presentational NavigationShell contract is
+        otherwise unchanged. Declared here, applied at implementation time.
+    - story_id: 'US-CW-032'
+      story_path: '/specs/user-stories/clearline-web/US-CW-032.yaml'
+      title: 'Persistent Sidebar App Shell & User-Identity Footer'
+      reason: >
+        The user-identity footer gains a link into Personal Info / Security (the natural "manage my account"
+        affordance from the identity chip). No change to the footer's role + approval-limit display; only an
+        added navigation target. Declared here, applied at implementation time.
+  deprecates: []
+  removes: []
+notes: >
+  The complete /settings surface for Clearline Web, structured as one shell story plus one story per settings
+  section, mirroring the SettingsNav two-tier information architecture in design §19.1:
+
+    Profile group (every authenticated user):
+      US-CW-033 shell + nav · US-CW-034 Personal Info + Notifications · US-CW-035 Security
+    Organization group (Controller / Admin / Owner — never Employees):
+      US-CW-036 Company Profile · US-CW-031 Team & Members (EXISTING, EPIC-CW-018) · US-CW-037 Approval
+      Policies & Spend Controls · US-CW-038 Card Program & Connected Accounts · US-CW-039 Integrations & Org
+      Notifications · US-CW-040 Security & Compliance · US-CW-041 Developer · US-CW-042 Billing & Plan
+
+  Cross-cutting design requirements (design §19 intro — these are requirements, not preferences, and every
+  story restates the ones it touches):
+    - Secrets are shown exactly once: API keys and webhook signing secrets use a reveal-once modal and are
+      never re-displayable (US-CW-041); TOTP backup codes are shown exactly once (US-CW-035).
+    - Client hides, server decides: the Organization group is NOT RENDERED for Employees (never shown disabled
+      or locked), and every org-settings route + API independently returns 403 regardless of client routing
+      (US-CW-033 AC + each org story).
+    - Destructive actions name the specific thing they destroy — never a bare "Are you sure?" (design §19.9);
+      revoking a key, disconnecting an integration, removing a bank account, cancelling a subscription each
+      spell out the consequence.
+    - No derived value is ever rendered as editable; no state is conveyed by color alone (sync status, usage
+      "approaching limit", webhook delivery status all carry icon + text).
+    - Client-side-only crypto where a secret must not leak: the TOTP QR is a client-rendered SVG so the secret
+      never reaches a third-party image service (US-CW-035); the webhook HMAC verification example is a
+      reference snippet (US-CW-041).
+    - An unsaved-changes footer bar governs every form-bearing settings page (US-CW-034 establishes it; other
+      form pages reuse it).
+
+  Sequencing: US-CW-033 (shell + SettingsNav + routing + role gating) is the foundation every other story
+  mounts into and should land first. US-CW-034 establishes the shared unsaved-changes footer + avatar/crop +
+  reveal-once/verification-link conventions the later stories reuse. The Organization-group stories
+  (US-CW-036…042) each depend on the shell and on the RBAC permission additions declared in the US-CW-006
+  update; they are otherwise independent of one another and can be picked up in any order.
+
+  Explicitly OUT OF SCOPE: Team & Members management (owned by EPIC-CW-018 / US-CW-031 — this epic only wires
+  its nav item into SettingsNav). Real KYB re-verification, real SSO/SAML brokering, real Plaid/Stripe/
+  QuickBooks backends, and real TOTP validation are mocked via the MSW service layer per the project's
+  Mock Backend Architecture — these are frontend responsibilities within that system, not a production
+  financial/identity stack.
+
+  Status is DRAFT: authored as specs-only for review. The changes.updates entries are declared but NOT yet
+  applied to the already-IMPLEMENTED US-CW-006 / US-CW-028 / US-CW-032 records — editing those (and adding the
+  new Permission tokens to @clearline/contracts) is an implementation-time step for whoever picks this up.

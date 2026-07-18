@@ -1,0 +1,115 @@
+# User Story Registry Record
+# User stories are the source of truth for what the application supports.
+# Epics declare changes to these records via their changes.adds/updates/deprecates/removes sections.
+
+# Identity
+id: 'US-CW-036'
+app: 'clearline-web'
+feature_area: 'core'
+title: 'Company Profile'
+
+# Lifecycle status
+status: 'DRAFT'
+story_points: 5
+dependencies: ['US-CW-033', 'US-CW-004', 'US-CW-034']
+
+# Provenance — immutable after creation
+created_by_epic: 'EPIC-CW-022'
+created_date: '2026-07-17'
+
+# Provenance history — append-only record of every epic that has touched this story
+history:
+  - epic_id: 'EPIC-CW-022'
+    action: 'created'
+    date: '2026-07-17'
+
+# Status timestamps — set when status transitions occur
+approved_date: null
+implementation_date: null
+deprecated_date: null
+removed_date: null
+
+# User Story
+user_story:
+  persona: 'Controller, Admin, or Owner of an approved Clearline Organization'
+  capability: 'view and edit the organization''s editable company details (primary contact, business address, fiscal year start, logo) while the KYB-verified legal identity fields stay read-only'
+  business_value: 'Administrators keep the company record current, but the legally verified identity of the business cannot be silently altered — protecting the integrity of the KYB result'
+  description: |
+    As a Controller, Admin, or Owner
+    I want a Company Profile settings page with editable operational fields and read-only verified identity fields
+    So that I can maintain the company's contact/address/fiscal-year/logo details, while the KYB-verified legal name and EIN are visibly locked with a "Verified" badge and a path to support for corrections
+
+# Acceptance Criteria
+acceptance_criteria:
+  - id: 'AC-01'
+    description: |
+      Given I am a Controller, Admin, or Owner on Settings → Company Profile
+      When I update the primary contact email, business address, and/or fiscal year start month and click "Save changes"
+      Then the changes are saved (via the shared unsaved-changes footer, US-CW-034 AC-02)
+      And a fiscal-year-start change takes effect on the next budget period, not retroactively
+    status: 'active'
+  - id: 'AC-02'
+    description: |
+      Given my company has completed KYB verification (US-CW-004 / US-CW-005)
+      When I view Company Profile
+      Then the Legal Business Name and EIN are rendered as read-only text with no input border or edit affordance,
+      a "Verified" badge appears next to the EIN, and a note reads "Verified details cannot be changed. Contact
+      support if there's an error."
+    status: 'active'
+  - id: 'AC-03'
+    description: |
+      Given I am on Company Profile
+      When I upload a valid square image and confirm the crop
+      Then the company logo updates on the settings page and in the app header
+    status: 'active'
+  - id: 'AC-04'
+    description: |
+      Given I am an Employee (no org-settings permission)
+      When I attempt to reach /settings/company
+      Then the item is absent from SettingsNav, I get the AccessDenied screen on direct navigation, and the API
+      returns 403 independently (US-CW-033 AC-02/AC-04)
+    status: 'active'
+  - id: 'AC-05'
+    description: |
+      Given any Company Profile change is saved (contact, address, fiscal year, logo)
+      When it succeeds
+      Then an immutable audit event records actor, action, and before → after (US-CW-021 / EPIC-CW-015)
+    status: 'active'
+
+# Technical Notes
+technical_notes: |
+  Gated by the `org-profile:manage` permission (Controller | Admin | Owner) introduced by the EPIC-CW-022 →
+  US-CW-006 update. Reuses the shared UnsavedChangesFooter and the AvatarCropDialog/logo-crop pattern from
+  US-CW-034, and the KYB result from US-CW-004 / US-CW-005 as the source of the read-only Legal Business Name
+  + EIN.
+
+  The read-only verified fields (AC-02) are a "no derived/verified value rendered as editable" instance of the
+  design §19 doctrine: they render as text, not disabled inputs, with a Verified badge and a support path. The
+  Organization entity introduced in EPIC-CW-018/US-CW-031 owns these values.
+
+  Fiscal-year-start (AC-01) must not retroactively re-window existing budget periods (EPIC-CW-013); it applies
+  from the next period boundary. Logo (AC-03) shares the crop dialog with the personal avatar but writes the
+  org logo used by the app header (US-CW-032 shell brand slot).
+
+  Audit (AC-05) writes to the AuditTrail (US-CW-021). Authorization is server-authoritative (AC-04): the item
+  is filtered out of SettingsNav and the handler re-checks the permission.
+
+# Edge Cases
+edge_cases: |
+  - Employee deep-links /settings/company — absent from nav + AccessDenied + 403 (AC-04)
+  - Attempt to edit Legal Business Name or EIN via crafted request — rejected server-side; these are immutable
+    post-KYB (AC-02)
+  - Non-square or oversized logo upload — crop dialog constrains; size/MIME validated as in US-CW-034 AC-06
+  - Fiscal-year-start changed mid-period — new value applies next period only; current period math unchanged
+    (AC-01)
+  - Navigate away with unsaved company edits — leave-guard warns (US-CW-034 AC-02)
+  - (inferred) Company not yet KYB-verified (edge for a not-fully-approved org) — verified fields show pending
+    state rather than a Verified badge; identity fields still not freely editable
+
+# Implementation Status
+implementation_status: |
+  🚧 Not yet implemented — DRAFT authored 2026-07-17 (EPIC-CW-022), specs-only for review.
+  Source: specs/designs/Clearline Design System - Consolidated.dc.html §19.1 (Company Profile item in the
+  Organization group) and Gherkin §20 (Company profile — editable contact/address/fiscal-year, KYB-verified
+  read-only fields, company logo upload). Anticipated new surface: /settings/company page reusing the
+  unsaved-changes footer + logo crop, reading KYB fields from US-CW-002.

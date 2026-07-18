@@ -1,0 +1,96 @@
+epic_id: 'EPIC-CW-017'
+title: 'Organization & Team Management'
+app: 'clearline-web'
+feature_area: 'core'
+status: 'APPROVED'
+approved_date: '2026-07-06'
+created_date: '2026-07-06'
+source_reference: >
+  Not sourced from clearline-user-stories-gherkin.md — added post-hoc after a review of how the
+  registry models organizations and team membership found no story anywhere that (a) creates an
+  Organization record, (b) assigns the business owner who completes KYB any role at all, or (c) lets
+  a second person ever join an existing organization. Meanwhile "Admin" is already used as an actor
+  in three places — EPIC-CW-015's notes ("log access itself restricted to Controller and Admin
+  roles"), US-CW-021 AC-04/AC-06 ("an admin changes a user's role", "only Controller and Admin roles
+  may view the audit log"), and US-CW-006 AC-05 ("an admin downgrades my role") — without any story
+  ever adding Admin to US-CW-006's enumerated role model (Employee, Finance Manager, Controller).
+  This epic closes both gaps together, since the second is unaddressable without first deciding who
+  is allowed to invite, remove, or change the role of anyone else.
+package_location: 'apps/clearline-web/'
+deployment_unit: 'apps/clearline-web/'
+tdr_reference: 'TDR-CW-WEB-001 (not yet created — app baseline TDR pending; inherits TDR-PLATFORM-001 in the interim)'
+depends_on_epics: ['EPIC-CW-002', 'EPIC-CW-003']
+extends_stories: ['US-CW-004', 'US-CW-006']
+reuses_from:
+  - 'US-CW-029 (@fintech-portfolio/domain-auth) enumeration-safe response pattern and single-use, hashed, time-limited token design, reused for invite tokens'
+has_ui: true
+ui_library: '@fintech-portfolio/ui'
+changes:
+  adds:
+    - story_id: 'US-CW-030'
+      story_path: '/specs/user-stories/clearline-web/US-CW-030.yaml'
+      title: 'Organization Provisioning & Owner Role Assignment'
+    - story_id: 'US-CW-031'
+      story_path: '/specs/user-stories/clearline-web/US-CW-031.yaml'
+      title: 'Team Management: Invite, Role Assignment & Removal'
+  updates:
+    - story_id: 'US-CW-004'
+      story_path: '/specs/user-stories/clearline-web/US-CW-004.yaml'
+      title: 'Business Onboarding Flow'
+      change: >
+        Adds AC-09: the moment approval unlocks full transacting capability (AC-08), an Organization
+        record is created and the onboarding business owner is assigned the Owner role on it — closing
+        the gap where onboarding referred only to "my Clearline account" without ever specifying that
+        an org entity comes into existence or who has authority over it. Also amends AC-07: the
+        existing "It looks like your business already has an account. Sign in instead." message is
+        only correct if the person hitting the duplicate-EIN check is the account's own Owner —  for
+        any other person at the same business, "sign in instead" is actively wrong, since they have no
+        Clearline credentials of their own to sign in with. AC-07 now branches on that distinction.
+    - story_id: 'US-CW-006'
+      story_path: '/specs/user-stories/clearline-web/US-CW-006.yaml'
+      title: 'Role-Based Navigation & Approval Authority'
+      change: >
+        Adds Owner and Admin to the role model as a new AC-08, and clarifies in technical_notes that
+        both sit orthogonal to the existing Employee/Finance Manager/Controller approval-authority
+        ladder rather than extending it — see this epic's notes for the full rationale. Also resolves
+        AC-05's previously-unspecified "an admin downgrades my role" actor: that action is now
+        concretely US-CW-031's role-change capability, not an undefined external actor.
+  deprecates: []
+  removes: []
+notes: >
+  Establishes how organizations and their members come into existence in Clearline, and who has
+  authority to manage that membership — the two questions the registry left unanswered: whether a
+  second person can ever join an org another person created, and whether the person who creates an
+  org needs elevated authority over it.
+
+  Design decision — invite-only, never self-service association: a user is never able to search for
+  or attach themselves to an organization they didn't create. US-CW-031 (Team Management) is the only
+  path by which a second person joins an existing org, gated entirely on an existing Owner/Admin
+  sending an invite. This mirrors how Ramp, Brex, and Mercury all handle B2B team membership — the
+  alternative (self-service join, even domain-matched) is a fraud vector: an attacker who signs up
+  with a look-alike or unverified work email could otherwise attach themselves to a real company's
+  spend data. A domain-matched "request to join" affordance was considered and deliberately excluded
+  from this epic's scope rather than half-built — even that softer version still requires an
+  Owner/Admin approval step to be safe, and US-CW-031 already gives Owner/Admin a manual invite path
+  that fully covers the only case this project needs (a business owner adding their own team).
+
+  Design decision — Owner is a role, not just "whoever signed up first": the business owner who
+  completes KYB (US-CW-004) is assigned Owner on the Organization record at the moment onboarding is
+  approved (US-CW-030), for the same reason banking regulators require a designated controlling
+  person for BSA/AML purposes — the beneficial-ownership capture US-CW-004 AC-05 already performs for
+  KYC is the same natural person this epic ties Owner to. Owner is a per-organization singleton and
+  cannot be removed or self-demoted (US-CW-031 explicitly blocks both), only reassigned via an
+  ownership-transfer flow — deliberately out of scope for this epic and flagged in US-CW-031's
+  technical_notes as a follow-up, since a solo-developer demo has no second Owner-holding scenario to
+  build it against yet (the same "don't build a mechanism nothing exercises end-to-end" reasoning
+  EPIC-CW-001's notes used to relocate its own AC-04).
+
+  Design decision — Admin is a delegable permission, not a fourth approval tier: US-CW-006's existing
+  Employee -> Finance Manager -> Controller ladder is entirely about financial approval authority
+  (nav visibility, approval limits, self-approval prevention), and Admin has nothing to do with any of
+  that — it's org-administration authority (invite, remove, change roles) that Owner can delegate to
+  any teammate regardless of their approval tier. Modeling Admin as a fourth rung above Controller
+  would have forced a decision about what approval limit "Admin" carries, which nothing in the
+  registry needs answered. This also resolves EPIC-CW-015/US-CW-021's existing "Controller and Admin"
+  audit-log-access phrasing without editing either file: both already independently qualify for audit
+  access under the roles this epic formalizes, so no change was needed there.

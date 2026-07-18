@@ -1,0 +1,162 @@
+# User Story Registry Record
+# User stories are the source of truth for what the application supports.
+# Epics declare changes to these records via their changes.adds/updates/deprecates/removes sections.
+
+# Identity
+id: 'US-CW-039'
+app: 'clearline-web'
+feature_area: 'core'
+title: 'Accounting Integrations & Organization Notifications'
+
+# Lifecycle status
+status: 'DRAFT'
+story_points: 13
+dependencies: ['US-CW-033', 'US-CW-016', 'US-CW-019', 'US-CW-034']
+
+# Provenance — immutable after creation
+created_by_epic: 'EPIC-CW-022'
+created_date: '2026-07-17'
+
+# Provenance history — append-only record of every epic that has touched this story
+history:
+  - epic_id: 'EPIC-CW-022'
+    action: 'created'
+    date: '2026-07-17'
+
+# Status timestamps — set when status transitions occur
+approved_date: null
+implementation_date: null
+deprecated_date: null
+removed_date: null
+
+# User Story
+user_story:
+  persona: 'Controller, Admin, or Owner of a Clearline Organization'
+  capability: 'connect accounting software (QuickBooks / Xero / NetSuite) via OAuth, map Clearline categories to the provider''s chart of accounts, run and monitor syncs, and route organization-level notifications (budget alerts, approval reminders) to the right recipients'
+  business_value: 'Spend data flows into the company''s books through a controlled OAuth connection with visible sync health, and the right people are alerted about budgets and pending approvals without individual opt-in'
+  description: |
+    As a Controller, Admin, or Owner
+    I want accounting integrations and organization notification routing
+    So that I can connect QuickBooks/Xero/NetSuite, map GL codes, trigger and audit syncs (seeing failures clearly), disconnect safely, and direct org-level budget and approval-reminder notifications to named recipients
+
+# Acceptance Criteria
+acceptance_criteria:
+  - id: 'AC-01'
+    description: |
+      Given I am a Controller, Admin, or Owner on Settings → Integrations
+      When I click "Connect" on the QuickBooks Online IntegrationCard
+      Then I am redirected to the QuickBooks OAuth authorization page, and after authorizing I return to Clearline
+      with the card showing "Connected", the QuickBooks account email, and a "Just now" last-sync timestamp
+    status: 'active'
+  - id: 'AC-02'
+    description: |
+      Given QuickBooks is connected
+      When I click "Configure GL mapping"
+      Then a table opens with Clearline expense categories on the left and a QuickBooks chart-of-accounts selector
+      on the right, I can map each category, and unmapped categories show "Not mapped" highlighted in amber
+    status: 'active'
+  - id: 'AC-03'
+    description: |
+      Given QuickBooks is connected and GL mapping is configured
+      When I click "Sync now"
+      Then the card shows "Syncing…", and on completion the last-sync timestamp updates and a toast shows
+      "Sync complete — 47 transactions exported to QuickBooks"
+    status: 'active'
+  - id: 'AC-04'
+    description: |
+      Given a sync was initiated
+      When it fails (provider API error or expired auth)
+      Then the IntegrationCard shows an "Error" status badge (icon + text, never color alone), an explanation
+      "Last sync failed — QuickBooks connection may need to be refreshed.", and a "Reconnect" option alongside
+      "Sync now"
+    status: 'active'
+  - id: 'AC-05'
+    description: |
+      Given QuickBooks is connected with prior sync activity
+      When I click "View sync log"
+      Then a table shows Date/Time, Records Synced, Status (Success / Partial / Failed), and a Details link for
+      failed or partial syncs
+    status: 'active'
+  - id: 'AC-06'
+    description: |
+      Given QuickBooks is connected
+      When I click "Disconnect"
+      Then a confirmation explains "Disconnecting QuickBooks will stop automatic syncing. Your existing GL code
+      mappings will be preserved for when you reconnect. Transactions already exported to QuickBooks are not
+      affected.", and on confirm the card returns to "Disconnected"
+    status: 'active'
+  - id: 'AC-07'
+    description: |
+      Given I am on Settings → Notifications (Organization)
+      When I add a Finance Manager to the "Budget threshold alerts" recipient list
+      Then that Finance Manager receives email alerts when any department budget crosses 80% or 100%
+      And clicking the "×" next to a recipient removes them, stopping their budget threshold emails
+    status: 'active'
+  - id: 'AC-08'
+    description: |
+      Given pending approvals are accumulating without action
+      When I set the approval-queue reminder frequency to "Every 24 hours"
+      Then approvers with pending items receive a daily digest of their queue until all items are actioned
+    status: 'active'
+  - id: 'AC-09'
+    description: |
+      Given I am an Employee
+      When I attempt to reach /settings/integrations or /settings/org-notifications
+      Then the items are absent from SettingsNav, direct navigation shows AccessDenied, and the API returns 403
+      independently (US-CW-033 AC-02/AC-04)
+    status: 'active'
+  - id: 'AC-10'
+    description: |
+      Given any integration or org-notification change occurs (connect, map, sync, disconnect, recipient add/
+      remove, reminder change)
+      When it succeeds
+      Then an immutable audit event records actor, action, and before → after (US-CW-021 / EPIC-CW-015)
+    status: 'active'
+
+# Technical Notes
+technical_notes: |
+  Gated by `integrations:manage` (Controller | Admin | Owner) from the EPIC-CW-022 → US-CW-006 update. The
+  IntegrationCard (design §19.8, four states: connected / disconnected / syncing / error) drives QuickBooks,
+  Xero, and NetSuite via an OAuth redirect flow; disconnect requires the §19.9 destructive confirmation that
+  names exactly what stops (and that mappings are preserved). Sync status is never color-only (AC-04) — icon +
+  text on the badge, matching the app's accessibility doctrine (US-CW-020).
+
+  GL mapping (AC-02) maps Clearline expense categories to the provider's chart of accounts; "Not mapped" rows
+  are flagged amber and block a clean sync until resolved. Sync-now/log (AC-03/AC-05) surface record counts and
+  partial/failed outcomes. Sync exports draw on the same reconciliation/ledger data as US-CW-016; disconnect
+  never mutates already-exported records.
+
+  Organization notifications (AC-07/AC-08) reuse the NotificationToggle/recipient-list UI from US-CW-034 but at
+  the ORG level: budget-threshold recipients tie to the department budget crossings from US-CW-019, and the
+  approval-queue reminder digests pending items from US-CW-012. Recipient add/remove is immediate (no
+  unsaved-changes footer for these list mutations, consistent with US-CW-034 toggle semantics).
+
+  All provider connections (OAuth handshakes, sync results) are backed by the MSW mock service layer — the
+  frontend models the connection lifecycle and sync health, not a real accounting backend. Audit via
+  AuditTrail (US-CW-021).
+
+# Edge Cases
+edge_cases: |
+  - OAuth authorization cancelled/denied at the provider — return to a still-"Disconnected" card, no partial
+    connection (AC-01)
+  - Sync run with unmapped categories — surfaced as Partial in the log with the unmapped categories flagged
+    (AC-02/AC-05)
+  - Sync fails on expired auth — Error badge + Reconnect offered; existing exported data untouched (AC-04)
+  - Disconnect then reconnect — GL mappings preserved and reapplied (AC-06)
+  - Remove a budget-alert recipient mid-threshold-crossing — they stop receiving from the next crossing; already
+    dispatched emails are not recalled (AC-07)
+  - Approval reminder set while a queue is empty — no digest sent until items are pending (AC-08)
+  - Employee deep-links either page — absent from nav + AccessDenied + 403 (AC-09)
+  - (inferred) Two admins connect the same provider concurrently — one connection wins; the other sees the
+    already-connected state rather than a duplicate integration
+  - (inferred) "Sync now" clicked twice rapidly — the button disables during "Syncing…" to prevent a duplicate
+    export run
+
+# Implementation Status
+implementation_status: |
+  🚧 Not yet implemented — DRAFT authored 2026-07-17 (EPIC-CW-022), specs-only for review.
+  Source: specs/designs/Clearline Design System - Consolidated.dc.html §19.8 (IntegrationCard · four states) and
+  Gherkin §23 (accounting integrations — OAuth connect, GL mapping, sync now/log, error+reconnect, disconnect;
+  org notification routing — budget-alert recipients, approval-queue reminder frequency). Anticipated new
+  surface: /settings/integrations (IntegrationCard + GL-mapping table + sync log) and /settings/org-notifications
+  (recipient lists + reminder frequency), both backed by MSW.
