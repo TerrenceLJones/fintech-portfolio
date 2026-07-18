@@ -25,6 +25,7 @@ import {
 } from './handlers/reconciliation.handlers';
 import { budgetsHandlers } from './handlers/budgets.handlers';
 import { auditHandlers } from './handlers/audit.handlers';
+import { teamHandlers } from './handlers/team.handlers';
 import { sharedAnalyticsService } from './services/shared-analytics-service';
 import { sharedReconciliationService } from './services/shared-reconciliation-service';
 import { sharedBudgetsService } from './services/shared-budgets-service';
@@ -39,7 +40,7 @@ import {
 import { sharedOnboardingService } from './services/shared-onboarding-service';
 import { sharedPaymentsService } from './services/shared-payments-service';
 import { DEMO_ONBOARDED_BUSINESS } from './fixtures/onboarding.fixture';
-import { SEED_USERS } from './fixtures/users.fixture';
+import { SEED_ORGANIZATION, SEED_USERS } from './fixtures/users.fixture';
 
 export const worker = setupWorker(
   ...authHandlers,
@@ -56,6 +57,7 @@ export const worker = setupWorker(
   ...reconciliationHandlers,
   ...budgetsHandlers,
   ...auditHandlers,
+  ...teamHandlers,
 );
 
 // Seed the demo user as an already-approved, fully-onboarded business so signing in as it lands on
@@ -171,6 +173,45 @@ export async function issueExpiredVerificationTokenForE2E(
     Date.now() - VERIFICATION_TOKEN_TTL_MS - 60_000,
   );
   return verificationToken;
+}
+
+const INVITE_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+
+/**
+ * Dev/demo + e2e control for US-CW-031: mints a real team invite into the seeded demo organization
+ * and hands back the single-use token, standing in for the emailed invite link there's no inbox to
+ * read (same rationale as issueResetTokenForE2E/issueVerificationTokenForE2E). Lets a tester walk the
+ * accept flow — set a password, land straight on the role dashboard — from the Team Beacon. Resolves
+ * undefined if the email is already a member (no token minted). Behind import.meta.env.DEV.
+ */
+export async function issueInviteTokenForE2E(
+  email: string,
+  role: Role = 'finance_manager',
+  grantAdmin = false,
+): Promise<string | undefined> {
+  const { token } = await sharedAuthService.createInvite({
+    orgId: SEED_ORGANIZATION.id,
+    email,
+    role,
+    grantAdmin,
+    inviterName: 'Priya Nair',
+  });
+  return token;
+}
+
+/**
+ * Same as issueInviteTokenForE2E, but backdated 1 minute past the 7-day TTL so it's already expired —
+ * for US-CW-031 AC-03 coverage of the "This invite has expired" screen. Behind import.meta.env.DEV.
+ */
+export async function issueExpiredInviteTokenForE2E(
+  email: string,
+  role: Role = 'finance_manager',
+): Promise<string | undefined> {
+  const { token } = await sharedAuthService.createInvite(
+    { orgId: SEED_ORGANIZATION.id, email, role, grantAdmin: false, inviterName: 'Priya Nair' },
+    Date.now() - INVITE_TOKEN_TTL_MS - 60_000,
+  );
+  return token;
 }
 
 /**

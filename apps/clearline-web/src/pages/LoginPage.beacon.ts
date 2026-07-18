@@ -44,9 +44,18 @@ function landingHint(user: (typeof SEED_USERS)[number]): string {
  * One copyable section per role, ordered by access level, so the role name renders as the section
  * heading above the account's name, email, and where it lands. All share the password below.
  */
+/** Tag the heading with the orthogonal team-administration authority (US-CW-006 AC-08): the Owner and
+ * the (non-owner) Admin are the accounts that reach the Team surface, and both share the Controller
+ * tier here — so the tag also disambiguates the otherwise-identical Controller headings. */
+function credentialHeading(user: (typeof SEED_USERS)[number]): string {
+  if (user.isOwner) return `${ROLE_LABEL[user.role]} (Owner)`;
+  if (user.isAdmin) return `${ROLE_LABEL[user.role]} · Admin`;
+  return ROLE_LABEL[user.role];
+}
+
 const credentialSections = SEED_USERS_BY_ACCESS.map((user) => ({
   kind: 'copyable' as const,
-  title: ROLE_LABEL[user.role],
+  title: credentialHeading(user),
   items: [{ label: user.displayName, value: user.email, hint: landingHint(user) }],
 }));
 

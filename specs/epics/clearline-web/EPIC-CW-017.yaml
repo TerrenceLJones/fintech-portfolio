@@ -2,8 +2,9 @@ epic_id: 'EPIC-CW-017'
 title: 'Organization & Team Management'
 app: 'clearline-web'
 feature_area: 'core'
-status: 'APPROVED'
+status: 'IMPLEMENTED'
 approved_date: '2026-07-06'
+implementation_date: '2026-07-18'
 created_date: '2026-07-06'
 source_reference: >
   Not sourced from clearline-user-stories-gherkin.md — added post-hoc after a review of how the

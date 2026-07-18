@@ -9,7 +9,7 @@ feature_area: 'core'
 title: 'Organization Provisioning & Owner Role Assignment'
 
 # Lifecycle status
-status: 'APPROVED'
+status: 'IMPLEMENTED'
 story_points: 5
 dependencies: ['US-CW-004']
 
@@ -25,10 +25,13 @@ history:
   - epic_id: 'EPIC-CW-017'
     action: 'approved'
     date: '2026-07-06'
+  - epic_id: 'EPIC-CW-017'
+    action: 'implemented'
+    date: '2026-07-18'
 
 # Status timestamps — set when status transitions occur
 approved_date: '2026-07-06'
-implementation_date: null
+implementation_date: '2026-07-18'
 deprecated_date: null
 removed_date: null
 
@@ -101,4 +104,13 @@ edge_cases: |
 
 # Implementation Status
 implementation_status: |
-  Not yet implemented. This story is APPROVED and ready for implementation planning — no application code exists yet.
+  Implemented by EPIC-CW-017 (2026-07-18). An Organization entity now exists in the mock backend:
+  AuthService seeds/holds organizations (orgsById/orgIdByEin) and SeedUser carries orgId + joinedAt.
+  On KYB approval, POST /api/onboarding/review/submit calls AuthService.provisionOrganizationForOwner,
+  which creates the org keyed to the verified business's legal name + EIN and assigns the creator Owner
+  (Controller tier, unlimited limit, isOwner) as one atomic transition — idempotent per EIN, so a
+  repeat never mints a second org (AC-04). Owner non-removability/non-self-demotion (AC-03) is enforced
+  at the data-access layer: changeMemberRole/removeMember reject any Owner target with owner_protected,
+  independent of the UI. See libs/mock-backend/src/services/auth.service.ts, its onboarding handler, and
+  libs/domain/auth/src/owner-provisioning-policy.ts, with coverage in auth.service.team.test.ts and
+  onboarding.handlers.test.ts.

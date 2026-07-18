@@ -152,7 +152,11 @@ export class OnboardingService {
 
     const existingUserId = this.userIdByEin.get(business.ein);
     if (existingUserId && existingUserId !== userId) {
-      return { outcome: 'duplicate_business' };
+      // A *different* person is onboarding a business whose EIN is already claimed. In this model the
+      // original onboarder becomes the org Owner (US-CW-030), so anyone else hitting this branch is by
+      // definition not that Owner and has no credentials of their own to "sign in" with — the AC-08
+      // case, told to ask their admin for an invite (US-CW-004 AC-08), not the AC-07 "sign in instead".
+      return { outcome: 'duplicate_business_not_owner' };
     }
 
     record.business = business;

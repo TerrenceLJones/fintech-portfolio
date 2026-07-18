@@ -3,6 +3,20 @@ import { AuthService, type AuthServiceSnapshot } from './auth.service';
 const STORAGE_KEY = 'clearline:mock-auth-state';
 
 /**
+ * Bump whenever AuthServiceSnapshot's shape changes. A snapshot persisted by an older build — e.g. one
+ * predating the org/team fields (orgId on SeedUser, the organizations/inviteTokens maps) — is
+ * discarded on load rather than restored into an inconsistent state. Without this, a stale snapshot
+ * would rehydrate users with no orgId, so the team roster still renders (from an earlier fetch) but a
+ * role/removal PATCH 404s because the member can no longer be matched to an org.
+ */
+const SNAPSHOT_VERSION = 2;
+
+interface VersionedSnapshot {
+  version: number;
+  snapshot: AuthServiceSnapshot;
+}
+
+/**
  * sharedAuthService lives entirely inside the running JS bundle, so a full page navigation — the
  * same kind a real reset-password link triggers, or a manual tester gets by pasting a token URL
  * into the address bar — tore the bundle down and rebuilt this service from the seed fixtures,
@@ -23,7 +37,14 @@ export class PersistedAuthService extends AuthService {
     const saved = sessionStorage.getItem(STORAGE_KEY);
     if (!saved) return;
     try {
-      this.restore(JSON.parse(saved) as AuthServiceSnapshot);
+      const parsed = JSON.parse(saved) as Partial<VersionedSnapshot>;
+      // Discard anything not written by this exact snapshot version — an older, shape-incompatible
+      // snapshot (or a pre-versioning bare snapshot) reseeds fresh from the fixtures instead.
+      if (parsed.version !== SNAPSHOT_VERSION || !parsed.snapshot) {
+        sessionStorage.removeItem(STORAGE_KEY);
+        return;
+      }
+      this.restore(parsed.snapshot);
     } catch {
       sessionStorage.removeItem(STORAGE_KEY);
     }
@@ -31,7 +52,8 @@ export class PersistedAuthService extends AuthService {
 
   private persist(): void {
     if (typeof sessionStorage === 'undefined') return;
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(this.snapshot()));
+    const payload: VersionedSnapshot = { version: SNAPSHOT_VERSION, snapshot: this.snapshot() };
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
   }
 
   override async login(...args: Parameters<AuthService['login']>) {
@@ -78,6 +100,38 @@ export class PersistedAuthService extends AuthService {
   override setUserRole(...args: Parameters<AuthService['setUserRole']>) {
     super.setUserRole(...args);
     this.persist();
+  }
+
+  override provisionOrganizationForOwner(
+    ...args: Parameters<AuthService['provisionOrganizationForOwner']>
+  ) {
+    const result = super.provisionOrganizationForOwner(...args);
+    this.persist();
+    return result;
+  }
+
+  override async createInvite(...args: Parameters<AuthService['createInvite']>) {
+    const result = await super.createInvite(...args);
+    this.persist();
+    return result;
+  }
+
+  override async acceptInvite(...args: Parameters<AuthService['acceptInvite']>) {
+    const result = await super.acceptInvite(...args);
+    this.persist();
+    return result;
+  }
+
+  override changeMemberRole(...args: Parameters<AuthService['changeMemberRole']>) {
+    const result = super.changeMemberRole(...args);
+    this.persist();
+    return result;
+  }
+
+  override removeMember(...args: Parameters<AuthService['removeMember']>) {
+    const result = super.removeMember(...args);
+    this.persist();
+    return result;
   }
 }
 

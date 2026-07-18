@@ -20,7 +20,8 @@ import { AuditLogPage } from './pages/audit/AuditLogPage';
 import { BudgetOverviewPage } from './pages/budget/BudgetOverviewPage';
 import { NewBudgetPage } from './pages/budget/NewBudgetPage';
 import { BudgetHistoryPage } from './pages/budget/BudgetHistoryPage';
-import { PlaceholderPage } from './pages/PlaceholderPage';
+import { TeamPage } from './pages/team/TeamPage';
+import { InviteAcceptPage } from './pages/invite/InviteAcceptPage';
 import { BusinessInfoStepPage } from './pages/onboarding/BusinessInfoStepPage';
 import { BeneficialOwnersStepPage } from './pages/onboarding/BeneficialOwnersStepPage';
 import { DocumentUploadStepPage } from './pages/onboarding/DocumentUploadStepPage';
@@ -60,6 +61,9 @@ export function App() {
           <Route path="/verify" element={<VerifyEmailPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
+          {/* Public invite acceptance (US-CW-031 AC-02): the invitee has no session yet, so this sits
+              outside RequireAuth. Setting a password logs them in and drops them on their role home. */}
+          <Route path="/invite" element={<InviteAcceptPage />} />
           <Route element={<RequireAuth />}>
             <Route element={<SessionActivityBoundary />}>
               <Route path="/onboarding/status" element={<OnboardingStatusPage />} />
@@ -157,17 +161,12 @@ export function App() {
                   >
                     <Route path="/audit" element={<AuditLogPage />} />
                   </Route>
-                  <Route element={<RequirePermission permission="team:view" apiPath="/api/team" />}>
-                    <Route
-                      path="/team"
-                      element={
-                        <PlaceholderPage
-                          title="Team"
-                          icon="users"
-                          body="Manage who belongs to this organization here."
-                        />
-                      }
-                    />
+                  <Route
+                    element={
+                      <RequirePermission permission="team:view" apiPath="/api/team/members" />
+                    }
+                  >
+                    <Route path="/team" element={<TeamPage />} />
                   </Route>
                 </Route>
               </Route>

@@ -36,17 +36,35 @@ const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
 };
 
 /**
- * The full permission set for a user, combining their approval-tier role with the orthogonal Admin
- * flag. Admin adds `team:view` and nothing else — critically, it grants no approval authority, so an
- * Employee+Admin still can't approve. Duplicate-free even though the two sources never currently
- * overlap.
+ * The full permission set for a user, combining their approval-tier role with the orthogonal
+ * team-administration authority. `team:view` is granted by EITHER the Admin flag OR the Owner flag
+ * (US-CW-006 AC-08 / US-CW-030 AC-02) — both sit orthogonal to the Employee/Finance Manager/Controller
+ * ladder, so an Employee who is Owner or Admin sees the Team surface but gains no approval authority.
+ * `team:view` is the only permission either flag adds. Duplicate-free even when a user holds both.
  */
-export function permissionsForRole(role: Role, { isAdmin }: { isAdmin: boolean }): Permission[] {
+export function permissionsForRole(
+  role: Role,
+  { isAdmin, isOwner = false }: { isAdmin: boolean; isOwner?: boolean },
+): Permission[] {
   const rolePerms = ROLE_PERMISSIONS[role];
-  const withAdmin: Permission[] = isAdmin ? [...rolePerms, 'team:view'] : [...rolePerms];
-  return [...new Set(withAdmin)];
+  const withTeam: Permission[] = isAdmin || isOwner ? [...rolePerms, 'team:view'] : [...rolePerms];
+  return [...new Set(withTeam)];
 }
 
 export function hasPermission(permissions: readonly Permission[], permission: Permission): boolean {
   return permissions.includes(permission);
+}
+
+/** The default per-transaction approval limit ($10,000, minor units) a Finance Manager is provisioned with. */
+const FINANCE_MANAGER_DEFAULT_LIMIT = 1_000_000;
+
+/**
+ * The approval limit (minor units; null = unlimited) a role carries by default — applied when a
+ * member's tier is changed (US-CW-031 AC-04) or an invite is accepted (US-CW-031 AC-02), so the limit
+ * always tracks the role rather than lingering from a previous one. A Controller is unlimited; a
+ * Finance Manager gets the standard finite limit; an Employee holds no approval authority, so null.
+ */
+export function defaultApprovalLimitForRole(role: Role): number | null {
+  if (role === 'finance_manager') return FINANCE_MANAGER_DEFAULT_LIMIT;
+  return null;
 }

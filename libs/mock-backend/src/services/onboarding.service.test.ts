@@ -57,12 +57,12 @@ describe('OnboardingService.seedApprovedAccount', () => {
     expect(status.business).toEqual(business());
   });
 
-  it('claims the seeded EIN so a different user onboarding it is flagged as a duplicate (AC-07)', async () => {
+  it('claims the seeded EIN so a different person onboarding it is flagged as a non-owner duplicate (AC-08)', async () => {
     const service = newService();
     service.seedApprovedAccount('user_1', business(), NOW);
 
     const result = await service.submitBusinessInfo('user_2', business(), NOW);
-    expect(result.outcome).toBe('duplicate_business');
+    expect(result.outcome).toBe('duplicate_business_not_owner');
   });
 
   it('does not overwrite an existing record for the same user', async () => {
@@ -98,12 +98,12 @@ describe('OnboardingService.submitBusinessInfo', () => {
     expect(status.currentStep).toBe('business');
   });
 
-  it('reports duplicate_business when a different user already onboarded that EIN', async () => {
+  it('reports duplicate_business_not_owner when a different person already onboarded that EIN (AC-08)', async () => {
     const service = newService();
     await service.submitBusinessInfo('user_1', business(), NOW);
 
     const result = await service.submitBusinessInfo('user_2', business(), NOW);
-    expect(result.outcome).toBe('duplicate_business');
+    expect(result.outcome).toBe('duplicate_business_not_owner');
   });
 
   it('does not treat the same user resubmitting their own EIN as a duplicate', async () => {

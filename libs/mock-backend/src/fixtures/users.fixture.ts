@@ -17,10 +17,18 @@ export interface SeedUser {
   isAdmin: boolean;
   /**
    * The account creator, elevated to Owner when their business clears KYB (US-CW-030). Orthogonal to
-   * both the approval tier and isAdmin; grants no permissions on its own in this epic. A protected
-   * singleton per account — non-removable/non-demotable enforcement arrives with team management (EPIC-CW-018).
+   * both the approval tier and isAdmin. Grants `team:view` (like isAdmin) and is a protected per-org
+   * singleton — non-removable and non-self-demotable (US-CW-030 AC-03, enforced in AuthService).
    */
   isOwner: boolean;
+  /**
+   * The Organization this user belongs to (US-CW-030). Null until they either have a business approved
+   * (which provisions an org and makes them its Owner) or accept an invite into an existing org
+   * (US-CW-031) — a freshly signed-up account has none.
+   */
+  orgId: string | null;
+  /** Epoch ms the user joined their organization — the roster's "joined" column (Design §18.1). */
+  joinedAt: number;
 }
 
 /** The plaintext DEMO_USER_PASSWORD was hashed from, kept only so local dev/tests can log in as the seed user. */
@@ -34,11 +42,28 @@ const DEMO_PASSWORD_HASH =
   'pbkdf2-sha256$210000$EVdpGm+5ZSyaf/tp5qNqAA==$2HU7zHF8PxFivV/4XCZ8GGQeUpHl/B71IO6/yMl3ZhM=';
 
 /**
+ * The one demo Organization every seed user belongs to (US-CW-030). Keyed to the same business the
+ * demo accounts onboarded (DEMO_ONBOARDED_BUSINESS's EIN), so the Team roster (Design §18.1) has a
+ * real, populated org to show. Its Owner is the dedicated `owner@clearline.dev` account below.
+ */
+export const SEED_ORGANIZATION = {
+  id: 'org_clearline_demo',
+  legalName: 'Clearline Demo Co',
+  ein: '11-2223334',
+  /** Fixed epoch (2026-04-01T00:00:00Z) so seed data is deterministic across test runs. */
+  createdAt: 1_743_465_600_000,
+} as const;
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/**
  * Deterministic seed users for local dev/demo and tests — never real credentials. One account per
  * approval-tier role so a tester can sign in as each and see its role-scoped shell and role-based
  * home (US-CW-006 / US-CW-001): the Employee lands on My Expenses, the approvers on the queue. The
  * Finance Manager (index 0, `demo@clearline.dev`) is the primary demo account e2e signs in as; its
- * role can still be switched mid-session via simulateRoleChangeForE2E. All share DEMO_USER_PASSWORD.
+ * role can still be switched mid-session via simulateRoleChangeForE2E. The dedicated Owner account
+ * (`owner@clearline.dev`) is the one that can reach the Team surface (US-CW-031). All belong to
+ * SEED_ORGANIZATION and share DEMO_USER_PASSWORD.
  */
 export const SEED_USERS: SeedUser[] = [
   {
@@ -51,6 +76,8 @@ export const SEED_USERS: SeedUser[] = [
     approvalLimit: 1_000_000,
     isAdmin: false,
     isOwner: false,
+    orgId: SEED_ORGANIZATION.id,
+    joinedAt: SEED_ORGANIZATION.createdAt + 7 * DAY_MS,
   },
   {
     id: 'user_2',
@@ -62,6 +89,8 @@ export const SEED_USERS: SeedUser[] = [
     approvalLimit: null,
     isAdmin: false,
     isOwner: false,
+    orgId: SEED_ORGANIZATION.id,
+    joinedAt: SEED_ORGANIZATION.createdAt + 45 * DAY_MS,
   },
   {
     id: 'user_3',
@@ -71,7 +100,27 @@ export const SEED_USERS: SeedUser[] = [
     displayName: 'Sofia Whitman',
     role: 'controller',
     approvalLimit: null,
-    isAdmin: false,
+    // Admin without being Owner — the delegable team-administration permission the epic models as
+    // orthogonal to the approval tier (US-CW-006 AC-08). Reaches the Team surface, but can't be
+    // the protected Owner. The demo account for "an Admin who isn't the Owner manages the team".
+    isAdmin: true,
     isOwner: false,
+    orgId: SEED_ORGANIZATION.id,
+    joinedAt: SEED_ORGANIZATION.createdAt + 30 * DAY_MS,
+  },
+  {
+    // The organization's Owner — a per-org singleton that can't be removed or demoted (US-CW-030
+    // AC-03). The account a tester signs in as to exercise the Team surface (US-CW-031).
+    id: 'user_owner',
+    email: 'owner@clearline.dev',
+    passwordHash: DEMO_PASSWORD_HASH,
+    verified: true,
+    displayName: 'Priya Nair',
+    role: 'controller',
+    approvalLimit: null,
+    isAdmin: false,
+    isOwner: true,
+    orgId: SEED_ORGANIZATION.id,
+    joinedAt: SEED_ORGANIZATION.createdAt,
   },
 ];

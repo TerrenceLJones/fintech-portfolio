@@ -22,6 +22,8 @@ beforeAll(async () => {
     approvalLimit: 1_000_000,
     isAdmin: false,
     isOwner: false,
+    orgId: null,
+    joinedAt: 0,
   };
 });
 

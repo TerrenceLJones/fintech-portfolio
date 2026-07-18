@@ -60,14 +60,15 @@ describe('useAuthorization', () => {
     expect(result.current.can('approvals:act')).toBe(false);
   });
 
-  it('surfaces isOwner from the session and grants no permissions on its own (US-CW-030)', async () => {
-    mockSession({ role: 'controller', isOwner: true });
+  it('surfaces isOwner and grants team:view from ownership without extra approval authority (US-CW-006 AC-08)', async () => {
+    // An Employee who is Owner sees the Team surface but gains no approval permissions from ownership.
+    mockSession({ role: 'employee', isOwner: true, isAdmin: false });
     const { result } = renderHook(() => useAuthorization(), { wrapper });
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     expect(result.current.isOwner).toBe(true);
-    // isOwner is orthogonal to permissions in this epic — a Controller Owner still has no team:view.
-    expect(result.current.can('team:view')).toBe(false);
+    expect(result.current.can('team:view')).toBe(true);
+    expect(result.current.can('approvals:act')).toBe(false);
   });
 
   it('defaults isOwner to false while no session is loaded', () => {

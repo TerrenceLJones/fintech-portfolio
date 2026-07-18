@@ -45,7 +45,10 @@ export function useAuthorization(): Authorization {
       };
     }
 
-    const permissions = permissionsForRole(data.role, { isAdmin: data.isAdmin });
+    const permissions = permissionsForRole(data.role, {
+      isAdmin: data.isAdmin,
+      isOwner: data.isOwner,
+    });
     return {
       isLoading: false,
       displayName: data.displayName,

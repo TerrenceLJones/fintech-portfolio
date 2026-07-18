@@ -93,6 +93,26 @@ describe('BusinessInfoStepPage', () => {
     expect(screen.getByRole('link', { name: /sign in/i })).toBeInTheDocument();
   });
 
+  it('shows the non-owner duplicate message with NO sign-in CTA (AC-08)', async () => {
+    setAccessToken('access_valid');
+    server.use(
+      http.post('*/api/onboarding/business', () =>
+        HttpResponse.json({ outcome: 'duplicate_business_not_owner' }),
+      ),
+    );
+    const user = userEvent.setup();
+    renderPage();
+
+    await fillValidForm(user);
+    await user.click(screen.getByRole('button', { name: /continue/i }));
+
+    await waitFor(() =>
+      expect(screen.getByText('Ask your organization’s admin to invite you.')).toBeInTheDocument(),
+    );
+    // A person with no account of their own has nothing to sign in with — no CTA.
+    expect(screen.queryByRole('link', { name: /sign in/i })).not.toBeInTheDocument();
+  });
+
   it('shows a visible, highlighted validation error when required fields are left blank', async () => {
     setAccessToken('access_valid');
     const user = userEvent.setup();

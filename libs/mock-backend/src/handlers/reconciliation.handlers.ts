@@ -44,7 +44,10 @@ function resolvePermissions(
   if (!accessToken) return null;
   const session = authService.checkSession(accessToken);
   if (session.outcome !== 'active') return null;
-  return permissionsForRole(session.role!, { isAdmin: session.isAdmin! });
+  return permissionsForRole(session.role!, {
+    isAdmin: session.isAdmin!,
+    isOwner: session.isOwner!,
+  });
 }
 
 function forbidden() {

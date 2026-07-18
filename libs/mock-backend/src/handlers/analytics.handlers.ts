@@ -43,7 +43,10 @@ function resolvePermissions(
   if (!accessToken) return null;
   const session = authService.checkSession(accessToken);
   if (session.outcome !== 'active') return null;
-  return permissionsForRole(session.role!, { isAdmin: session.isAdmin! });
+  return permissionsForRole(session.role!, {
+    isAdmin: session.isAdmin!,
+    isOwner: session.isOwner!,
+  });
 }
 
 /** Read the inclusive from/to range off the query string, falling back to the seeded default month. */

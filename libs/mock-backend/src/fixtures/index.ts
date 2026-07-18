@@ -1,7 +1,7 @@
 // Pure seed-data barrel — safe to import from either the browser or Node MSW setup, and from app
 // dev tooling (e.g. the demo guide) that needs to display the seeded data to testers. Contains no
 // handler/worker wiring, so importing it never pulls in msw/browser or msw/node.
-export { SEED_USERS, DEMO_USER_PASSWORD } from './users.fixture';
+export { SEED_USERS, SEED_ORGANIZATION, DEMO_USER_PASSWORD } from './users.fixture';
 export type { SeedUser } from './users.fixture';
 export {
   SEED_SOURCE_ACCOUNT,

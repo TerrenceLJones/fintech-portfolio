@@ -40,6 +40,7 @@ export function BusinessInfoStepPage() {
   const outcome = submitBusinessInfo.data?.outcome;
 
   if (outcome === 'duplicate_business') {
+    // AC-07: the account's own Owner re-onboarding — they have credentials, so "sign in instead".
     return (
       <AuthLayout>
         <Text as="h1" size="title" className="mb-2">
@@ -51,6 +52,21 @@ export function BusinessInfoStepPage() {
         <Link to="/login" className="text-cl-accent-text text-[13px] font-semibold">
           Sign in
         </Link>
+      </AuthLayout>
+    );
+  }
+
+  if (outcome === 'duplicate_business_not_owner') {
+    // AC-08: a different person at the same business — they have no Clearline credentials of their
+    // own, so "sign in" would be wrong. They join only via an invite from an Owner/Admin (US-CW-031).
+    return (
+      <AuthLayout>
+        <Text as="h1" size="title" className="mb-2">
+          Your business already has a Clearline account
+        </Text>
+        <Text as="p" size="body" tone="muted" className="mb-6">
+          Ask your organization&rsquo;s admin to invite you.
+        </Text>
       </AuthLayout>
     );
   }

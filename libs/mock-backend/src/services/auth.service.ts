@@ -3,16 +3,25 @@ import {
   isResetTokenExpired,
   isValidSignUpPassword,
   isVerificationTokenExpired,
+  isInviteTokenExpired,
   isAccessTokenExpired,
   classifyRefreshTokenPresentation,
+  ownerProvisioning,
+  defaultApprovalLimitForRole,
   verifyPassword,
   isValidPassword,
   hashPassword,
   hashToken,
   type FailedAttempt,
 } from '@clearline/domain-auth';
-import type { Role } from '@clearline/contracts';
-import { SEED_USERS, type SeedUser } from '../fixtures/users.fixture';
+import type {
+  Organization,
+  PendingInvite,
+  Role,
+  TeamMember,
+  TeamRosterResponse,
+} from '@clearline/contracts';
+import { SEED_ORGANIZATION, SEED_USERS, type SeedUser } from '../fixtures/users.fixture';
 
 /** No real user's hash — exists only so an unregistered-email login takes the same PBKDF2 time as a real one. */
 const DUMMY_HASH_FOR_TIMING_PARITY =
@@ -51,6 +60,75 @@ interface VerificationTokenRecord {
   email: string;
   issuedAt: number;
   used: boolean;
+}
+
+/** An Organization record, keyed to the business it was provisioned for (US-CW-030). */
+interface OrganizationRecord {
+  id: string;
+  legalName: string;
+  ein: string;
+  /** Epoch ms the organization was provisioned (KYB approval). */
+  createdAt: number;
+}
+
+/**
+ * An outstanding team invite (US-CW-031). Stored keyed by the SHA-256 hash of its single-use token
+ * (never the raw token), carrying which org/role/admin it grants and who sent it. `id` is a stable,
+ * non-secret handle for the roster's pending row (safe to expose; the token hash is not).
+ */
+interface InviteTokenRecord {
+  id: string;
+  orgId: string;
+  /** Invitee email, lower-cased. */
+  email: string;
+  role: Role;
+  grantAdmin: boolean;
+  /** Display name of the Owner/Admin who sent it, for the acceptance screen. */
+  inviterName: string;
+  issuedAt: number;
+  used: boolean;
+}
+
+export type CreateInviteOutcome = 'sent' | 'already_member';
+
+export interface CreateInviteResult {
+  outcome: CreateInviteOutcome;
+  /** The raw single-use token — present only when a new invite was actually minted. Never surfaced over the network. */
+  token?: string;
+}
+
+export interface InviteDetails {
+  status: 'valid' | 'expired' | 'invalid';
+  inviterName?: string;
+  organizationName?: string;
+  role?: Role;
+  email?: string;
+}
+
+export type AcceptInviteOutcome = 'success' | 'invite_expired' | 'invite_invalid' | 'weak_password';
+
+export interface AcceptInviteResult {
+  outcome: AcceptInviteOutcome;
+  accessToken?: string;
+  refreshToken?: string;
+}
+
+export type TeamMutationOutcome =
+  'ok' | 'owner_protected' | 'admin_revoke_forbidden' | 'member_not_found';
+
+export interface ChangeMemberRoleResult {
+  outcome: TeamMutationOutcome;
+  member?: TeamMember;
+  /** The member's role before the change — for the audit diff (US-CW-031 AC-04). */
+  previousRole?: Role;
+  /** The member's Admin flag before the change — for the admin-change audit event (US-CW-031 AC-08). */
+  previousIsAdmin?: boolean;
+}
+
+export interface RemoveMemberResult {
+  outcome: TeamMutationOutcome;
+  /** The removed member as they were just before removal — for the audit record (US-CW-031 AC-04/AC-05). */
+  member?: TeamMember;
 }
 
 export type SignUpOutcome = 'success' | 'weak_password';
@@ -149,6 +227,8 @@ export interface AuthServiceSnapshot {
   auditLog: AuditEvent[];
   resetTokens: [string, ResetTokenRecord][];
   verificationTokens: [string, VerificationTokenRecord][];
+  inviteTokens: [string, InviteTokenRecord][];
+  organizations: [string, OrganizationRecord][];
   refreshTokenFamilies: SerializedRefreshTokenFamily[];
   notifications: NotificationEvent[];
 }
@@ -206,11 +286,318 @@ export class AuthService {
   /** Access tokens are short-lived and never persisted beyond this process, so unlike refresh tokens they're kept raw rather than hashed. */
   private readonly accessTokensByToken = new Map<string, AccessTokenRecord>();
   private readonly notificationsSent: NotificationEvent[] = [];
+  /** Team invites, keyed by the SHA-256 hash of the single-use token — never the raw token (US-CW-031). */
+  private readonly invitesByTokenHash = new Map<string, InviteTokenRecord>();
+  /** Organization records by id. */
+  private readonly orgsById = new Map<string, OrganizationRecord>();
+  /** EIN → orgId, so a repeated onboarding of the same EIN reuses its org rather than minting a second (US-CW-030 AC-04). */
+  private readonly orgIdByEin = new Map<string, string>();
 
-  constructor(users: SeedUser[] = SEED_USERS) {
+  constructor(
+    users: SeedUser[] = SEED_USERS,
+    organizations: readonly OrganizationRecord[] = [SEED_ORGANIZATION],
+  ) {
     // Copy each user rather than storing the caller's reference — resetPassword mutates the
     // stored record in place, and must not corrupt the caller's (possibly shared) fixture array.
     this.usersByEmail = new Map(users.map((user) => [user.email.toLowerCase(), { ...user }]));
+    for (const org of organizations) {
+      this.orgsById.set(org.id, { ...org });
+      this.orgIdByEin.set(org.ein, org.id);
+    }
+  }
+
+  private toOrganization(record: OrganizationRecord): Organization {
+    return {
+      id: record.id,
+      legalName: record.legalName,
+      ein: record.ein,
+      createdAt: new Date(record.createdAt).toISOString(),
+    };
+  }
+
+  private toTeamMember(user: SeedUser): TeamMember {
+    return {
+      id: user.id,
+      displayName: user.displayName,
+      email: user.email,
+      role: user.role,
+      isAdmin: user.isAdmin,
+      isOwner: user.isOwner,
+      joinedAt: new Date(user.joinedAt).toISOString(),
+    };
+  }
+
+  /**
+   * Provision an Organization for the account creator whose KYB just cleared, and assign them Owner —
+   * one atomic transition (US-CW-030 AC-01): there is never a persisted state where the business is
+   * approved but has no Organization or no Owner. Idempotent per EIN: a repeat provisioning of an EIN
+   * that already has an org reuses it and creates no second org (AC-04). The owner elevation reads
+   * through on the creator's very next session check, since checkSession re-reads the live record.
+   * A no-op returning null for an unknown email.
+   */
+  provisionOrganizationForOwner(
+    email: string,
+    business: { legalName: string; ein: string },
+    now: number = Date.now(),
+  ): Organization | null {
+    const user = this.usersByEmail.get(email.toLowerCase());
+    if (!user) return null;
+
+    let orgId = this.orgIdByEin.get(business.ein);
+    let record: OrganizationRecord;
+    if (orgId) {
+      record = this.orgsById.get(orgId)!;
+    } else {
+      orgId = `org_${crypto.randomUUID()}`;
+      record = { id: orgId, legalName: business.legalName, ein: business.ein, createdAt: now };
+      this.orgsById.set(orgId, record);
+      this.orgIdByEin.set(business.ein, orgId);
+    }
+
+    // Atomic with org creation: membership + Owner authority assigned in the same transition.
+    const provisioning = ownerProvisioning();
+    user.orgId = orgId;
+    user.role = provisioning.role;
+    user.approvalLimit = provisioning.approvalLimit;
+    user.isOwner = provisioning.isOwner;
+    user.joinedAt = now;
+
+    return this.toOrganization(record);
+  }
+
+  /** The orgId a user (by id) belongs to, or null if they aren't in any organization. */
+  getOrgIdForUser(userId: string): string | null {
+    for (const user of this.usersByEmail.values()) {
+      if (user.id === userId) return user.orgId;
+    }
+    return null;
+  }
+
+  /** The full team roster for an organization — members plus pending invites (Design §18.1). Null if the org is unknown. */
+  getTeamRoster(orgId: string, now: number = Date.now()): TeamRosterResponse | null {
+    const org = this.orgsById.get(orgId);
+    if (!org) return null;
+
+    const members = [...this.usersByEmail.values()]
+      .filter((user) => user.orgId === orgId)
+      .sort((a, b) => a.joinedAt - b.joinedAt)
+      .map((user) => this.toTeamMember(user));
+
+    const invites: PendingInvite[] = [...this.invitesByTokenHash.values()]
+      .filter(
+        (invite) =>
+          invite.orgId === orgId && !invite.used && !isInviteTokenExpired(invite.issuedAt, now),
+      )
+      .sort((a, b) => a.issuedAt - b.issuedAt)
+      .map((invite) => ({
+        id: invite.id,
+        email: invite.email,
+        role: invite.role,
+        grantAdmin: invite.grantAdmin,
+        invitedAt: new Date(invite.issuedAt).toISOString(),
+      }));
+
+    return {
+      organizationId: org.id,
+      organizationName: org.legalName,
+      members,
+      invites,
+    };
+  }
+
+  /**
+   * Create a single-use, 7-day team invite (US-CW-031 AC-01). Enumeration-safe: the caller always
+   * gets the same "sent" shape whether or not the email already has an account — a token is minted
+   * ONLY for an email that isn't already a member of some organization, and the raw token never
+   * leaves the service in the response (mirrors requestPasswordReset/signUp). Dedupe: a second invite
+   * to the same email+org while one is still pending returns the existing one rather than minting a
+   * duplicate (edge case). `already_member` when the email is already in THIS org — nothing to send.
+   */
+  async createInvite(
+    input: { orgId: string; email: string; role: Role; grantAdmin: boolean; inviterName: string },
+    now: number = Date.now(),
+  ): Promise<CreateInviteResult> {
+    const email = input.email.toLowerCase();
+    const existingUser = this.usersByEmail.get(email);
+
+    // Already a member somewhere — never mint (no cross-org attachment, no duplicate account). If it's
+    // this very org, say so; otherwise stay enumeration-safe and just report "sent" with no token.
+    if (existingUser?.orgId) {
+      return existingUser.orgId === input.orgId
+        ? { outcome: 'already_member' }
+        : { outcome: 'sent' };
+    }
+
+    // Dedupe an already-outstanding invite to the same email+org (edge case: no second token).
+    for (const invite of this.invitesByTokenHash.values()) {
+      if (
+        invite.orgId === input.orgId &&
+        invite.email === email &&
+        !invite.used &&
+        !isInviteTokenExpired(invite.issuedAt, now)
+      ) {
+        return { outcome: 'sent' };
+      }
+    }
+
+    const token = `invite_${crypto.randomUUID()}`;
+    const tokenHash = await hashToken(token);
+    this.invitesByTokenHash.set(tokenHash, {
+      id: `invite_${crypto.randomUUID()}`,
+      orgId: input.orgId,
+      email,
+      role: input.role,
+      grantAdmin: input.grantAdmin,
+      inviterName: input.inviterName,
+      issuedAt: now,
+      used: false,
+    });
+    return { outcome: 'sent', token };
+  }
+
+  /** What the invite-acceptance page shows before a password is set (Design §18.3). */
+  async getInviteDetails(token: string, now: number = Date.now()): Promise<InviteDetails> {
+    const record = this.invitesByTokenHash.get(await hashToken(token));
+    if (!record || record.used) return { status: 'invalid' };
+    if (isInviteTokenExpired(record.issuedAt, now)) return { status: 'expired' };
+
+    const org = this.orgsById.get(record.orgId);
+    return {
+      status: 'valid',
+      inviterName: record.inviterName,
+      organizationName: org?.legalName,
+      role: record.role,
+      email: record.email,
+    };
+  }
+
+  /**
+   * Accept an invite (US-CW-031 AC-02). A brand-new invitee sets a password (validated to sign-up
+   * complexity) and an account is created directly into the inviting org with the invite's role —
+   * skipping business onboarding entirely, which is a per-organization step the Owner already did.
+   * An expired or already-consumed token grants no membership (AC-03). On success the invitee is
+   * auto-logged-in exactly like email verification, landing on their role dashboard.
+   */
+  async acceptInvite(
+    token: string,
+    password: string,
+    now: number = Date.now(),
+  ): Promise<AcceptInviteResult> {
+    const tokenHash = await hashToken(token);
+    const record = this.invitesByTokenHash.get(tokenHash);
+    if (!record || record.used) return { outcome: 'invite_invalid' };
+    if (isInviteTokenExpired(record.issuedAt, now)) return { outcome: 'invite_expired' };
+
+    const existingUser = this.usersByEmail.get(record.email);
+    if (!existingUser && !isValidSignUpPassword(password)) {
+      return { outcome: 'weak_password' };
+    }
+
+    const approvalLimit = defaultApprovalLimitForRole(record.role);
+    if (existingUser) {
+      // An account already exists (e.g. signed up but never onboarded) — attach it to the org with
+      // the invited role rather than creating a duplicate. It keeps its own password.
+      existingUser.orgId = record.orgId;
+      existingUser.role = record.role;
+      existingUser.approvalLimit = approvalLimit;
+      existingUser.isAdmin = record.grantAdmin;
+      existingUser.verified = true;
+      existingUser.joinedAt = now;
+    } else {
+      this.usersByEmail.set(record.email, {
+        id: `user_${crypto.randomUUID()}`,
+        email: record.email,
+        passwordHash: await hashPassword(password),
+        verified: true,
+        displayName: record.email.split('@')[0] ?? record.email,
+        role: record.role,
+        approvalLimit,
+        isAdmin: record.grantAdmin,
+        isOwner: false,
+        orgId: record.orgId,
+        joinedAt: now,
+      });
+    }
+
+    record.used = true;
+    const { accessToken, refreshToken } = await this.createFamily(record.email, now);
+    return { outcome: 'success', accessToken, refreshToken };
+  }
+
+  /**
+   * Change an existing member's approval tier (US-CW-031 AC-04). Gated to a member of the actor's own
+   * org. The Owner is protected — their tier can't be changed by anyone (US-CW-030 AC-03). The change
+   * reads through on the member's next session check (US-CW-006 AC-05). Returns the prior role so the
+   * caller can write the audit diff.
+   */
+  changeMemberRole(
+    actorOrgId: string,
+    memberId: string,
+    patch: { role: Role; grantAdmin?: boolean },
+    actorIsOwner = false,
+  ): ChangeMemberRoleResult {
+    const member = this.findMemberInOrg(actorOrgId, memberId);
+    if (!member) return { outcome: 'member_not_found' };
+    if (member.isOwner) return { outcome: 'owner_protected' };
+
+    // Granting Admin is a delegation any Owner/Admin can make, but REVOKING it is Owner-only
+    // (US-CW-031 AC-08): an Admin can never strip Admin — not from another Admin, nor from themselves —
+    // so an Admin can't lock the org out of team management, and revocation stays a deliberate Owner
+    // decision. The check is on the transition true→false, resolved server-side from the caller's own
+    // session, never client claims.
+    const revokingAdmin = patch.grantAdmin === false && member.isAdmin;
+    if (revokingAdmin && !actorIsOwner) {
+      return { outcome: 'admin_revoke_forbidden' };
+    }
+
+    const previousRole = member.role;
+    const previousIsAdmin = member.isAdmin;
+    member.role = patch.role;
+    member.approvalLimit = defaultApprovalLimitForRole(patch.role);
+    if (patch.grantAdmin !== undefined) member.isAdmin = patch.grantAdmin;
+
+    return {
+      outcome: 'ok',
+      member: this.toTeamMember(member),
+      previousRole,
+      previousIsAdmin,
+    };
+  }
+
+  /**
+   * Remove a member from the organization (US-CW-031 AC-05). Gated to a member of the actor's own org.
+   * The Owner can never be removed by anyone, including another Admin (US-CW-030 AC-03). On removal the
+   * member's every session is revoked, so they're signed out on their next request, and their org
+   * membership is cleared — they can only return via a fresh invite.
+   */
+  removeMember(actorOrgId: string, memberId: string): RemoveMemberResult {
+    const member = this.findMemberInOrg(actorOrgId, memberId);
+    if (!member) return { outcome: 'member_not_found' };
+    if (member.isOwner) return { outcome: 'owner_protected' };
+
+    const snapshot = this.toTeamMember(member);
+    this.revokeFamiliesForEmail(member.email);
+    member.orgId = null;
+
+    return { outcome: 'ok', member: snapshot };
+  }
+
+  private findMemberInOrg(orgId: string, memberId: string): SeedUser | undefined {
+    for (const user of this.usersByEmail.values()) {
+      if (user.id === memberId && user.orgId === orgId) return user;
+    }
+    return undefined;
+  }
+
+  /** Revoke every active refresh-token family for an email — used when a member is removed (AC-05). */
+  private revokeFamiliesForEmail(email: string): void {
+    const key = email.toLowerCase();
+    for (const family of this.familiesById.values()) {
+      if (family.email === key && !family.revoked) {
+        family.revoked = true;
+        family.revokedReason = 'reuse_detected';
+      }
+    }
   }
 
   async login(
@@ -574,6 +961,10 @@ export class AuthService {
         approvalLimit: null,
         isAdmin: false,
         isOwner: false,
+        // No organization yet — a fresh sign-up joins one only by onboarding a business (which
+        // provisions an org and makes them Owner, US-CW-030) or accepting an invite (US-CW-031).
+        orgId: null,
+        joinedAt: now,
       });
     }
 
@@ -647,6 +1038,8 @@ export class AuthService {
       auditLog: [...this.auditLog],
       resetTokens: [...this.resetTokensByTokenHash],
       verificationTokens: [...this.verificationTokensByTokenHash],
+      inviteTokens: [...this.invitesByTokenHash],
+      organizations: [...this.orgsById],
       refreshTokenFamilies: [...this.familiesById.values()].map((family) => ({
         ...family,
         usedTokenHashes: [...family.usedTokenHashes],
@@ -675,6 +1068,22 @@ export class AuthService {
     snapshot.verificationTokens.forEach(([hash, record]) =>
       this.verificationTokensByTokenHash.set(hash, record),
     );
+
+    this.invitesByTokenHash.clear();
+    (snapshot.inviteTokens ?? []).forEach(([hash, record]) =>
+      this.invitesByTokenHash.set(hash, record),
+    );
+
+    // Organizations + the EIN index are rebuilt from the snapshot when present; a snapshot predating
+    // team management (no organizations key) leaves the seeded orgs in place rather than wiping them.
+    if (snapshot.organizations) {
+      this.orgsById.clear();
+      this.orgIdByEin.clear();
+      snapshot.organizations.forEach(([id, record]) => {
+        this.orgsById.set(id, record);
+        this.orgIdByEin.set(record.ein, id);
+      });
+    }
 
     this.familiesById.clear();
     this.familyIdByTokenHash.clear();

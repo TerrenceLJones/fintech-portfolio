@@ -266,6 +266,14 @@ describe('review submission — owner provisioning at KYB approval (US-CW-030)',
 
     const session = authService.checkSession(token);
     expect(session).toMatchObject({ role: 'controller', approvalLimit: null, isOwner: true });
+
+    // US-CW-030 AC-01: an Organization record is created, keyed to the verified business, with the
+    // creator assigned Owner on it — not merely an isOwner flag on a user with no org.
+    const orgId = authService.getOrgIdForUser(session.userId!);
+    expect(orgId).toBeTruthy();
+    const roster = authService.getTeamRoster(orgId!)!;
+    expect(roster.organizationName).toBe('Northwind Labs, Inc.');
+    expect(roster.members.find((m) => m.id === session.userId)?.isOwner).toBe(true);
   });
 
   it('does not elevate when the review is routed to under_review (AC-01)', async () => {

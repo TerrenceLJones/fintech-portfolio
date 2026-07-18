@@ -9,7 +9,7 @@ feature_area: 'core'
 title: 'Business Onboarding Flow'
 
 # Lifecycle status
-status: 'APPROVED'
+status: 'IMPLEMENTED'
 story_points: 8
 dependencies: []
 
@@ -28,10 +28,13 @@ history:
   - epic_id: 'EPIC-CW-017'
     action: 'updated'
     date: '2026-07-06'
+  - epic_id: 'EPIC-CW-017'
+    action: 'implemented'
+    date: '2026-07-18'
 
 # Status timestamps — set when status transitions occur
 approved_date: '2026-06-30'
-implementation_date: null
+implementation_date: '2026-07-18'
 deprecated_date: null
 removed_date: null
 

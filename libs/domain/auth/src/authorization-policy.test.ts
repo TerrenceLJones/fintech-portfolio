@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { hasPermission, permissionsForRole } from './authorization-policy';
+import {
+  defaultApprovalLimitForRole,
+  hasPermission,
+  permissionsForRole,
+} from './authorization-policy';
 
 describe('permissionsForRole', () => {
   it('grants an Employee only their own expenses and cards', () => {
@@ -49,13 +53,43 @@ describe('permissionsForRole', () => {
     expect(perms).not.toContain('approvals:act');
   });
 
-  it('does not grant team:view to a non-Admin, even a Controller', () => {
+  it('grants team:view for an Owner without granting extra approval authority (US-CW-006 AC-08)', () => {
+    // An Employee who is Owner sees the Team surface but gains no approval permissions from ownership.
+    const perms = permissionsForRole('employee', { isAdmin: false, isOwner: true });
+    expect(perms).toContain('team:view');
+    expect(perms).not.toContain('approvals:view');
+    expect(perms).not.toContain('approvals:act');
+  });
+
+  it('does not grant team:view to someone who is neither Owner nor Admin, even a Controller', () => {
     expect(permissionsForRole('controller', { isAdmin: false })).not.toContain('team:view');
+    expect(permissionsForRole('controller', { isAdmin: false, isOwner: false })).not.toContain(
+      'team:view',
+    );
+  });
+
+  it('grants a single team:view when a user is both Owner and Admin (no duplicate)', () => {
+    const perms = permissionsForRole('controller', { isAdmin: true, isOwner: true });
+    expect(perms.filter((p) => p === 'team:view')).toHaveLength(1);
   });
 
   it('never returns duplicate permissions', () => {
     const perms = permissionsForRole('controller', { isAdmin: true });
     expect(new Set(perms).size).toBe(perms.length);
+  });
+});
+
+describe('defaultApprovalLimitForRole', () => {
+  it('gives a Controller an unlimited approval limit', () => {
+    expect(defaultApprovalLimitForRole('controller')).toBeNull();
+  });
+
+  it('gives a Finance Manager a finite default limit', () => {
+    expect(defaultApprovalLimitForRole('finance_manager')).toBeGreaterThan(0);
+  });
+
+  it('gives an Employee no approval limit (they hold no approval authority)', () => {
+    expect(defaultApprovalLimitForRole('employee')).toBeNull();
   });
 });
 

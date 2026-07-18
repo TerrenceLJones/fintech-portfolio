@@ -9,7 +9,7 @@ feature_area: 'core'
 title: 'Team Management: Invite, Role Assignment & Removal'
 
 # Lifecycle status
-status: 'APPROVED'
+status: 'IMPLEMENTED'
 story_points: 8
 dependencies: ['US-CW-030', 'US-CW-006', 'US-CW-001']
 
@@ -25,10 +25,13 @@ history:
   - epic_id: 'EPIC-CW-017'
     action: 'approved'
     date: '2026-07-06'
+  - epic_id: 'EPIC-CW-017'
+    action: 'implemented'
+    date: '2026-07-18'
 
 # Status timestamps — set when status transitions occur
 approved_date: '2026-07-06'
-implementation_date: null
+implementation_date: '2026-07-18'
 deprecated_date: null
 removed_date: null
 
@@ -92,6 +95,16 @@ acceptance_criteria:
       Then I do not see any team-management navigation or actions
       And the invite, role-change, and removal endpoints independently reject my requests server-side regardless of client state
     status: 'active'
+  - id: 'AC-08'
+    description: |
+      Given I am an Owner or Admin
+      When I grant Admin to an existing member
+      Then that member gains the orthogonal Admin permission on their next request (US-CW-006 AC-05)
+      And an audit event records the change, actor, and timestamp (US-CW-021 AC-04)
+      But when I attempt to revoke Admin from a member
+      Then it is permitted only if I am the Owner — an Admin can delegate Admin but can never strip it, from another Admin or from themselves
+      And the role-change endpoint independently rejects a non-Owner's revoke attempt server-side, so an Admin can never lock the organization out of team management
+    status: 'active'
 
 # Technical Notes
 technical_notes: |
@@ -137,4 +150,24 @@ edge_cases: |
 
 # Implementation Status
 implementation_status: |
-  Not yet implemented. This story is APPROVED and ready for implementation planning — no application code exists yet.
+  Implemented by EPIC-CW-017 (2026-07-18). Invite tokens follow the established single-use, hashed,
+  time-limited pattern with a 7-day TTL (libs/domain/auth/src/invite-token-policy.ts). AuthService adds
+  createInvite (enumeration-safe, dedupes an outstanding invite, never mints for an existing member),
+  getInviteDetails, acceptInvite (creates the account directly in the inviting org with the invited
+  role, skips onboarding, auto-logs-in), changeMemberRole and removeMember (both Owner-protected;
+  removal revokes the member's refresh-token families so they're signed out on their next request,
+  AC-05). Endpoints live in libs/mock-backend/src/handlers/team.handlers.ts: GET /api/team/members,
+  POST /api/team/invites, GET/POST /api/team/invites/:token(/accept), PATCH /api/team/members/:id/role,
+  DELETE /api/team/members/:id — all Owner/Admin-gated server-side (AC-07), with role changes and
+  removals emitting role_change audit events (AC-04, US-CW-021). AC-08: the role-change endpoint also
+  grants/revokes the orthogonal Admin flag — granting is available to any Owner/Admin, revoking is
+  Owner-only (changeMemberRole rejects a non-Owner revoke with admin_revoke_forbidden, so an Admin can
+  never strip Admin from another Admin or themselves), and each admin change emits its own audit event.
+  team:view is now granted by isOwner OR
+  isAdmin (libs/domain/auth/src/authorization-policy.ts). UI: apps/clearline-web/src/pages/team/TeamPage
+  (roster, invite modal, change-role/remove dialogs) and pages/invite/InviteAcceptPage (public
+  set-password → role dashboard / expired screen). Data-access lib: @clearline/data-access-team. AC-06's
+  "domain match at sign-up does not auto-join" holds by construction — sign-up creates an account with
+  orgId: null and routes to standalone onboarding; joining an org is only ever possible via an invite.
+  Out of scope, flagged as follow-ups: ownership transfer, and invite resend/revoke controls (the
+  roster shows pending invites but does not yet action them).

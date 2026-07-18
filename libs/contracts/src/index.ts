@@ -10,3 +10,4 @@ export type * from './analytics';
 export type * from './reconciliation';
 export type * from './budgets';
 export type * from './audit';
+export type * from './team';

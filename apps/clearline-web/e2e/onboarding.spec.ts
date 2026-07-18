@@ -193,11 +193,11 @@ test.describe('Business onboarding & KYB (US-CW-004, US-CW-005)', () => {
     await expect(page).toHaveURL(/\/onboarding\/owners/);
   });
 
-  test('routes a duplicate EIN to a sign-in CTA instead of a second onboarding (AC-07)', async ({
+  test('tells a different person hitting a claimed EIN to ask for an invite — no sign-in CTA (AC-08)', async ({
     page,
     mockBackend,
   }) => {
-    // A first account onboards, claiming OTHER_KNOWN_EIN.
+    // A first account onboards, claiming OTHER_KNOWN_EIN and becoming its Owner.
     await startOnboardingAsFreshUser(page, mockBackend, 'first-owner@clearline.dev');
     await fillBusinessInfo(page, { ein: OTHER_KNOWN_EIN, legalName: 'Second Owner Co' });
     let response = waitForApiResponse(page, '/api/onboarding/business');
@@ -205,17 +205,18 @@ test.describe('Business onboarding & KYB (US-CW-004, US-CW-005)', () => {
     await response;
     await expect(page).toHaveURL(/\/onboarding\/owners/);
 
-    // Now a second account attempts to onboard a business with the same EIN.
+    // A *different* person attempts to onboard the same EIN. They aren't that business's Owner and
+    // have no Clearline credentials of their own, so "sign in instead" would be wrong (US-CW-004
+    // AC-08, added by EPIC-CW-017): they're told to ask their admin for an invite, with no CTA.
     await startOnboardingAsFreshUser(page, mockBackend, 'dup-owner@clearline.dev');
     await fillBusinessInfo(page, { ein: OTHER_KNOWN_EIN });
     response = waitForApiResponse(page, '/api/onboarding/business');
     await page.getByRole('button', { name: 'Continue' }).click();
     await response;
 
-    await expect(
-      page.getByText('It looks like your business already has an account. Sign in instead.'),
-    ).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Sign in' })).toBeVisible();
+    await expect(page.getByText('Your business already has a Clearline account')).toBeVisible();
+    await expect(page.getByText(/Ask your organization.s admin to invite you/)).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Sign in' })).toHaveCount(0);
   });
 
   test('blocks further attempts and shows a support reference after 3 failed document uploads (AC-04)', async ({

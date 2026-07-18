@@ -64,7 +64,16 @@ export interface OnboardingStatusResponse {
 
 export type SubmitBusinessInfoRequest = BusinessInfo;
 
-export type SubmitBusinessInfoOutcome = 'verified' | 'ein_not_found' | 'duplicate_business';
+/**
+ * 'duplicate_business' and 'duplicate_business_not_owner' both reject a new onboarding attempt against
+ * an EIN someone else already onboarded (US-CW-004 AC-07/AC-08), branching on who is attempting it.
+ * The owner re-attempting their own account sees "Sign in instead" (AC-07); a different person at the
+ * same business — who has no Clearline credentials of their own — is told to ask their admin for an
+ * invite instead, with no sign-in CTA (AC-08). Neither is ever a persisted status of the user's own
+ * record, so both appear only here as a one-shot outcome, never in OnboardingOverallStatus.
+ */
+export type SubmitBusinessInfoOutcome =
+  'verified' | 'ein_not_found' | 'duplicate_business' | 'duplicate_business_not_owner';
 
 export interface SubmitBusinessInfoResponse {
   outcome: SubmitBusinessInfoOutcome;

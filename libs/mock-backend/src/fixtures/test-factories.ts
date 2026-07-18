@@ -50,6 +50,8 @@ export async function buildSeedUser(
     approvalLimit = null,
     isAdmin = false,
     isOwner = false,
+    orgId = null,
+    joinedAt = 0,
   } = overrides;
 
   return {
@@ -61,6 +63,8 @@ export async function buildSeedUser(
     approvalLimit,
     isAdmin,
     isOwner,
+    orgId,
+    joinedAt,
     passwordHash: passwordHash ?? (await hashPassword(password ?? DEFAULT_TEST_PASSWORD)),
   };
 }

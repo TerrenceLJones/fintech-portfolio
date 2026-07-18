@@ -38,7 +38,10 @@ function resolveActor(request: Request, authService: AuthService): PaymentActor 
   return {
     userId: session.userId!,
     displayName: session.displayName!,
-    permissions: permissionsForRole(session.role!, { isAdmin: session.isAdmin! }),
+    permissions: permissionsForRole(session.role!, {
+      isAdmin: session.isAdmin!,
+      isOwner: session.isOwner!,
+    }),
   };
 }
 
