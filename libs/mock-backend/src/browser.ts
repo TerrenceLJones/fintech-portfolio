@@ -24,6 +24,7 @@ import {
   type ReconciliationSection,
 } from './handlers/reconciliation.handlers';
 import { budgetsHandlers } from './handlers/budgets.handlers';
+import { auditHandlers } from './handlers/audit.handlers';
 import { sharedAnalyticsService } from './services/shared-analytics-service';
 import { sharedReconciliationService } from './services/shared-reconciliation-service';
 import { sharedBudgetsService } from './services/shared-budgets-service';
@@ -54,6 +55,7 @@ export const worker = setupWorker(
   ...analyticsHandlers,
   ...reconciliationHandlers,
   ...budgetsHandlers,
+  ...auditHandlers,
 );
 
 // Seed the demo user as an already-approved, fully-onboarded business so signing in as it lands on

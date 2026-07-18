@@ -12,11 +12,15 @@ import type {
   StepUpVerifyRequest,
   StepUpVerifyResponse,
 } from '@clearline/contracts';
+import type { CreatePaymentRequest as PaymentRequest, PaymentIntent } from '@clearline/contracts';
 import { hasPermission, permissionsForRole } from '@clearline/domain-auth';
 import { AuthService } from '../services/auth.service';
 import { PaymentsService, type PaymentActor } from '../services/payments.service';
+import { AuditService } from '../services/audit.service';
 import { sharedAuthService } from '../services/shared-auth-service';
 import { sharedPaymentsService } from '../services/shared-payments-service';
+import { sharedAuditService } from '../services/shared-audit-service';
+import { formatAuditMoney, resolveAuditActor } from './audit-actor';
 
 /**
  * Resolves the acting payer from the request's own access token — never from anything the client
@@ -48,7 +52,34 @@ const forbidden = () =>
 export function createPaymentsHandlers(
   paymentsService: PaymentsService = sharedPaymentsService,
   authService: AuthService = sharedAuthService,
+  auditService: AuditService = sharedAuditService,
 ): HttpHandler[] {
+  /**
+   * Record a payment submission in the central audit log (US-CW-021 AC-01). Emitted regardless of
+   * outcome — a successful submit, a step-up hold, and a validation rejection are all recorded — so a
+   * failed or rejected payment is auditable too. Captures the actor, amount, recipient, idempotency
+   * key, and outcome; the timestamp is stamped by the audit store.
+   */
+  function recordSubmission(
+    request: Request,
+    payload: PaymentRequest,
+    idempotencyKey: string,
+    outcome: string,
+    intent?: PaymentIntent,
+  ) {
+    const actor = resolveAuditActor(request, authService);
+    if (!actor) return;
+    const recipient = intent?.recipientName ?? payload.recipientId ?? 'hand-entered recipient';
+    auditService.record({
+      actor,
+      category: 'payment',
+      action: 'Submitted payment',
+      ...(intent ? { target: { label: intent.id, ref: intent.id } } : {}),
+      detail: `${formatAuditMoney(payload.amount)} → ${recipient}`,
+      meta: { amount: payload.amount, recipient, idempotencyKey, outcome },
+    });
+  }
+
   return [
     http.get('*/api/payments/context', ({ request }) => {
       const actor = resolveActor(request, authService);
@@ -92,6 +123,8 @@ export function createPaymentsHandlers(
         });
       }
       if (result.outcome === 'validation_error') {
+        // A rejected submission is still an auditable attempt (AC-01) — recorded with its reason.
+        recordSubmission(request, payload, idempotencyKey, `rejected · ${result.reason}`);
         const body: PaymentErrorResponse = {
           error: result.reason,
           ...(result.availableBalance ? { availableBalance: result.availableBalance } : {}),
@@ -101,9 +134,11 @@ export function createPaymentsHandlers(
       }
       // A high-value payment comes back reserved with a step-up challenge attached (US-CW-010 AC-01).
       if (result.outcome === 'requires_action') {
+        recordSubmission(request, payload, idempotencyKey, 'step-up required', result.intent);
         const body: CreatePaymentResponse = { intent: result.intent, challenge: result.challenge };
         return HttpResponse.json(body, { status: 200 });
       }
+      recordSubmission(request, payload, idempotencyKey, 'submitted', result.intent);
       const body: CreatePaymentResponse = { intent: result.intent };
       return HttpResponse.json(body, { status: 200 });
     }),

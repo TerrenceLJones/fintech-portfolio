@@ -51,7 +51,8 @@
       "@clearline/domain-reconciliation": ["libs/domain/reconciliation/src/index.ts"],
       "@clearline/data-access-reconciliation": ["libs/data-access/reconciliation/src/index.ts"],
       "@clearline/domain-budgets": ["libs/domain/budgets/src/index.ts"],
-      "@clearline/data-access-budgets": ["libs/data-access/budgets/src/index.ts"]
+      "@clearline/data-access-budgets": ["libs/data-access/budgets/src/index.ts"],
+      "@clearline/data-access-audit": ["libs/data-access/audit/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp", "dist"]

@@ -13,8 +13,11 @@ import type {
 import { hasPermission, permissionsForRole } from '@clearline/domain-auth';
 import { AuthService } from '../services/auth.service';
 import { CardsService, type CardActor } from '../services/cards.service';
+import { AuditService } from '../services/audit.service';
 import { sharedAuthService } from '../services/shared-auth-service';
 import { sharedCardsService } from '../services/shared-cards-service';
+import { sharedAuditService } from '../services/shared-audit-service';
+import { formatAuditMoney, resolveAuditActor } from './audit-actor';
 
 /**
  * Resolves the acting user from the request's own access token — never from anything the client
@@ -57,6 +60,7 @@ function requirePermission(
 export function createCardsHandlers(
   cardsService: CardsService = sharedCardsService,
   authService: AuthService = sharedAuthService,
+  auditService: AuditService = sharedAuditService,
 ): HttpHandler[] {
   return [
     // The issuance form's data is Controller-only (cards:manage) — declared before the parameterized
@@ -92,6 +96,24 @@ export function createCardsHandlers(
           status: 422,
         });
       }
+      // Card issuance is a privileged card-control action — record it with its limit + MCC posture in
+      // the central audit log (US-CW-021 AC-03). The actor is re-resolved from the session so the log
+      // carries their role, not just the CardActor's id/name.
+      const auditActor = resolveAuditActor(request, authService);
+      if (auditActor) {
+        const mccCount = result.card.allowedMccs.length;
+        auditService.record({
+          actor: auditActor,
+          category: 'card_control',
+          action: 'Issued card',
+          target: { label: `•••• ${result.card.last4}`, ref: result.card.id },
+          detail: `${formatAuditMoney(result.card.monthlyLimit)}/mo · ${
+            mccCount > 0
+              ? `${mccCount} MCC restriction${mccCount === 1 ? '' : 's'}`
+              : 'unrestricted'
+          }`,
+        });
+      }
       const body: CardResponse = { card: result.card };
       return HttpResponse.json(body, { status: 201 });
     }),
@@ -106,6 +128,20 @@ export function createCardsHandlers(
       if (result.outcome === 'not_found') {
         return HttpResponse.json({ error: 'card_not_found' } satisfies CardErrorResponse, {
           status: 404,
+        });
+      }
+      // A freeze/unfreeze is an auditable card-control change with a clear before → after (US-CW-021
+      // AC-03): the log captures the prior and new state, who made the change, and when.
+      const auditActor = resolveAuditActor(request, authService);
+      if (auditActor) {
+        auditService.record({
+          actor: auditActor,
+          category: 'card_control',
+          action: frozen ? 'Froze card' : 'Unfroze card',
+          target: { label: `•••• ${result.card.last4}`, ref: result.card.id },
+          diff: frozen
+            ? { from: 'Active', to: 'Frozen', tone: 'neutral' }
+            : { from: 'Frozen', to: 'Active', tone: 'positive' },
         });
       }
       const body: CardResponse = { card: result.card };

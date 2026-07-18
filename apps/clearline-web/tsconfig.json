@@ -27,6 +27,7 @@
     { "path": "../../libs/data-access/onboarding" },
     { "path": "../../libs/data-access/payments" },
     { "path": "../../libs/data-access/reconciliation" },
-    { "path": "../../libs/data-access/budgets" }
+    { "path": "../../libs/data-access/budgets" },
+    { "path": "../../libs/data-access/audit" }
   ]
 }

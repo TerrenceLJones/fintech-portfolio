@@ -9,7 +9,7 @@ feature_area: 'core'
 title: 'Immutable Audit Logging for Financial Actions'
 
 # Lifecycle status
-status: 'APPROVED'
+status: 'IMPLEMENTED'
 story_points: 5
 dependencies: ['US-CW-007', 'US-CW-012', 'US-CW-014', 'US-CW-006']
 
@@ -25,10 +25,13 @@ history:
   - epic_id: 'EPIC-CW-015'
     action: 'approved'
     date: '2026-06-30'
+  - epic_id: 'EPIC-CW-015'
+    action: 'implemented'
+    date: '2026-07-18'
 
 # Status timestamps — set when status transitions occur
 approved_date: '2026-06-30'
-implementation_date: null
+implementation_date: '2026-07-18'
 deprecated_date: null
 removed_date: null
 
@@ -108,5 +111,29 @@ edge_cases: |
 
 # Implementation Status
 implementation_status: |
-  Not yet implemented. This story is APPROVED and ready for implementation planning, transcribed as part of the initial
-  specification pass for clearline-web — no application code exists yet.
+  ✅ Implemented 2026-07-18 (EPIC-CW-015). A central, append-only AuditService in the mock backend
+  (@clearline/mock-backend) is the single source of truth for the audit log — it exposes only record()
+  and list() (no update/delete/clear at any layer), and the running app binds one shared instance that
+  payments, approvals, and card-control flows all emit into via a shared resolveAuditActor seam, rather
+  than the log being duplicated per feature. A unified AuditEvent contract (@clearline/contracts) carries
+  actor (server-derived), category, action, an optional before→after diff, and payment meta. The
+  Controller-only Audit Log view (/audit) is served by GET /api/audit-log through @clearline/data-access-audit
+  (useAuditLog), rendered as the design's §18 table with the append-only assurance badge; a 403 degrades
+  to AccessDenied. A page-aware Beacon guide and an e2e spec (audit.spec.ts) accompany it.
+  - AC-01: POST /api/payments records a 'payment' event on every submission regardless of outcome —
+    success, step-up hold, and validation rejection all logged — capturing actorId, amount, recipient,
+    timestamp, idempotency key, and outcome in AuditEvent.meta.
+  - AC-02: each approve/reject/escalate/reassign records an 'approval' event with who acted, the action,
+    the expense (submitter + category + id), and when; a rejection carries its reason.
+  - AC-03: a card freeze/unfreeze records a 'card_control' event with an Active↔Frozen before→after diff;
+    issuance records the new card with its monthly limit and MCC posture.
+  - AC-04: role/permission changes map to a 'role_change' category with a before→after role diff. No live
+    role-change flow exists yet (team management, EPIC-CW-018, is still Planned), so this category is
+    covered by the seed fixture and the ready record() seam rather than a live emission point.
+  - AC-05: the append-only guarantee is enforced at the data-access layer — AuditService has no update,
+    delete, remove, or clear method, and /api/audit-log exposes no write/mutate/delete route. A service
+    test asserts the absence of any mutation path and that list() returns deep clones.
+  - AC-06: audit:view gates the read (Controller only, re-checked server-side); a non-Controller is
+    denied outright with 403, never a limited view. A successful read records a self-referential
+    'audit_access' event for the caller before returning, so it tops the very list returned and is
+    tinted as the viewer's own access in the table.

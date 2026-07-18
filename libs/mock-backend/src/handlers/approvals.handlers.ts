@@ -5,11 +5,15 @@ import type {
   ApprovalQueueResponse,
   RejectApprovalRequest,
 } from '@clearline/contracts';
+import type { ApprovalQueueItem } from '@clearline/contracts';
 import { permissionsForRole } from '@clearline/domain-auth';
 import { AuthService } from '../services/auth.service';
 import { ApprovalsService, type ApprovalActor } from '../services/approvals.service';
+import { AuditService } from '../services/audit.service';
 import { sharedAuthService } from '../services/shared-auth-service';
 import { sharedApprovalsService } from '../services/shared-approvals-service';
+import { sharedAuditService } from '../services/shared-audit-service';
+import { formatAuditMoney, resolveAuditActor } from './audit-actor';
 import { bearerToken, unauthorizedForSession } from './session-auth';
 
 /**
@@ -39,7 +43,30 @@ function resolveActor(request: Request, authService: AuthService): ApprovalActor
 export function createApprovalsHandlers(
   approvalsService: ApprovalsService = sharedApprovalsService,
   authService: AuthService = sharedAuthService,
+  auditService: AuditService = sharedAuditService,
 ): HttpHandler[] {
+  /**
+   * Record an approval decision in the central audit log (US-CW-021 AC-02): who took the action, what
+   * action, on which expense, and when. The actor is re-resolved from the session so the event carries
+   * their role. A `reason` (rejection) is appended to the detail line when present.
+   */
+  function recordDecision(
+    request: Request,
+    item: ApprovalQueueItem,
+    action: string,
+    reason?: string,
+  ) {
+    const actor = resolveAuditActor(request, authService);
+    if (!actor) return;
+    auditService.record({
+      actor,
+      category: 'approval',
+      action,
+      target: { label: `${item.category} · ${item.submitterName}`, ref: item.id },
+      detail: `${formatAuditMoney(item.amount)}${reason ? ` · ${reason}` : ''}`,
+    });
+  }
+
   return [
     http.get('*/api/approvals', ({ request }) => {
       const actor = resolveActor(request, authService);
@@ -74,6 +101,7 @@ export function createApprovalsHandlers(
         };
         return HttpResponse.json(body, { status: 403 });
       }
+      recordDecision(request, result.item, 'Approved expense');
       const body: ApprovalActionResponse = { item: result.item };
       return HttpResponse.json(body, { status: 200 });
     }),
@@ -96,6 +124,7 @@ export function createApprovalsHandlers(
         const body: ApprovalErrorResponse = { error: result.reason };
         return HttpResponse.json(body, { status: 403 });
       }
+      recordDecision(request, result.item, 'Rejected expense', reason);
       const body: ApprovalActionResponse = { item: result.item };
       return HttpResponse.json(body, { status: 200 });
     }),
@@ -112,6 +141,7 @@ export function createApprovalsHandlers(
         const body: ApprovalErrorResponse = { error: result.reason };
         return HttpResponse.json(body, { status: 403 });
       }
+      recordDecision(request, result.item, 'Escalated expense');
       const body: ApprovalActionResponse = { item: result.item };
       return HttpResponse.json(body, { status: 200 });
     }),
@@ -128,6 +158,7 @@ export function createApprovalsHandlers(
         const body: ApprovalErrorResponse = { error: result.reason };
         return HttpResponse.json(body, { status: 403 });
       }
+      recordDecision(request, result.item, 'Reassigned approver');
       const body: ApprovalActionResponse = { item: result.item };
       return HttpResponse.json(body, { status: 200 });
     }),

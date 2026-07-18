@@ -16,6 +16,7 @@ import { IssueCardPage } from './pages/cards/IssueCardPage';
 import { CardDetailPage } from './pages/cards/CardDetailPage';
 import { DashboardPage } from './pages/dashboard/DashboardPage';
 import { ReconciliationPage } from './pages/reconciliation/ReconciliationPage';
+import { AuditLogPage } from './pages/audit/AuditLogPage';
 import { BudgetOverviewPage } from './pages/budget/BudgetOverviewPage';
 import { NewBudgetPage } from './pages/budget/NewBudgetPage';
 import { BudgetHistoryPage } from './pages/budget/BudgetHistoryPage';
@@ -154,16 +155,7 @@ export function App() {
                   <Route
                     element={<RequirePermission permission="audit:view" apiPath="/api/audit-log" />}
                   >
-                    <Route
-                      path="/audit"
-                      element={
-                        <PlaceholderPage
-                          title="Audit Log"
-                          icon="clock"
-                          body="The append-only record of privileged actions will appear here."
-                        />
-                      }
-                    />
+                    <Route path="/audit" element={<AuditLogPage />} />
                   </Route>
                   <Route element={<RequirePermission permission="team:view" apiPath="/api/team" />}>
                     <Route

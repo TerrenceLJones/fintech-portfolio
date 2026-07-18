@@ -15,6 +15,7 @@
   "dependencies": {
     "@clearline/contracts": "workspace:*",
     "@clearline/data-access-analytics": "workspace:*",
+    "@clearline/data-access-audit": "workspace:*",
     "@clearline/data-access-approvals": "workspace:*",
     "@clearline/data-access-budgets": "workspace:*",
     "@clearline/data-access-auth": "workspace:*",

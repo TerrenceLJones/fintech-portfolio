@@ -64,6 +64,7 @@ It's a standalone, project-agnostic library (`libs/demo-beacon`, `@clearline/dem
 - **New payment** — the full account/routing numbers (the page shows only masked forms) for the "Recipient not listed?" hand-entry flow, and the amount thresholds that trip the daily-limit / insufficient-funds blocks.
 - **Onboarding** — the EINs the mock registry accepts, and the names/EINs that route to manual review.
 - **Reconciliation** — the seeded exceptions (a fuzzy suggestion, an unmatched line, a splittable transaction, a duplicate), with one-click toggles to break a panel or trip the Fatal-tier balance-integrity state.
+- **Audit Log** — the seeded cross-cutting events (payment, approval, card freeze, role change) and the self-referential "your access is logged" behavior, with a pointer to the role switch that proves the Controller-only restriction.
 
 **How it works:** each page calls `useDemoBeacon(config)` to register its guide while mounted; a single `DemoBeaconProvider` in `App.tsx` owns the store and renders the launcher. Anything side-effectful (navigation, backend simulation, reset) crosses the boundary as a callback the app supplies. Config lives beside each page in colocated `*.beacon.ts` files (`apps/clearline-web/src/**/*.beacon.ts`) and shared helpers in `src/dev/beacon/`.
 
@@ -94,6 +95,7 @@ clearline/
       onboarding/            # @clearline/data-access-onboarding
       payments/              # @clearline/data-access-payments
       reconciliation/        # @clearline/data-access-reconciliation
+      audit/                 # @clearline/data-access-audit
     util/
       money/                 # @clearline/money — currency minor-unit conversion, shared once
     contracts/               # @clearline/contracts — API contract types (no Pact, see ADR-006)
@@ -158,8 +160,9 @@ The frontend framework decision is settled (React 19 + Vite) and `clearline-web`
 - **EPIC-CW-020** — Reassign approver for blocked approvals
 - **EPIC-CW-021** — Sidebar navigation shell (top-nav → side-nav migration: persistent left rail with role-scoped vertical nav, a user-identity footer showing role + approval limit, the relocated theme control, and a narrow-viewport off-canvas drawer)
 - **EPIC-CW-014** — Accessibility (cross-cutting, WCAG 2.1 AA): non-color status/risk/budget indicators, a global ≥3px keyboard focus ring (with a forced-colors fallback), spoken `MoneyDisplay` aria-labels, form errors associated to their field via `aria-describedby` and announced through a live region, and focus-trapped confirmation dialogs that announce the countdown and cancel on Escape
+- **EPIC-CW-015** — Audit logging (cross-cutting): a central, immutable, append-only audit store that payments, approvals, and card controls all emit into (rather than a log duplicated per feature), surfaced as a Controller-only Audit Log view with who / what / when and a before→after diff — where opening the view is itself an audited action, and no update or delete path exists at any layer (corrections are appended, never edits)
 
-**Planned** (see `specs/epics/clearline-web/`): AI invoice coding, AI spend insights (streaming), organization & team management, plus audit logging.
+**Planned** (see `specs/epics/clearline-web/`): AI invoice coding, AI spend insights (streaming), plus organization & team management.
 
 ---
 
