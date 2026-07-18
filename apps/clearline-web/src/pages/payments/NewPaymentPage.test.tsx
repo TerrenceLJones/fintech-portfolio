@@ -112,6 +112,23 @@ describe('NewPaymentPage — derived balance', () => {
   });
 });
 
+describe('NewPaymentPage — accessible error association (US-CW-020 AC-04)', () => {
+  it('ties the erroring field to the announced message via aria-describedby and marks it invalid', async () => {
+    renderPage({ availableBalance: 300_000 });
+    await chooseRecipientAndAmount(/Acme Corp/i, '5000');
+
+    // The validation message is announced through a live region…
+    const alert = await screen.findByRole('alert');
+    expect(alert.id).toBeTruthy();
+
+    // …and the amount field it refers to is programmatically associated with it, not merely
+    // recoloured — a screen reader lands on the field and hears why it is invalid.
+    const amount = screen.getByLabelText('Amount');
+    expect(amount).toHaveAttribute('aria-invalid', 'true');
+    expect(amount).toHaveAttribute('aria-describedby', alert.id);
+  });
+});
+
 describe('NewPaymentPage — client-side validation blocks (US-CW-008)', () => {
   it('blocks an over-balance payment before any network call, echoing the balance (AC-01)', async () => {
     renderPage({ availableBalance: 300_000 });

@@ -157,8 +157,9 @@ The frontend framework decision is settled (React 19 + Vite) and `clearline-web`
 - **EPIC-CW-019** — Account owner provisioning at KYB approval
 - **EPIC-CW-020** — Reassign approver for blocked approvals
 - **EPIC-CW-021** — Sidebar navigation shell (top-nav → side-nav migration: persistent left rail with role-scoped vertical nav, a user-identity footer showing role + approval limit, the relocated theme control, and a narrow-viewport off-canvas drawer)
+- **EPIC-CW-014** — Accessibility (cross-cutting, WCAG 2.1 AA): non-color status/risk/budget indicators, a global ≥3px keyboard focus ring (with a forced-colors fallback), spoken `MoneyDisplay` aria-labels, form errors associated to their field via `aria-describedby` and announced through a live region, and focus-trapped confirmation dialogs that announce the countdown and cancel on Escape
 
-**Planned** (see `specs/epics/clearline-web/`): AI invoice coding, AI spend insights (streaming), organization & team management, plus cross-cutting accessibility (WCAG 2.1 AA) and audit logging.
+**Planned** (see `specs/epics/clearline-web/`): AI invoice coding, AI spend insights (streaming), organization & team management, plus audit logging.
 
 ---
 

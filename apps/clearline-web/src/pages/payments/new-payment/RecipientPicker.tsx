@@ -1,4 +1,5 @@
 import { Avatar, Button, Icon, Text, TextField } from '@clearline/ui';
+import { PAYMENT_ERROR_ID } from './PaymentFormAlerts';
 import { initialsFor } from './format';
 import type { NewPaymentForm } from './use-new-payment-form';
 
@@ -95,12 +96,14 @@ export function RecipientPicker({
             value={routingNumber}
             onChange={(e) => onRoutingNumberChange(e.target.value)}
             state={recipientError}
+            aria-describedby={recipientError ? PAYMENT_ERROR_ID : undefined}
           />
           <TextField
             label="Account number"
             value={accountNumber}
             onChange={(e) => onAccountNumberChange(e.target.value)}
             state={recipientError}
+            aria-describedby={recipientError ? PAYMENT_ERROR_ID : undefined}
           />
         </div>
       ) : null}

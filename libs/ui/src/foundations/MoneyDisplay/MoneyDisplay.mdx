@@ -32,4 +32,12 @@ and risk missing an accessibility or formatting rule the design system already s
 Credit/debit states must show a directional icon (up/down arrow) in addition to color, so the
 direction of money movement is never conveyed by color alone.
 
+## Accessibility (EPIC-CW-014 · US-CW-020 AC-03)
+
+The visual glyphs (e.g. `$1,999.00`) are marked `aria-hidden`, and the amount is exposed to
+screen readers as a fully spoken, visually-hidden phrase — "One thousand nine hundred ninety-nine
+dollars" — via `spokenMoneyAmount` from `@clearline/money`. Credit/debit direction, otherwise
+carried only by an arrow icon and color, is spoken too ("Credit of …"). Pass `currency` so the
+spoken unit matches the glyphs (e.g. "pounds"), or `ariaLabel` to override the phrase entirely.
+
 <Stories />

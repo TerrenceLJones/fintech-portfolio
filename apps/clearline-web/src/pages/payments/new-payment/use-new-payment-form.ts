@@ -249,6 +249,14 @@ export function useNewPaymentForm() {
     setFxAcknowledged(false);
   }
 
+  // INVARIANT: whenever `activeError` carries a `field` ('amount' | 'recipient'), the
+  // PaymentFormAlerts error element (id=PAYMENT_ERROR_ID) is guaranteed to be in the DOM, so the
+  // field's `aria-describedby` never dangles (US-CW-020 AC-04). This holds because a field-scoped
+  // error is either (a) a client validation failure — which means the form is invalid and was never
+  // submitted, so the mutation-driven isTimeout/isExhausted branches that pre-empt the error alert
+  // can't be active — or (b) a server 'recipient_not_found', which is itself the active error being
+  // rendered. If a future change lets a field-scoped error survive a submit attempt, re-check that
+  // PaymentFormAlerts still renders the error branch (not isTimeout/isExhausted) for that state.
   const activeError: ActiveError | null = serverError
     ? {
         field: serverError.code === 'recipient_not_found' ? ('recipient' as const) : undefined,

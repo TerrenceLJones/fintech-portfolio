@@ -9,7 +9,7 @@ feature_area: 'core'
 title: 'WCAG 2.1 AA Accessibility Compliance'
 
 # Lifecycle status
-status: 'APPROVED'
+status: 'IMPLEMENTED'
 story_points: 5
 dependencies: []
 
@@ -25,10 +25,13 @@ history:
   - epic_id: 'EPIC-CW-014'
     action: 'approved'
     date: '2026-06-30'
+  - epic_id: 'EPIC-CW-014'
+    action: 'implemented'
+    date: '2026-07-17'
 
 # Status timestamps — set when status transitions occur
 approved_date: '2026-06-30'
-implementation_date: null
+implementation_date: '2026-07-17'
 deprecated_date: null
 removed_date: null
 
@@ -111,5 +114,15 @@ edge_cases: |
 
 # Implementation Status
 implementation_status: |
-  Not yet implemented. This story is APPROVED and ready for implementation planning, transcribed as part of the initial
-  specification pass for clearline-web — no application code exists yet.
+  Implemented under EPIC-CW-014 (2026-07-17). AC-01 non-color indicators — StatusBadge, BudgetGauge, and
+  MoneyDisplay (credit/debit) already pair color with an icon and text; SimilarityPill (fuzzy-match risk cue) now
+  carries a sparkles icon alongside its spelled-out score. AC-02 keyboard focus — a global :focus-visible baseline
+  in @clearline/ui styles.css gives every focusable element a >=3px ring with a forced-colors fallback, and the
+  standalone Demo Beacon carries its own >=3px ring on its launcher, switch, close, and action buttons. AC-03 spoken
+  money — spokenMoneyAmount/spokenMoney in @clearline/money turn an amount into a fully spoken phrase ("One thousand
+  nine hundred ninety-nine dollars"), exposed by MoneyDisplay as visually-hidden text while the glyphs are aria-hidden,
+  with credit/debit direction spoken too. AC-04 form errors — TextField associates its error via aria-describedby +
+  role="alert"; the New Payment form ties the erroring field (amount / manual recipient) to its live-region message via
+  a shared aria-describedby id. AC-05 confirmation dialogs — ConfirmationDialog (Radix Modal) traps focus, cancels on
+  Escape, gates the confirm button through a countdown, and now announces via a polite live region when the action
+  becomes confirmable. A prefers-reduced-motion guard stills the loading-skeleton shimmer.

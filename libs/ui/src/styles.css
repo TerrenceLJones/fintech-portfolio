@@ -13,6 +13,31 @@ body {
   font-family: var(--font-cl-ui);
 }
 
+/* ── Accessibility: global keyboard focus ring (EPIC-CW-014 · US-CW-020 AC-02) ──
+   A visible ring of at least 3px for focusable elements that don't already carry
+   their own focus treatment — links, buttons, and custom tabindex targets — so a
+   keyboard-only operator never loses the focus location. Scoped to :focus-visible
+   so it only shows for keyboard/AT users, not on mouse click.
+
+   Native form fields (input/select/textarea) are intentionally excluded: they are
+   always wrapped by a design-system field component (TextField, PasswordField,
+   OtpInput, …) that renders its own focus-within ring, and — unlike buttons — an
+   <input> matches :focus-visible on pointer focus too, so a global outline here
+   would double-ring the field and show even on a mouse click. This is the floor
+   for un-styled controls, not a ceiling; components may layer a richer ring. */
+:where(a, button, summary, [tabindex]):focus-visible {
+  outline: 3px solid var(--cl-focus);
+  outline-offset: 2px;
+}
+
+/* Forced-colors / Windows High Contrast strips custom outline colors — fall back
+   to the system Highlight color so the ring never disappears (US-CW-020 edge case). */
+@media (forced-colors: active) {
+  :where(a, button, summary, [tabindex]):focus-visible {
+    outline-color: Highlight;
+  }
+}
+
 @keyframes cl-shimmer {
   0% {
     background-position: -200px 0;
@@ -33,4 +58,13 @@ body {
   );
   background-size: 320px 100%;
   animation: cl-shimmer 1.4s linear infinite;
+}
+
+/* Respect a user's reduced-motion preference — hold a static placeholder instead
+   of the shimmer sweep (US-CW-020 accessibility, prefers-reduced-motion). */
+@media (prefers-reduced-motion: reduce) {
+  .cl-skeleton {
+    animation: none;
+    background-position: 0 0;
+  }
 }

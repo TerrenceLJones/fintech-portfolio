@@ -1,9 +1,28 @@
 import { describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ConfirmationDialog } from './ConfirmationDialog';
 
 describe('ConfirmationDialog', () => {
+  it('announces to screen readers when the countdown finishes and the action is armed (WCAG AC-05)', () => {
+    vi.useFakeTimers();
+    try {
+      render(<ConfirmationDialog open onOpenChange={() => {}} title="Confirm?" countdown={1} />);
+
+      // While counting down, the polite live region holds no armed announcement yet.
+      const liveRegion = screen.getByRole('status', { name: /confirmation timer/i });
+      expect(liveRegion).not.toHaveTextContent(/can now confirm/i);
+
+      // Advance past the countdown; the live region announces that confirmation is now available.
+      act(() => {
+        vi.advanceTimersByTime(1000);
+      });
+      expect(liveRegion).toHaveTextContent(/can now confirm/i);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('gates the confirm button while counting down, but keeps it focusable and explained', () => {
     render(
       <ConfirmationDialog

@@ -18,7 +18,7 @@ export const CSS = `
   box-shadow: 0 8px 28px rgba(0,0,0,0.22); transition: transform .12s ease, box-shadow .12s ease;
 }
 .dbc-launcher:hover { transform: translateY(-1px); box-shadow: 0 12px 34px rgba(0,0,0,0.28); }
-.dbc-launcher:focus-visible { outline: 2px solid var(--beacon-focus, #ffffff); outline-offset: 2px; }
+.dbc-launcher:focus-visible { outline: 3px solid var(--beacon-focus, #ffffff); outline-offset: 2px; }
 .dbc-launcher-icon { font-size: 18px; line-height: 1; }
 
 .dbc-panel {
@@ -49,6 +49,7 @@ export const CSS = `
   background: transparent; color: var(--beacon-text-2, #52525b); font-size: 16px; line-height: 1;
   display: inline-flex; align-items: center; justify-content: center; }
 .dbc-close:hover { background: var(--beacon-inset, rgba(0,0,0,0.05)); color: var(--beacon-text, #18181b); }
+.dbc-close:focus-visible { outline: 3px solid var(--beacon-accent, #4f46e5); outline-offset: 2px; }
 
 .dbc-body { overflow-y: auto; padding: 6px 14px 14px; }
 .dbc-section { padding: 12px 0; border-bottom: 1px solid var(--beacon-border, rgba(0,0,0,0.06)); }
@@ -91,6 +92,10 @@ export const CSS = `
   background: var(--beacon-danger-weak, rgba(220,38,38,0.07)); }
 .dbc-linkbtn { background: none; border: 0; padding: 0; cursor: pointer; font: inherit; font-size: 11px;
   font-weight: 600; color: var(--beacon-accent, #4f46e5); text-decoration: underline; white-space: nowrap; }
+/* Keyboard focus ring (>=3px) for every interactive control in the panel — the Beacon is
+   standalone and imports no app CSS, so it must carry its own WCAG AA focus indicator. */
+.dbc-btn:focus-visible, .dbc-linkbtn:focus-visible {
+  outline: 3px solid var(--beacon-accent, #4f46e5); outline-offset: 2px; }
 
 .dbc-actions { display: flex; flex-direction: column; gap: 10px; }
 .dbc-action-row { display: flex; flex-direction: column; gap: 3px; }
@@ -106,7 +111,7 @@ export const CSS = `
   border-radius: 9999px; border: 1px solid var(--beacon-border, rgba(0,0,0,0.14));
   background: var(--beacon-inset-2, rgba(0,0,0,0.12)); transition: background .14s ease, border-color .14s ease; }
 .dbc-switch:disabled { opacity: .55; cursor: default; }
-.dbc-switch:focus-visible { outline: 2px solid var(--beacon-accent, #4f46e5); outline-offset: 2px; }
+.dbc-switch:focus-visible { outline: 3px solid var(--beacon-accent, #4f46e5); outline-offset: 2px; }
 .dbc-switch.dbc-on { background: var(--beacon-accent, #4f46e5); border-color: var(--beacon-accent, #4f46e5); }
 .dbc-switch-knob { position: absolute; top: 1px; left: 1px; width: 16px; height: 16px; border-radius: 9999px;
   background: #ffffff; box-shadow: 0 1px 2px rgba(0,0,0,0.3); transition: transform .14s ease; }

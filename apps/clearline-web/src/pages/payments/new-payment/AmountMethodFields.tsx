@@ -1,6 +1,7 @@
 import { currencySymbol } from '@clearline/money';
 import { Select, Text, TextField } from '@clearline/ui';
 import { paymentMethodOptions } from './payment-methods';
+import { PAYMENT_ERROR_ID } from './PaymentFormAlerts';
 import type { NewPaymentForm } from './use-new-payment-form';
 
 interface AmountMethodFieldsProps {
@@ -32,6 +33,7 @@ export function AmountMethodFields({
           value={amountInput}
           onChange={(e) => onAmountChange(e.target.value)}
           state={activeError?.field === 'amount' ? 'error' : undefined}
+          aria-describedby={activeError?.field === 'amount' ? PAYMENT_ERROR_ID : undefined}
           className="font-mono text-[18px] font-semibold tabular-nums"
         />
       </div>

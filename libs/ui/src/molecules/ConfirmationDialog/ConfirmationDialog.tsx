@@ -98,6 +98,12 @@ export function ConfirmationDialog({
           Waiting a few seconds before this irreversible action can be confirmed.
         </span>
       )}
+      {/* Politely announces the countdown finishing so a screen-reader user knows the confirm
+          button is now actionable without watching the visible timer (US-CW-020 AC-05). Empty
+          while counting so each tick isn't announced — only the armed transition is spoken. */}
+      <span role="status" aria-label="Confirmation timer" aria-live="polite" className="sr-only">
+        {armed ? 'You can now confirm this action.' : ''}
+      </span>
     </Modal>
   );
 }

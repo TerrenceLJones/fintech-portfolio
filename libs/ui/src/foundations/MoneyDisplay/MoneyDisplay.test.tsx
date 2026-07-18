@@ -33,4 +33,35 @@ describe('MoneyDisplay', () => {
     render(<MoneyDisplay amount={48210} label="Available balance" />);
     expect(screen.getByText('Available balance')).toBeInTheDocument();
   });
+
+  it('exposes a fully spoken aria-label for screen readers (WCAG AC-03)', () => {
+    render(<MoneyDisplay amount={1999} />);
+    // The spoken phrase is real (visually hidden) text so every screen reader announces it,
+    // rather than the raw "$1,999.00" glyphs.
+    expect(screen.getByText('One thousand nine hundred ninety-nine dollars')).toBeInTheDocument();
+  });
+
+  it('hides the visual glyphs from assistive tech so the amount is not read twice', () => {
+    render(<MoneyDisplay amount={1999} />);
+    const visual = screen.getByText('$1,999.00');
+    expect(visual).toHaveAttribute('aria-hidden', 'true');
+  });
+
+  it('speaks the direction for credit and debit amounts', () => {
+    const { rerender } = render(<MoneyDisplay amount={5000} state="credit" />);
+    expect(screen.getByText('Credit of Five thousand dollars')).toBeInTheDocument();
+
+    rerender(<MoneyDisplay amount={5000} state="debit" />);
+    expect(screen.getByText('Debit of Five thousand dollars')).toBeInTheDocument();
+  });
+
+  it('speaks the amount in the given currency', () => {
+    render(<MoneyDisplay amount={5} currency="GBP" />);
+    expect(screen.getByText('Five pounds')).toBeInTheDocument();
+  });
+
+  it('lets a caller override the spoken label', () => {
+    render(<MoneyDisplay amount={5} ariaLabel="Balance five dollars" />);
+    expect(screen.getByText('Balance five dollars')).toBeInTheDocument();
+  });
 });

@@ -1,6 +1,13 @@
 import { Alert, Button } from '@clearline/ui';
 import type { NewPaymentForm } from './use-new-payment-form';
 
+/**
+ * Stable id of the form-level validation live region. The erroring field points its
+ * `aria-describedby` here so a screen reader on that field hears the announced reason
+ * (US-CW-020 AC-04) rather than only seeing the red border.
+ */
+export const PAYMENT_ERROR_ID = 'new-payment-error';
+
 interface PaymentFormAlertsProps {
   isTimeout: NewPaymentForm['isTimeout'];
   isExhausted: NewPaymentForm['isExhausted'];
@@ -40,7 +47,7 @@ export function PaymentFormAlerts({
   if (activeError?.message) {
     return (
       <div className="mt-4">
-        <div role="alert" className="text-cl-neg text-[12px] font-medium">
+        <div id={PAYMENT_ERROR_ID} role="alert" className="text-cl-neg text-[12px] font-medium">
           {activeError.message}
         </div>
         {activeError.limitCta ? (
