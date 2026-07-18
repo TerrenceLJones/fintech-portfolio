@@ -8,6 +8,7 @@
     "build": "vite build",
     "start": "vite preview",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "e2e": "playwright test",
     "lint": "eslint .",
     "type-check": "tsc --noEmit"
@@ -56,6 +57,7 @@
     "@types/node": "^24.0.0",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
+    "@vitest/coverage-v8": "^4.1.9",
     "msw": "^2.14.6",
     "tailwindcss": "^4.3.2"
   },

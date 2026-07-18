@@ -249,6 +249,9 @@ importers:
       '@types/react-dom':
         specifier: ^19.2.3
         version: 19.2.3(@types/react@19.2.17)
+      '@vitest/coverage-v8':
+        specifier: ^4.1.9
+        version: 4.1.9(@vitest/browser@4.1.9)(vitest@4.1.9)
       msw:
         specifier: ^2.14.6
         version: 2.14.6(@types/node@24.13.2)(typescript@6.0.3)
@@ -622,6 +625,10 @@ importers:
       react-dom:
         specifier: ^19.0.0
         version: 19.2.7(react@19.2.7)
+    devDependencies:
+      '@vitest/coverage-v8':
+        specifier: ^4.1.9
+        version: 4.1.9(@vitest/browser@4.1.9)(vitest@4.1.9)
 
   libs/design-tokens:
     dependencies:
@@ -632,6 +639,9 @@ importers:
       '@types/react':
         specifier: ^19.2.17
         version: 19.2.17
+      '@vitest/coverage-v8':
+        specifier: ^4.1.9
+        version: 4.1.9(@vitest/browser@4.1.9)(vitest@4.1.9)
       tailwindcss:
         specifier: ^4.3.1
         version: 4.3.2
@@ -674,7 +684,11 @@ importers:
         specifier: workspace:*
         version: link:../../contracts
 
-  libs/icons: {}
+  libs/icons:
+    devDependencies:
+      '@vitest/coverage-v8':
+        specifier: ^4.1.9
+        version: 4.1.9(@vitest/browser@4.1.9)(vitest@4.1.9)
 
   libs/mock-backend:
     dependencies:
@@ -703,6 +717,9 @@ importers:
         specifier: workspace:*
         version: link:../domain/reconciliation
     devDependencies:
+      '@vitest/coverage-v8':
+        specifier: ^4.1.9
+        version: 4.1.9(@vitest/browser@4.1.9)(vitest@4.1.9)
       msw:
         specifier: ^2.14.6
         version: 2.14.6(@types/node@24.13.2)(typescript@6.0.3)

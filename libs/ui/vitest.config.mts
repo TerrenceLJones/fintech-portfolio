@@ -8,7 +8,8 @@ export default defineConfig({
   test: {
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'html'],
+      reporter: ['text', 'json-summary', 'json', 'html'],
+      reportOnFailure: true,
       reportsDirectory: 'coverage',
       include: ['src/**/*.{ts,tsx}'],
       exclude: ['src/**/*.stories.tsx', 'src/**/*.test.{ts,tsx}', 'src/index.ts'],

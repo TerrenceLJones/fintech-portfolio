@@ -15,6 +15,7 @@
     "lint": "eslint .",
     "type-check": "tsc --noEmit",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "build": "tsc"
   },
   "dependencies": {
@@ -28,6 +29,7 @@
     "@clearline/domain-budgets": "workspace:*"
   },
   "devDependencies": {
+    "@vitest/coverage-v8": "^4.1.9",
     "msw": "^2.14.6"
   },
   "metadata": {

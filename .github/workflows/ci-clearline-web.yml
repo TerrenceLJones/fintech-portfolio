@@ -17,6 +17,7 @@ on:
 permissions:
   contents: read
   actions: read
+  pull-requests: write # coverage report comment
 
 concurrency:
   group: ci-clearline-web-${{ github.ref }}
@@ -78,8 +79,53 @@ jobs:
       - name: Type-check affected
         run: pnpm exec nx affected --target=type-check --parallel=3
 
-      - name: Test affected
-        run: pnpm exec nx affected --target=test --parallel=3
+      - name: Test affected (with coverage)
+        run: pnpm exec nx affected --target=test:coverage --parallel=3
+
+      # Post a per-project coverage table to the PR. Each step is guarded by the
+      # existence of that project's coverage-summary.json, so only projects that
+      # `nx affected` actually tested get a section — and none run on push-to-main.
+      - name: Coverage report — clearline-web
+        if: ${{ github.event_name == 'pull_request' && !cancelled() && hashFiles('apps/clearline-web/coverage/coverage-summary.json') != '' }}
+        uses: davelosert/vitest-coverage-report-action@v2
+        with:
+          name: clearline-web
+          working-directory: apps/clearline-web
+
+      - name: Coverage report — ui
+        if: ${{ github.event_name == 'pull_request' && !cancelled() && hashFiles('libs/ui/coverage/coverage-summary.json') != '' }}
+        uses: davelosert/vitest-coverage-report-action@v2
+        with:
+          name: ui
+          working-directory: libs/ui
+
+      - name: Coverage report — mock-backend
+        if: ${{ github.event_name == 'pull_request' && !cancelled() && hashFiles('libs/mock-backend/coverage/coverage-summary.json') != '' }}
+        uses: davelosert/vitest-coverage-report-action@v2
+        with:
+          name: mock-backend
+          working-directory: libs/mock-backend
+
+      - name: Coverage report — design-tokens
+        if: ${{ github.event_name == 'pull_request' && !cancelled() && hashFiles('libs/design-tokens/coverage/coverage-summary.json') != '' }}
+        uses: davelosert/vitest-coverage-report-action@v2
+        with:
+          name: design-tokens
+          working-directory: libs/design-tokens
+
+      - name: Coverage report — icons
+        if: ${{ github.event_name == 'pull_request' && !cancelled() && hashFiles('libs/icons/coverage/coverage-summary.json') != '' }}
+        uses: davelosert/vitest-coverage-report-action@v2
+        with:
+          name: icons
+          working-directory: libs/icons
+
+      - name: Coverage report — demo-beacon
+        if: ${{ github.event_name == 'pull_request' && !cancelled() && hashFiles('libs/demo-beacon/coverage/coverage-summary.json') != '' }}
+        uses: davelosert/vitest-coverage-report-action@v2
+        with:
+          name: demo-beacon
+          working-directory: libs/demo-beacon
 
       - name: Build affected
         run: pnpm exec nx affected --target=build --parallel=3

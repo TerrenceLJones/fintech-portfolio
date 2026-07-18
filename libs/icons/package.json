@@ -9,10 +9,13 @@
     "lint": "eslint .",
     "type-check": "tsc --noEmit",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "build": "vite build"
   },
   "dependencies": {},
-  "devDependencies": {},
+  "devDependencies": {
+    "@vitest/coverage-v8": "^4.1.9"
+  },
   "metadata": {
     "package_type": "shared",
     "app": "clearline-web",
