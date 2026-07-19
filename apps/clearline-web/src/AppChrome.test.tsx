@@ -81,11 +81,14 @@ describe('AppChrome role-scoped navigation', () => {
     expect(screen.getByText('Audit Log')).toBeInTheDocument();
   });
 
-  it('adds Team for an Admin without any approval links (orthogonality)', async () => {
+  it('does not show a primary-nav Team item for an Admin — Team moved into Settings (US-CW-033)', async () => {
     mockRole('employee', true);
     renderChrome();
 
-    await waitFor(() => expect(screen.getByText('Team')).toBeInTheDocument());
+    // Settings is universal, so its presence signals the role-scoped nav has populated.
+    await waitFor(() => expect(screen.getByText('Settings')).toBeInTheDocument());
+    // Team & Members now lives under Settings, not the primary rail; orthogonality still holds.
+    expect(screen.queryByText('Team')).not.toBeInTheDocument();
     expect(screen.queryByText('Approvals')).not.toBeInTheDocument();
   });
 });

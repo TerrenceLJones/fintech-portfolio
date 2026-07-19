@@ -26,6 +26,7 @@ import {
 import { budgetsHandlers } from './handlers/budgets.handlers';
 import { auditHandlers } from './handlers/audit.handlers';
 import { teamHandlers } from './handlers/team.handlers';
+import { settingsHandlers } from './handlers/settings.handlers';
 import { sharedAnalyticsService } from './services/shared-analytics-service';
 import { sharedReconciliationService } from './services/shared-reconciliation-service';
 import { sharedBudgetsService } from './services/shared-budgets-service';
@@ -58,6 +59,7 @@ export const worker = setupWorker(
   ...budgetsHandlers,
   ...auditHandlers,
   ...teamHandlers,
+  ...settingsHandlers,
 );
 
 // Seed the demo user as an already-approved, fully-onboarded business so signing in as it lands on

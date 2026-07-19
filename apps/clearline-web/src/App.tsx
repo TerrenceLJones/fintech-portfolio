@@ -20,7 +20,7 @@ import { AuditLogPage } from './pages/audit/AuditLogPage';
 import { BudgetOverviewPage } from './pages/budget/BudgetOverviewPage';
 import { NewBudgetPage } from './pages/budget/NewBudgetPage';
 import { BudgetHistoryPage } from './pages/budget/BudgetHistoryPage';
-import { TeamPage } from './pages/team/TeamPage';
+import { settingsRoutes } from './pages/settings/settings-routes';
 import { InviteAcceptPage } from './pages/invite/InviteAcceptPage';
 import { BusinessInfoStepPage } from './pages/onboarding/BusinessInfoStepPage';
 import { BeneficialOwnersStepPage } from './pages/onboarding/BeneficialOwnersStepPage';
@@ -161,13 +161,10 @@ export function App() {
                   >
                     <Route path="/audit" element={<AuditLogPage />} />
                   </Route>
-                  <Route
-                    element={
-                      <RequirePermission permission="team:view" apiPath="/api/team/members" />
-                    }
-                  >
-                    <Route path="/team" element={<TeamPage />} />
-                  </Route>
+                  {/* Settings surface (US-CW-033) — the role-scoped /settings route tree, factored into
+                    settings-routes.tsx so the app and its routing tests mount the same structure. Team &
+                    Members lives here now (/settings/team); there is no longer a top-level /team route. */}
+                  {settingsRoutes()}
                 </Route>
               </Route>
             </Route>

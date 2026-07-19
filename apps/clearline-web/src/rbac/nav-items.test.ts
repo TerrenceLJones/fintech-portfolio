@@ -14,9 +14,16 @@ function canFor(role: Parameters<typeof permissionsForRole>[0], isAdmin = false)
 }
 
 describe('navItemsForPermissions', () => {
-  it('gives an Employee only My Expenses and My Cards (US-CW-006 AC-01)', () => {
+  it('gives an Employee only My Expenses and My Cards, plus the universal Settings entry (US-CW-006 AC-01 / US-CW-033)', () => {
     const items = navItemsForPermissions(canFor('employee'));
-    expect(items.map((i) => i.label)).toEqual(['My Expenses', 'My Cards']);
+    expect(items.map((i) => i.label)).toEqual(['My Expenses', 'My Cards', 'Settings']);
+  });
+
+  it('always includes the permission-less Settings entry, even for an Employee (US-CW-028 update)', () => {
+    expect(navItemsForPermissions(canFor('employee')).map((i) => i.id)).toContain('settings');
+    expect(navItemsForPermissions(canFor('controller', true)).map((i) => i.id)).toContain(
+      'settings',
+    );
   });
 
   it('gives a Finance Manager the Dashboard plus Approvals, Reconciliation and Payments (AC-02)', () => {
@@ -47,9 +54,12 @@ describe('navItemsForPermissions', () => {
     expect(labels).toContain('Audit Log');
   });
 
-  it('adds Team for an Admin without any approval links (orthogonality)', () => {
+  it('does not add a primary-nav Team item for an Admin — Team & Members moved into Settings (US-CW-033)', () => {
     const labels = navItemsForPermissions(canFor('employee', true)).map((i) => i.label);
-    expect(labels).toContain('Team');
+    // Team & Members is now reached via Settings → Team & Members (/settings/team), not the primary rail.
+    expect(labels).not.toContain('Team');
+    expect(labels).toContain('Settings');
+    // Orthogonality preserved: an Admin still gains no approval links.
     expect(labels).not.toContain('Approvals');
   });
 });

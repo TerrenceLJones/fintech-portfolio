@@ -10,7 +10,12 @@ import type { NavigationShellItem } from '@clearline/ui';
  */
 export interface NavItemDef {
   id: string;
-  permission: Permission;
+  /**
+   * The single permission this entry requires. Omitted for entries every authenticated user holds —
+   * e.g. Settings (US-CW-028 update / US-CW-033): the Profile group is universal, and whether the
+   * Organization group renders is decided inside /settings by SettingsNav, not by the primary rail.
+   */
+  permission?: Permission;
   label: string;
   icon: IconName;
   path: string;
@@ -61,7 +66,12 @@ export const NAV_ITEMS: NavItemDef[] = [
     path: '/budgets',
   },
   { id: 'audit', permission: 'audit:view', label: 'Audit Log', icon: 'clock', path: '/audit' },
-  { id: 'team', permission: 'team:view', label: 'Team', icon: 'users', path: '/team' },
+  // Team & Members is NOT a primary-nav item — it was relocated into Settings → Team & Members
+  // (/settings/team) by US-CW-033, reachable via the Settings entry below (US-CW-028 update).
+  // Settings entry point (US-CW-028 update / US-CW-033) — no permission: visible to every authenticated
+  // user because the Profile group is universal. The role-scoped Organization group is decided inside
+  // /settings by SettingsNav, not here.
+  { id: 'settings', label: 'Settings', icon: 'settings', path: '/settings' },
 ];
 
 /**
@@ -79,11 +89,9 @@ export function homePathForPermissions(can: (permission: Permission) => boolean)
 export function navItemsForPermissions(
   can: (permission: Permission) => boolean,
 ): NavigationShellItem[] {
-  return NAV_ITEMS.filter((item) => can(item.permission)).map(({ id, icon, label }) => ({
-    id,
-    icon,
-    label,
-  }));
+  return NAV_ITEMS.filter((item) => item.permission === undefined || can(item.permission)).map(
+    ({ id, icon, label }) => ({ id, icon, label }),
+  );
 }
 
 /** Route path for a nav id (for onNavigate). */

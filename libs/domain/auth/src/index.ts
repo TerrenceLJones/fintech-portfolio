@@ -9,6 +9,7 @@ export * from './password-hashing';
 export * from './password-policy';
 export * from './refresh-token-policy';
 export * from './reset-token-policy';
+export * from './settings-sections-policy';
 export * from './signup-password-policy';
 export * from './token-hashing';
 export * from './verification-token-policy';
