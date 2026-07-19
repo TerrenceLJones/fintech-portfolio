@@ -11,6 +11,7 @@ import { clearAccessToken, setAccessToken } from '@clearline/data-access-auth';
 import { AppChrome } from '../../AppChrome';
 import { settingsRoutes } from './settings-routes';
 import { withQueryClient } from '../../test/with-query-client';
+import { NavigationGuardProvider } from '../../hooks/navigation-guard';
 
 const server = registerMswServer();
 afterEach(() => clearAccessToken());
@@ -68,15 +69,18 @@ function mockProfileBackend(initial: ProfileResponse = seedProfile()) {
   return state;
 }
 
-function renderPersonal() {
+function renderPersonal({ withGuard = false }: { withGuard?: boolean } = {}) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const tree = (
+    <Routes>
+      <Route element={<AppChrome />}>{settingsRoutes()}</Route>
+    </Routes>
+  );
   return render(
     withQueryClient(
       <ThemeProvider>
         <MemoryRouter initialEntries={['/settings/personal']}>
-          <Routes>
-            <Route element={<AppChrome />}>{settingsRoutes()}</Route>
-          </Routes>
+          {withGuard ? <NavigationGuardProvider>{tree}</NavigationGuardProvider> : tree}
         </MemoryRouter>
       </ThemeProvider>,
       queryClient,
@@ -116,6 +120,31 @@ describe('PersonalInfoPage — identity form (AC-01/02)', () => {
     await userEvent.click(within(footer()!).getByRole('button', { name: 'Discard' }));
     expect(footer()).not.toBeInTheDocument();
     expect(screen.getByLabelText('Full name')).toHaveValue('Marcus Okafor');
+  });
+
+  it('warns before an in-app navigation away with unsaved changes (AC-02)', async () => {
+    mockProfileBackend();
+    renderPersonal({ withGuard: true });
+
+    const name = await screen.findByLabelText('Full name');
+    await userEvent.clear(name);
+    await userEvent.type(name, 'Dirty edit');
+
+    // Clicking another SettingsNav section while dirty defers navigation behind a confirmation.
+    const nav = screen.getByRole('navigation', { name: 'Settings' });
+    await userEvent.click(within(nav).getByRole('link', { name: 'Notifications' }));
+
+    expect(
+      await screen.findByRole('heading', { name: 'Discard unsaved changes?' }),
+    ).toBeInTheDocument();
+    // Navigation was deferred: we're still on Personal Info (aria-hidden behind the modal), not
+    // Notifications.
+    expect(
+      screen.getByRole('heading', { name: 'Personal Info', hidden: true }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('heading', { name: 'Notifications', hidden: true }),
+    ).not.toBeInTheDocument();
   });
 });
 

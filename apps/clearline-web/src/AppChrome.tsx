@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router';
+import { useLocation } from 'react-router';
 import { Alert, AppShell, type SidebarIdentity } from '@clearline/ui';
 import { useAccessChanged, useAuthorization } from '@clearline/data-access-auth';
 import { NAV_ITEMS, navIdForPath, navItemsForPermissions, navPathForId } from './rbac/nav-items';
 import { identityDetail, initialsFromName, roleLabel } from './rbac/identity';
 import { PageTitleSetterContext } from './hooks/page-title-context';
+import { useGuardedNavigate } from './hooks/navigation-guard-context';
 
 /**
  * The authenticated app shell, wired to the live role. It reads entitlements from useAuthorization
@@ -23,7 +24,9 @@ export function AppChrome() {
     useAuthorization();
   const { accessChanged, dismiss } = useAccessChanged();
   const location = useLocation();
-  const navigate = useNavigate();
+  // Primary-nav clicks go through the unsaved-changes guard (US-CW-034 AC-02) so leaving a dirty
+  // settings form warns first; it's a plain navigate outside the guard provider.
+  const guardedNavigate = useGuardedNavigate();
 
   const [titleOverride, setTitleOverride] = useState<string>();
 
@@ -69,7 +72,7 @@ export function AppChrome() {
         activeNavId={activeNavId}
         onNavigate={(id) => {
           const path = navPathForId(id);
-          if (path) navigate(path);
+          if (path) guardedNavigate(path);
         }}
         title={title}
         banner={banner}

@@ -114,3 +114,94 @@ test('an Admin reaches Team & Members inside Settings, at /settings/team (reloca
   await expect(page).toHaveURL(/\/settings\/team/);
   await expect(teamLink).toHaveAttribute('aria-current', 'page');
 });
+
+// US-CW-034 — Personal Profile & Notification Preferences. The demo account (Finance Manager) is
+// used as-is; the Profile group needs no special role. Navigation goes through the UI (clicking the
+// Settings entry, then the section link) rather than a scripted pushState, so it can't race the
+// post-login HomeRedirect.
+async function openSettings(page: Parameters<typeof fillLoginForm>[0]) {
+  await signIn(page);
+  await mainNav(page).getByText('Settings').click();
+  await expect(page.getByRole('heading', { name: 'Personal Info' })).toBeVisible();
+}
+
+test('Personal Info: editing the name raises the unsaved footer and saving confirms (AC-01/02)', async ({
+  page,
+}) => {
+  await openSettings(page);
+
+  const name = page.getByLabel('Full name');
+  await expect(name).toHaveValue('Marcus Okafor');
+  await name.fill('Marcus Okafor Jr.');
+
+  const footer = page.getByRole('region', { name: 'Unsaved changes' });
+  await expect(footer).toBeVisible();
+  await footer.getByRole('button', { name: 'Save changes' }).click();
+
+  await expect(page.getByText('Profile updated')).toBeVisible();
+  await expect(footer).toBeHidden();
+});
+
+test('Personal Info: requesting an email change shows the sent notice and a pending indicator (AC-03)', async ({
+  page,
+}) => {
+  await openSettings(page);
+
+  await page.getByLabel('New email').fill('marcus.new@clearline.dev');
+  await page.getByRole('button', { name: 'Update email' }).click();
+
+  await expect(
+    page.getByText(/We've sent a confirmation link to marcus.new@clearline.dev/),
+  ).toBeVisible();
+  await expect(page.getByText('Pending: marcus.new@clearline.dev')).toBeVisible();
+});
+
+test('Personal Info: confirming the email-change link swaps the login email (AC-03/04)', async ({
+  page,
+  mockBackend,
+}) => {
+  await signIn(page);
+  // No inbox in the demo — mint the confirmation-link token directly, as the Beacon action does.
+  const token = await mockBackend.issueEmailChangeTokenForE2E(
+    DEMO_EMAIL,
+    'marcus.moved@clearline.dev',
+  );
+  expect(token).toBeTruthy();
+
+  await navigateSpa(page, `/email-change/confirm?token=${token}`);
+
+  await expect(page.getByRole('heading', { name: 'Email updated' })).toBeVisible();
+  await expect(page.getByText(/marcus.moved@clearline.dev/)).toBeVisible();
+});
+
+test('Personal Info: an expired email-change link shows the expired screen (AC-04)', async ({
+  page,
+  mockBackend,
+}) => {
+  await signIn(page);
+  const token = await mockBackend.issueExpiredEmailChangeTokenForE2E(
+    DEMO_EMAIL,
+    'marcus.stale@clearline.dev',
+  );
+  expect(token).toBeTruthy();
+
+  await navigateSpa(page, `/email-change/confirm?token=${token}`);
+
+  await expect(page.getByRole('heading', { name: 'This link has expired' })).toBeVisible();
+});
+
+test('Notifications: toggling a channel auto-saves, and the bulk summary applies (AC-07/09)', async ({
+  page,
+}) => {
+  await openSettings(page);
+  await settingsNav(page).getByRole('link', { name: 'Notifications' }).click();
+  await expect(page.getByRole('heading', { name: 'Notifications' })).toBeVisible();
+
+  await page.getByRole('switch', { name: 'Email — Expense approved' }).click();
+  await expect(page.getByText('Preferences saved')).toBeVisible();
+
+  await page.getByRole('combobox', { name: 'Notification Summary frequency' }).click();
+  await page.getByRole('option', { name: 'Weekly Digest' }).click();
+  await page.getByRole('button', { name: 'Apply' }).click();
+  await expect(page.getByText('Summary applied')).toBeVisible();
+});

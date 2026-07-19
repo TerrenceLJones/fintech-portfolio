@@ -31,7 +31,7 @@ export function NotificationsPage() {
   const applySummary = useApplyNotificationSummary();
 
   const [summary, setSummary] = useState<NotificationFrequency>('instant');
-  const { toast, show: showToast, dismiss: dismissToast } = useToast(2500);
+  const { toast, show: showToast } = useToast(2500);
 
   const byKey = new Map<string, NotificationPreference>(
     (data?.preferences ?? []).map((pref) => [pref.key, pref]),
@@ -52,7 +52,7 @@ export function NotificationsPage() {
       </Text>
 
       {/* Bulk summary (AC-09) */}
-      <section className="border-cl-border bg-cl-surface flex flex-wrap items-end gap-3 rounded-xl border p-6">
+      <section className="border-cl-border bg-cl-surface flex flex-wrap items-center gap-3 rounded-xl border p-6">
         <div className="min-w-0 flex-1">
           <Text as="h3" size="label" weight="semibold">
             Notification Summary
@@ -62,24 +62,28 @@ export function NotificationsPage() {
             unaffected, and you can still override any row afterward.
           </Text>
         </div>
-        <div className="w-40">
-          <Select
-            value={summary}
-            onValueChange={(value) => setSummary(value as NotificationFrequency)}
-            options={SUMMARY_OPTIONS}
-            aria-label="Notification Summary frequency"
-          />
+        {/* items-stretch so the Select and Apply button share one height regardless of their
+            intrinsic padding — otherwise the field (~44px) and the button (~40px) don't line up. */}
+        <div className="flex items-stretch gap-2">
+          <div className="w-40">
+            <Select
+              value={summary}
+              onValueChange={(value) => setSummary(value as NotificationFrequency)}
+              options={SUMMARY_OPTIONS}
+              aria-label="Notification Summary frequency"
+            />
+          </div>
+          <Button
+            variant="secondary"
+            size="md"
+            loading={applySummary.isPending}
+            onClick={() =>
+              applySummary.mutate(summary, { onSuccess: () => showToast('Summary applied') })
+            }
+          >
+            Apply
+          </Button>
         </div>
-        <Button
-          variant="secondary"
-          size="md"
-          loading={applySummary.isPending}
-          onClick={() =>
-            applySummary.mutate(summary, { onSuccess: () => showToast('Summary applied') })
-          }
-        >
-          Apply
-        </Button>
       </section>
 
       {/* Preference table (AC-07/08) */}
@@ -113,7 +117,7 @@ export function NotificationsPage() {
         })}
       </section>
 
-      <ToastViewport toast={toast} onDismiss={dismissToast} />
+      <ToastViewport toast={toast} />
     </div>
   );
 }

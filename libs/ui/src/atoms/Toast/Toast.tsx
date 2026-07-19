@@ -27,8 +27,6 @@ export interface ToastProps {
    * failure toast. Either way the message is spoken — meaning is never carried by color alone.
    */
   role?: 'status' | 'alert';
-  /** When provided, a dismiss (×) button is shown so the user can clear the toast before it auto-hides. */
-  onDismiss?: () => void;
 }
 
 /**
@@ -36,15 +34,9 @@ export interface ToastProps {
  * approved" batch-success toast (US-CW-013 AC-01, design §7.2). Presentational: the caller controls
  * when it appears and dismisses it. It reads on the theme surface (never a hard-coded color) so the
  * text stays legible in both light and dark, and pairs an icon with its color so the outcome reads
- * without relying on hue. Provide `onDismiss` for a manual close affordance.
+ * without relying on hue.
  */
-export function Toast({
-  message,
-  tone = 'positive',
-  icon,
-  role = 'status',
-  onDismiss,
-}: ToastProps) {
+export function Toast({ message, tone = 'positive', icon, role = 'status' }: ToastProps) {
   const def = TONE[tone];
 
   return (
@@ -59,16 +51,6 @@ export function Toast({
       <Text as="span" size="label" weight="semibold" tone="default">
         {message}
       </Text>
-      {onDismiss ? (
-        <button
-          type="button"
-          onClick={onDismiss}
-          aria-label="Dismiss"
-          className="text-cl-text-3 hover:text-cl-text focus-visible:ring-cl-focus -mr-1 ml-1 shrink-0 rounded outline-none focus-visible:ring-2"
-        >
-          <Icon name="x" size={14} />
-        </button>
-      ) : null}
     </div>
   );
 }

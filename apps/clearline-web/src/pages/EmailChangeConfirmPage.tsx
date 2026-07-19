@@ -20,15 +20,17 @@ export function EmailChangeConfirmPage() {
   const validate = useValidateEmailChangeToken(token);
   const confirm = useConfirmEmailChange();
 
-  // Fire the confirm exactly once, and only when the link is valid. A ref (not confirm.isIdle) guards
-  // against React's double-invoke in StrictMode consuming the single-use token twice.
+  // Fire the confirm exactly once, and only when the link is valid. The ref guards against React's
+  // synchronous double-invoke in StrictMode (where confirm.isIdle would still read true on the second
+  // call), and the isIdle check adds defense-in-depth against any later re-render racing a second
+  // mutate — together they ensure the single-use token is consumed at most once per mount.
   const attempted = useRef(false);
   useEffect(() => {
-    if (validate.data?.valid && !attempted.current) {
+    if (validate.data?.valid && confirm.isIdle && !attempted.current) {
       attempted.current = true;
       confirm.mutate(token);
     }
-  }, [validate.data?.valid, token, confirm]);
+  }, [validate.data?.valid, confirm, token]);
 
   const expired =
     token.length === 0 ||

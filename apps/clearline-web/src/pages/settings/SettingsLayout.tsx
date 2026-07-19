@@ -11,6 +11,7 @@ import {
   settingsPathForSlug,
   settingsSlugForPath,
 } from '../../rbac/settings-sections';
+import { useGuardedNavigate } from '../../hooks/navigation-guard-context';
 import { settingsBeacon } from './settings.beacon';
 
 /**
@@ -30,6 +31,9 @@ export function SettingsLayout() {
   const { accessChanged } = useAccessChanged();
   const location = useLocation();
   const navigate = useNavigate();
+  // SettingsNav clicks pass through the unsaved-changes guard (AC-02); the forced access-downgrade
+  // redirect below stays on plain navigate — it must not be blockable.
+  const guardedNavigate = useGuardedNavigate();
 
   const groups = settingsGroupsForPermissions(can);
   const activeSlug = settingsSlugForPath(location.pathname);
@@ -46,7 +50,7 @@ export function SettingsLayout() {
       <SettingsNav
         groups={groups}
         activeId={activeSlug}
-        onNavigate={(id) => navigate(settingsPathForSlug(id as SettingsSectionSlug))}
+        onNavigate={(id) => guardedNavigate(settingsPathForSlug(id as SettingsSectionSlug))}
       />
       <div className="min-w-0 flex-1">
         <Outlet />

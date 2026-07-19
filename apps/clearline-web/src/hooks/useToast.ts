@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 /**
- * A transient confirmation toast: `show(message)` displays it, it clears itself after `duration` ms,
- * and `dismiss()` clears it immediately (wired to the toast's manual close affordance). The
- * auto-dismiss lifecycle lives here rather than in the presentational `Toast` atom — the atom stays
- * pure (a sticky or externally-controlled toast is still possible), while form pages avoid
- * re-implementing the same setTimeout. Render with `<ToastViewport toast={toast} onDismiss={dismiss} />`.
+ * A transient confirmation toast: `show(message)` displays it, and it clears itself after `duration`
+ * ms. The auto-dismiss lifecycle lives here rather than in the presentational `Toast` atom — the atom
+ * stays pure — while form pages avoid re-implementing the same setTimeout. Render with
+ * `<ToastViewport toast={toast} />`. There is no manual-dismiss control: on a short timer a close
+ * button would rarely be clickable before the toast clears.
  */
 export function useToast(duration = 3000) {
   const [toast, setToast] = useState<string | null>(null);
@@ -16,7 +16,5 @@ export function useToast(duration = 3000) {
     return () => clearTimeout(timer);
   }, [toast, duration]);
 
-  const dismiss = useCallback(() => setToast(null), []);
-
-  return { toast, show: setToast, dismiss };
+  return { toast, show: setToast };
 }
