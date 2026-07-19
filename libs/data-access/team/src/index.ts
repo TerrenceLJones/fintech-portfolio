@@ -5,5 +5,7 @@ export * from './use-team-roster';
 export * from './use-invite-member';
 export * from './use-change-member-role';
 export * from './use-remove-member';
+export * from './use-resend-invite';
+export * from './use-revoke-invite';
 export * from './use-invite-details';
 export * from './use-accept-invite';

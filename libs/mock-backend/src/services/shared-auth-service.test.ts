@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PersistedAuthService } from './shared-auth-service';
-import { DEMO_USER_PASSWORD } from '../fixtures/users.fixture';
+import { DEMO_USER_PASSWORD, SEED_ORGANIZATION } from '../fixtures/users.fixture';
 
 const STORAGE_KEY = 'clearline:mock-auth-state';
 const NEW_PASSWORD = 'Brand-New-Password-1!';
@@ -100,6 +100,38 @@ describe('PersistedAuthService', () => {
     await service.refresh(refreshToken!);
 
     expect(storage.getItem(STORAGE_KEY)).not.toBe(beforeRefresh);
+  });
+
+  async function createPendingInvite(service: PersistedAuthService): Promise<string> {
+    await service.createInvite({
+      orgId: SEED_ORGANIZATION.id,
+      email: 'pending@clearline.dev',
+      role: 'finance_manager',
+      grantAdmin: false,
+      inviterName: 'Priya Nair',
+    });
+    return service.getTeamRoster(SEED_ORGANIZATION.id)!.invites[0]!.id;
+  }
+
+  it('persists a snapshot to sessionStorage after resendInvite (US-CW-031 AC-09)', async () => {
+    const service = new PersistedAuthService();
+    const inviteId = await createPendingInvite(service);
+    const beforeResend = storage.getItem(STORAGE_KEY);
+
+    await service.resendInvite(SEED_ORGANIZATION.id, inviteId);
+
+    expect(storage.getItem(STORAGE_KEY)).not.toBe(beforeResend);
+  });
+
+  it('persists a snapshot to sessionStorage after revokeInvite (US-CW-031 AC-10)', async () => {
+    const service = new PersistedAuthService();
+    const inviteId = await createPendingInvite(service);
+    const beforeRevoke = storage.getItem(STORAGE_KEY);
+
+    service.revokeInvite(SEED_ORGANIZATION.id, inviteId);
+
+    expect(storage.getItem(STORAGE_KEY)).not.toBe(beforeRevoke);
+    expect(service.getTeamRoster(SEED_ORGANIZATION.id)!.invites).toHaveLength(0);
   });
 
   it('persists a snapshot to sessionStorage after logout (US-CW-002)', async () => {

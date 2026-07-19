@@ -131,6 +131,23 @@ export interface RemoveMemberResult {
   member?: TeamMember;
 }
 
+/** Outcome of a pending-invite mutation (resend / revoke): the invite is either found in the org or not. */
+export type InviteMutationOutcome = 'ok' | 'invite_not_found';
+
+export interface ResendInviteResult {
+  outcome: InviteMutationOutcome;
+  /** The freshly minted single-use token — present only on success. Never surfaced over the network. */
+  token?: string;
+  /** The refreshed pending invite — for the audit record (US-CW-031 AC-09). */
+  invite?: PendingInvite;
+}
+
+export interface RevokeInviteResult {
+  outcome: InviteMutationOutcome;
+  /** The invite as it was just before revocation — for the audit record (US-CW-031 AC-10). */
+  invite?: PendingInvite;
+}
+
 export type SignUpOutcome = 'success' | 'weak_password';
 
 export interface SignUpResult {
@@ -389,13 +406,7 @@ export class AuthService {
           invite.orgId === orgId && !invite.used && !isInviteTokenExpired(invite.issuedAt, now),
       )
       .sort((a, b) => a.issuedAt - b.issuedAt)
-      .map((invite) => ({
-        id: invite.id,
-        email: invite.email,
-        role: invite.role,
-        grantAdmin: invite.grantAdmin,
-        invitedAt: new Date(invite.issuedAt).toISOString(),
-      }));
+      .map((invite) => this.toPendingInvite(invite));
 
     return {
       organizationId: org.id,
@@ -580,6 +591,66 @@ export class AuthService {
     member.orgId = null;
 
     return { outcome: 'ok', member: snapshot };
+  }
+
+  /**
+   * Re-send a pending invite (US-CW-031 AC-09 / Design §18.1). Mints a fresh single-use token and
+   * invalidates the old one — "Resend issues a fresh link and invalidates the old one" — restarting
+   * the 7-day expiry window from now. The PendingInvite id is preserved so the roster row stays put.
+   * Org-scoped; the raw token is returned to the caller but, as with createInvite, never surfaced over
+   * the network.
+   */
+  async resendInvite(
+    actorOrgId: string,
+    inviteId: string,
+    now: number = Date.now(),
+  ): Promise<ResendInviteResult> {
+    const found = this.findInviteInOrg(actorOrgId, inviteId);
+    if (!found) return { outcome: 'invite_not_found' };
+
+    this.invitesByTokenHash.delete(found.hash);
+    const token = `invite_${crypto.randomUUID()}`;
+    const refreshed: InviteTokenRecord = { ...found.record, issuedAt: now, used: false };
+    this.invitesByTokenHash.set(await hashToken(token), refreshed);
+
+    return { outcome: 'ok', token, invite: this.toPendingInvite(refreshed) };
+  }
+
+  /**
+   * Revoke a pending invite (US-CW-031 AC-10 / Design §18.1). Deletes the outstanding invite so it
+   * drops off the roster and its link can no longer be accepted (getInviteDetails/acceptInvite both
+   * report it invalid). Org-scoped. Returns the invite as it was for the audit diff.
+   */
+  revokeInvite(actorOrgId: string, inviteId: string): RevokeInviteResult {
+    const found = this.findInviteInOrg(actorOrgId, inviteId);
+    if (!found) return { outcome: 'invite_not_found' };
+
+    this.invitesByTokenHash.delete(found.hash);
+    return { outcome: 'ok', invite: this.toPendingInvite(found.record) };
+  }
+
+  /** Locate a live (unaccepted) invite by its PendingInvite id within an org, with its map key for deletion. */
+  private findInviteInOrg(
+    orgId: string,
+    inviteId: string,
+  ): { hash: string; record: InviteTokenRecord } | undefined {
+    for (const [hash, record] of this.invitesByTokenHash) {
+      if (record.id === inviteId && record.orgId === orgId && !record.used) {
+        return { hash, record };
+      }
+    }
+    return undefined;
+  }
+
+  /** Project an invite record into the roster's PendingInvite shape (never exposes the token). */
+  private toPendingInvite(record: InviteTokenRecord): PendingInvite {
+    return {
+      id: record.id,
+      email: record.email,
+      role: record.role,
+      grantAdmin: record.grantAdmin,
+      invitedAt: new Date(record.issuedAt).toISOString(),
+    };
   }
 
   private findMemberInOrg(orgId: string, memberId: string): SeedUser | undefined {

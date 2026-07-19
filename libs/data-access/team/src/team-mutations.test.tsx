@@ -6,6 +6,8 @@ import { clearAccessToken, setAccessToken } from '@clearline/data-access-auth';
 import { useInviteMember } from './use-invite-member';
 import { useChangeMemberRole } from './use-change-member-role';
 import { useRemoveMember } from './use-remove-member';
+import { useResendInvite } from './use-resend-invite';
+import { useRevokeInvite } from './use-revoke-invite';
 import { TeamForbiddenError } from './team-forbidden-error';
 import { createQueryWrapper } from './test/create-query-wrapper';
 
@@ -79,5 +81,58 @@ describe('useRemoveMember', () => {
     result.current.mutate('user_2');
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
+  });
+});
+
+describe('useResendInvite', () => {
+  it('resolves on a 200 resend and posts to the invite’s /resend endpoint', async () => {
+    setAccessToken('access_valid');
+    let calledId: string | undefined;
+    server.use(
+      http.post('*/api/team/invites/:id/resend', ({ params }) => {
+        calledId = String(params.id);
+        return HttpResponse.json({});
+      }),
+    );
+
+    const { result } = renderHook(() => useResendInvite(), { wrapper });
+    result.current.mutate('invite_1');
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(calledId).toBe('invite_1');
+  });
+
+  it('surfaces a 403 as a typed TeamForbiddenError', async () => {
+    setAccessToken('access_valid');
+    server.use(
+      http.post('*/api/team/invites/:id/resend', () =>
+        HttpResponse.json({ error: 'forbidden_role' }, { status: 403 }),
+      ),
+    );
+
+    const { result } = renderHook(() => useResendInvite(), { wrapper });
+    result.current.mutate('invite_1');
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(result.current.error).toBeInstanceOf(TeamForbiddenError);
+  });
+});
+
+describe('useRevokeInvite', () => {
+  it('resolves on a 204 revoke and deletes the invite endpoint', async () => {
+    setAccessToken('access_valid');
+    let calledId: string | undefined;
+    server.use(
+      http.delete('*/api/team/invites/:id', ({ params }) => {
+        calledId = String(params.id);
+        return new HttpResponse(null, { status: 204 });
+      }),
+    );
+
+    const { result } = renderHook(() => useRevokeInvite(), { wrapper });
+    result.current.mutate('invite_1');
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(calledId).toBe('invite_1');
   });
 });

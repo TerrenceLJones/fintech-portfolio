@@ -28,6 +28,12 @@ history:
   - epic_id: 'EPIC-CW-017'
     action: 'implemented'
     date: '2026-07-18'
+  - epic_id: 'EPIC-CW-018'
+    action: 'updated'
+    date: '2026-07-18'
+  - epic_id: 'EPIC-CW-018'
+    action: 'implemented'
+    date: '2026-07-18'
 
 # Status timestamps — set when status transitions occur
 approved_date: '2026-07-06'
@@ -105,6 +111,21 @@ acceptance_criteria:
       Then it is permitted only if I am the Owner — an Admin can delegate Admin but can never strip it, from another Admin or from themselves
       And the role-change endpoint independently rejects a non-Owner's revoke attempt server-side, so an Admin can never lock the organization out of team management
     status: 'active'
+  - id: 'AC-09'
+    description: |
+      Given I am an Owner or Admin viewing a pending (unaccepted) invite
+      When I resend it
+      Then a fresh single-use link is issued and the previously sent link is invalidated, restarting the 7-day expiry window from now
+      And the invite stays on the roster under the same pending entry
+      And the resend endpoint independently rejects a non-Owner/Admin caller server-side (AC-07) and records an audit event (US-CW-021 AC-04)
+    status: 'active'
+  - id: 'AC-10'
+    description: |
+      Given I am an Owner or Admin viewing a pending (unaccepted) invite
+      When I revoke it
+      Then the outstanding link can no longer be accepted and the invite is removed from the roster
+      And the revoke endpoint independently rejects a non-Owner/Admin caller server-side (AC-07) and records an audit event (US-CW-021 AC-04)
+    status: 'active'
 
 # Technical Notes
 technical_notes: |
@@ -170,5 +191,13 @@ implementation_status: |
   set-password → role dashboard / expired screen). Data-access lib: @clearline/data-access-team. AC-06's
   "domain match at sign-up does not auto-join" holds by construction — sign-up creates an account with
   orgId: null and routes to standalone onboarding; joining an org is only ever possible via an invite.
-  Out of scope, flagged as follow-ups: ownership transfer (now owned by EPIC-CW-022 / US-CW-043), and
-  invite resend/revoke controls (the roster shows pending invites but does not yet action them).
+
+  AC-09 / AC-10 (pending-invite resend & revoke) added and implemented by EPIC-CW-018 (2026-07-18):
+  AuthService.resendInvite re-issues a fresh single-use token and invalidates the old one (restarting the
+  7-day window, keeping the same PendingInvite id), and AuthService.revokeInvite deletes the outstanding
+  invite so its link no longer validates — both org-scoped (invite_not_found otherwise). Endpoints POST
+  /api/team/invites/:id/resend and DELETE /api/team/invites/:id reuse the Owner/Admin authorizeAdmin gate
+  (AC-07) and emit role_change audit events (AC-04). data-access-team adds useResendInvite / useRevokeInvite;
+  TeamPage's pending row renders the Resend and Revoke (×, confirmed) controls per design §18.1.
+
+  Out of scope, still a follow-up: ownership transfer (now owned by EPIC-CW-022 / US-CW-043).
