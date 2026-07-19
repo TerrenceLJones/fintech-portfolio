@@ -122,6 +122,18 @@ export class PersistedAuthService extends AuthService {
     return result;
   }
 
+  override async resendInvite(...args: Parameters<AuthService['resendInvite']>) {
+    const result = await super.resendInvite(...args);
+    this.persist();
+    return result;
+  }
+
+  override revokeInvite(...args: Parameters<AuthService['revokeInvite']>) {
+    const result = super.revokeInvite(...args);
+    this.persist();
+    return result;
+  }
+
   override changeMemberRole(...args: Parameters<AuthService['changeMemberRole']>) {
     const result = super.changeMemberRole(...args);
     this.persist();

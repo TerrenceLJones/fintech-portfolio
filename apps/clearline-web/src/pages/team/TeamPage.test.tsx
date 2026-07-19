@@ -132,6 +132,59 @@ describe('TeamPage', () => {
     expect(within(dialog).getByRole('checkbox')).toBeEnabled();
   });
 
+  it('offers Resend and Revoke actions on a pending invite (US-CW-031 AC-09/AC-10)', async () => {
+    mockRoster();
+    renderPage();
+
+    await waitFor(() => expect(screen.getByText('pending@northwind.test')).toBeInTheDocument());
+    expect(screen.getByRole('button', { name: 'Resend' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /Revoke invite for pending@northwind.test/ }),
+    ).toBeInTheDocument();
+  });
+
+  it('resends a pending invite (US-CW-031 AC-09)', async () => {
+    mockRoster();
+    let resentId: string | undefined;
+    server.use(
+      http.post('*/api/team/invites/:id/resend', ({ params }) => {
+        resentId = String(params.id);
+        return HttpResponse.json({});
+      }),
+    );
+    renderPage();
+
+    await waitFor(() => expect(screen.getByText('pending@northwind.test')).toBeInTheDocument());
+    await userEvent.click(screen.getByRole('button', { name: 'Resend' }));
+
+    await waitFor(() => expect(resentId).toBe('invite_1'));
+    // A resend has no other visible effect on the row, so it confirms with a toast.
+    expect(await screen.findByText('Invite resent')).toBeInTheDocument();
+  });
+
+  it('revokes a pending invite after confirmation (US-CW-031 AC-10)', async () => {
+    mockRoster();
+    let revokedId: string | undefined;
+    server.use(
+      http.delete('*/api/team/invites/:id', ({ params }) => {
+        revokedId = String(params.id);
+        return new HttpResponse(null, { status: 204 });
+      }),
+    );
+    renderPage();
+
+    await waitFor(() => expect(screen.getByText('pending@northwind.test')).toBeInTheDocument());
+    await userEvent.click(
+      screen.getByRole('button', { name: /Revoke invite for pending@northwind.test/ }),
+    );
+
+    // Revoking is a confirmed action, like member removal.
+    const dialog = await screen.findByRole('dialog');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Revoke invite' }));
+
+    await waitFor(() => expect(revokedId).toBe('invite_1'));
+  });
+
   it('shows the access-denied surface when the roster returns 403 (AC-07)', async () => {
     setAccessToken('access_valid');
     mockSession(false);

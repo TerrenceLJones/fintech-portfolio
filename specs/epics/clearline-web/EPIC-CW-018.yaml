@@ -1,88 +1,76 @@
 epic_id: 'EPIC-CW-018'
-title: 'Organization & Team Management'
+title: 'Pending-Invite Resend & Revoke'
 app: 'clearline-web'
 feature_area: 'core'
-status: 'APPROVED'
-approved_date: null
+status: 'IMPLEMENTED'
+approved_date: '2026-07-18'
+implementation_date: '2026-07-18'
 created_date: '2026-07-07'
 source_reference: >
-  specs/designs/Clearline Design System - Consolidated.dc.html §18 "Organization & Team Management"
-  (labeled "Gherkin EPIC-CW-017 — Organization Provisioning & Team Management, US-CW-030 · US-CW-031"),
-  plus the non-owner duplicate-business branch drawn under §1 / Batch 03. This body of work existed only as
-  design mockups with no formal backlog record; this epic formalizes the TEAM-MANAGEMENT half. NOTE ON
-  NUMBERING: the design's "EPIC-CW-017" label is superseded — EPIC-CW-016.yaml intentionally retired the
-  number 017 (a draft folded back into EPIC-CW-016), so this work is assigned EPIC-CW-018 (which also matches
-  design §18). The owner-provisioning half was split out into EPIC-CW-019 as the "implement first" foundation;
-  this epic is the deferred invite/team-management work and depends on it.
+  specs/designs/Clearline Design System - Consolidated.dc.html §18.1 "Team" — the pending-invite row,
+  which draws a "Resend" control and a "Revoke invite" (×) control alongside the Pending badge, plus
+  the §18.4 "Every change is written to the AuditTrail" note. NUMBERING / SCOPE HISTORY: this epic was
+  originally authored as the deferred TEAM-MANAGEMENT half of design §18 (the full US-CW-031 invite and
+  team lifecycle), a re-numbering of the design's "EPIC-CW-017" label. In the event the entire team
+  surface — US-CW-031 in full, plus the US-CW-004 / US-CW-006 amendments — was designed and shipped
+  together under EPIC-CW-017 (see EPIC-CW-017.yaml, IMPLEMENTED 2026-07-18), and the owner-provisioning
+  foundation shipped as EPIC-CW-019 (US-CW-030). That left EPIC-CW-018 with no scope of its own except
+  the ONE piece of design §18 that EPIC-CW-017 shipped as display-only: the pending-invite row rendered
+  a Pending badge but no working Resend / Revoke actions (US-CW-031 flagged both as a deferred
+  follow-up). This epic is therefore re-scoped down to exactly that gap — the Resend and Revoke controls
+  — and nothing already delivered by EPIC-CW-017.
 package_location: 'apps/clearline-web/'
 deployment_unit: 'apps/clearline-web/'
 tdr_reference: 'TDR-CW-WEB-001'
-depends_on_epics: ['EPIC-CW-019', 'EPIC-CW-002', 'EPIC-CW-003', 'EPIC-CW-016']
-extends_stories: ['US-CW-004', 'US-CW-006', 'US-CW-030']
+depends_on_epics: ['EPIC-CW-017']
+extends_stories: ['US-CW-031']
 reuses_from:
-  - '@clearline/domain-auth password-hashing module (PBKDF2-HMAC-SHA256), for invitee self-set passwords'
-  - 'Single-use, hashed-at-rest token machinery from US-CW-029 (email verification) and US-CW-003 (password reset)'
-  - 'Enumeration-safe confirmation + async email dispatch pattern from US-CW-029 / US-CW-003'
-  - 'RBAC permission model (permissionsForRole, RequirePermission guard, AccessDenied, useAuthorization, nav gating) from EPIC-CW-003 (US-CW-006 / US-CW-028)'
-  - 'isOwner flag + owner provisioning from EPIC-CW-019 (US-CW-030)'
-  - 'RequireOnboarded guard + onboarding status resolver from EPIC-CW-002 (US-CW-004) for invited-member admission'
-  - 'ConfirmationDialog organism (design §11) for role-change and removal; AuditTrail (US-CW-021) for team-change audit events'
+  - 'The single-use, hashed-at-rest invite-token machinery from US-CW-031 (createInvite / getInviteDetails / acceptInvite, invite-token-policy 7-day TTL) — Resend re-issues through it, Revoke deletes through it'
+  - 'The six Owner/Admin-gated team endpoints + authorizeAdmin server-side gate from US-CW-031 (team.handlers.ts) — the two new endpoints reuse it verbatim (AC-07 enforcement)'
+  - 'AuditService role_change events + resolveAuditActor from US-CW-021 / US-CW-031, for the resend/revoke audit records (design §18.4)'
+  - 'ConfirmationDialog organism (design §11) — the revoke confirmation, mirroring US-CW-031 member removal'
+  - '@clearline/data-access-team roster query + mutation-hook pattern (useRemoveMember) for the two new hooks'
 has_ui: true
 ui_library: '@clearline/ui'
 changes:
-  adds:
+  adds: []
+  updates:
     - story_id: 'US-CW-031'
       story_path: '/specs/user-stories/clearline-web/US-CW-031.yaml'
-      title: 'Team Member Invitations & Management'
-  updates:
-    - story_id: 'US-CW-004'
-      story_path: '/specs/user-stories/clearline-web/US-CW-004.yaml'
-      title: 'Business Onboarding Flow'
+      title: 'Team Management: Invite, Role Assignment & Removal'
       reason: >
-        Two additions, applied at this epic's implementation time. (1) RequireOnboarded must admit invited
-        members — who have no per-user onboarding record — to the app instead of redirecting them into the KYB
-        wizard, by inheriting their Organization's approved status (US-CW-031 AC-10). (2) A new acceptance
-        criterion for the NON-owner duplicate-EIN branch: AC-07 today only covers the creator re-onboarding
-        ("Sign in instead"); the design also specifies a different person hitting an already-claimed EIN being
-        told "your business already has an account — ask your admin to invite you," with no sign-in CTA and no
-        credentials (US-CW-031 AC-11). That branch is currently design-only with no matching AC on US-CW-004.
-    - story_id: 'US-CW-006'
-      story_path: '/specs/user-stories/clearline-web/US-CW-006.yaml'
-      title: 'Role-Based Navigation & Approval Authority'
-      reason: >
-        Extends the `team:view` permission — today granted only by isAdmin — to also be granted by isOwner
-        (introduced in EPIC-CW-019), so team-management nav and endpoints authorize on isOwner OR isAdmin. This
-        is deferred to here rather than done in EPIC-CW-019 because there is no team surface to gate until this
-        epic ships; granting team:view earlier would render a nav item pointing at a nonexistent page. The
-        mid-session role-change handling (AC-05) and "Your access changed" banner are reused as-is by
-        US-CW-031's role-change flow.
+        Adds AC-09 (resend a pending invite) and AC-10 (revoke a pending invite) — the two
+        pending-invite controls design §18.1 draws that EPIC-CW-017 shipped display-only, and that
+        US-CW-031's own implementation_status flagged as a deferred follow-up. Resend re-issues a fresh
+        single-use link and invalidates the old one, restarting the 7-day window; revoke deletes the
+        outstanding invite so its link can no longer be accepted. Both are Owner/Admin-gated server-side
+        (reusing US-CW-031 AC-07's authorizeAdmin), org-scoped, and audited (design §18.4). No change to
+        the invite-token TTL, the enumeration-safe create path, or any already-shipped AC.
   deprecates: []
   removes: []
 notes: >
-  The deferred invite / team-management half of design §18 ("One Owner, invite-only membership"). Contains a
-  single story, US-CW-031: the invite and team-management lifecycle — invite by email + approval-tier role with
-  optional Admin, single-use 7-day enumeration-safe link, self-set-password acceptance (no temporary
-  passwords), pending / resend / revoke, role change, member removal, non-admin 403 enforcement, and audit.
-  This epic also introduces the distinct Organization entity (members belong to it, invites target it), and
-  it owns the two behaviors that only make sense once non-creator members exist: invited members bypassing KYB
-  onboarding (US-CW-031 AC-10, via the RequireOnboarded change) and the non-owner duplicate-EIN "ask your admin
-  to invite you" branch (US-CW-031 AC-11).
+  A single, tightly-scoped gap-closure: the pending-invite Resend and Revoke controls from design §18.1,
+  the only part of §18 that EPIC-CW-017 left as display-only (the roster showed a Pending row but no
+  working actions). Everything else in the original §18 team-management surface — the invite lifecycle,
+  role change, member removal, the Organization entity, the RequireOnboarded invited-member bypass, the
+  non-owner duplicate-EIN branch, and the US-CW-004 / US-CW-006 amendments — was delivered by EPIC-CW-017
+  and is NOT part of this epic; this epic's changes.updates deliberately claims none of it.
 
-  Sequencing: the owner-provisioning foundation is EPIC-CW-019 (US-CW-030 — isOwner flag + creator elevated to
-  Controller + Owner at KYB approval), which is implemented first and answers the RBAC/KYB interaction on its
-  own. This epic is picked up later and builds the team surface on top of that foundation; hence depends_on
-  EPIC-CW-019.
+  Design-confirmed behavior: "Resend issues a fresh link and invalidates the old one" (§18, mirrored from
+  the password-reset / verification resend copy). Resend keeps the same PendingInvite id so the roster row
+  stays put, mints a new hashed token, and restarts the 7-day expiry from the resend time; the old link
+  reports invalid thereafter. Revoke removes the outstanding invite entirely — getInviteDetails and
+  acceptInvite both report it invalid — and drops it from the roster. Both emit a role_change audit event
+  (§18.4). The raw token is never returned over the network for either, consistent with the
+  enumeration-safe create path.
 
-  Credential model (design-confirmed, project-owner-approved 2026-07-07): invited users SET THEIR OWN password
-  via the invite link — there is no temporary-password mechanism anywhere in the product. Matches the §18.3
-  "Set a password to join" mockup and the enumeration-safe, single-use-token conventions already shipped for
-  sign-up (US-CW-029) and password reset (US-CW-003).
-
-  Ownership transfer / Owner offboarding is deliberately OUT OF SCOPE here as in EPIC-CW-019: the Owner remains
-  non-removable and non-demotable (US-CW-031 AC-06/AC-07 enforce the US-CW-030 AC-03 invariant), and the org
-  always has exactly one Owner. That follow-up is now owned by EPIC-CW-022 (US-CW-043, Ownership Transfer),
-  whose Settings surface is its natural home, before an Owner can ever leave.
-
-  Status is DRAFT: authored as specs-only for review. The changes.updates entries above are declared but NOT yet
-  applied to the already-APPROVED/IMPLEMENTED US-CW-004 / US-CW-006 records — editing those is an
-  implementation-time step for whoever picks this epic up.
+  Implemented 2026-07-18: AuthService.resendInvite (async, mints + swaps the token) and
+  AuthService.revokeInvite (deletes), both org-scoped via findInviteInOrg and returning invite_not_found
+  for an unknown/foreign id; PersistedAuthService overrides both to snapshot (no SNAPSHOT_VERSION bump —
+  the invitesByTokenHash shape is unchanged). Endpoints POST /api/team/invites/:id/resend (200,
+  enumeration-safe empty body) and DELETE /api/team/invites/:id (204) reuse authorizeAdmin (AC-07) and
+  emit "Resent invite" / "Revoked invite" role_change audit events. data-access-team gains
+  useResendInvite / useRevokeInvite (roster-invalidating, mirroring useRemoveMember). TeamPage's pending
+  row now renders a Resend button and a Revoke (×) action behind a ConfirmationDialog; the Team beacon
+  gains a "Resend or revoke a pending invite" flow. US-CW-031 keeps its provenance history and gains
+  AC-09 / AC-10.

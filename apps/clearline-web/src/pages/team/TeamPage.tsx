@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
-import type { Role, TeamMember } from '@clearline/contracts';
+import type { PendingInvite, Role, TeamMember } from '@clearline/contracts';
 import {
   AccessDenied,
   Avatar,
@@ -10,12 +10,15 @@ import {
   EmptyState,
   Icon,
   Text,
+  Toast,
 } from '@clearline/ui';
 import {
   TeamForbiddenError,
   useChangeMemberRole,
   useInviteMember,
   useRemoveMember,
+  useResendInvite,
+  useRevokeInvite,
   useTeamRoster,
 } from '@clearline/data-access-team';
 import { useAuthorization } from '@clearline/data-access-auth';
@@ -45,10 +48,21 @@ export function TeamPage() {
   const inviteMember = useInviteMember();
   const changeRole = useChangeMemberRole();
   const removeMember = useRemoveMember();
+  const resendInvite = useResendInvite();
+  const revokeInvite = useRevokeInvite();
 
   const [inviteOpen, setInviteOpen] = useState(false);
   const [roleTarget, setRoleTarget] = useState<TeamMember | null>(null);
   const [removeTarget, setRemoveTarget] = useState<TeamMember | null>(null);
+  const [revokeTarget, setRevokeTarget] = useState<PendingInvite | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+
+  // A resend leaves the row looking the same, so it confirms with a transient toast (design §7.2).
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => setToast(null), 4000);
+    return () => clearTimeout(timer);
+  }, [toast]);
 
   const summary = useMemo(() => {
     if (!roster.data) return '';
@@ -100,6 +114,11 @@ export function TeamPage() {
   function handleRemove() {
     if (!removeTarget) return;
     removeMember.mutate(removeTarget.id, { onSuccess: () => setRemoveTarget(null) });
+  }
+
+  function handleRevoke() {
+    if (!revokeTarget) return;
+    revokeInvite.mutate(revokeTarget.id, { onSuccess: () => setRevokeTarget(null) });
   }
 
   return (
@@ -205,9 +224,30 @@ export function TeamPage() {
             <div>
               <Chip label="Pending" icon="clock" />
             </div>
-            <Text as="span" size="label" tone="faint" className="text-right">
-              Invited {shortDate(invite.invitedAt)}
-            </Text>
+            <div className="flex items-center justify-end gap-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                icon="refresh"
+                onClick={() =>
+                  resendInvite.mutate(invite.id, { onSuccess: () => setToast('Invite resent') })
+                }
+                // Scope the pending state to just this row so one resend doesn't disable the others.
+                disabled={resendInvite.isPending && resendInvite.variables === invite.id}
+              >
+                Resend
+              </Button>
+              {/* Icon-only action — mirrors the member-remove control (Design §18.1). */}
+              <button
+                type="button"
+                aria-label={`Revoke invite for ${invite.email}`}
+                title="Revoke invite"
+                onClick={() => setRevokeTarget(invite)}
+                className="border-cl-border-2 text-cl-neg bg-cl-surface inline-flex cursor-pointer items-center rounded-lg border px-2 py-[7px]"
+              >
+                <Icon name="x-circle" size={13} />
+              </button>
+            </div>
           </div>
         ))}
       </div>
@@ -241,6 +281,22 @@ export function TeamPage() {
         countdown={0}
         onConfirm={handleRemove}
       />
+
+      <ConfirmationDialog
+        open={revokeTarget != null}
+        onOpenChange={(open) => !open && setRevokeTarget(null)}
+        title={revokeTarget ? `Revoke invite to ${revokeTarget.email}?` : 'Revoke invite?'}
+        body="The invite link stops working immediately. If they still need access you'd have to send a fresh invite."
+        confirmLabel="Revoke invite"
+        countdown={0}
+        onConfirm={handleRevoke}
+      />
+
+      {toast ? (
+        <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2">
+          <Toast message={toast} />
+        </div>
+      ) : null}
     </div>
   );
 }

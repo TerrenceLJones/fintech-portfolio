@@ -220,6 +220,103 @@ describe('grant / revoke Admin (US-CW-031 AC-08)', () => {
   });
 });
 
+describe('pending-invite resend / revoke (US-CW-031 AC-09/AC-10)', () => {
+  async function mintPendingInvite(email = 'newhire@acme.test'): Promise<string> {
+    await authService.createInvite({
+      orgId: SEED_ORGANIZATION.id,
+      email,
+      role: 'finance_manager',
+      grantAdmin: false,
+      inviterName: 'Priya Nair',
+    });
+    return authService.getTeamRoster(SEED_ORGANIZATION.id)!.invites.find((i) => i.email === email)!
+      .id;
+  }
+
+  describe('POST /api/team/invites/:id/resend', () => {
+    it('re-sends an invite (200, empty body), leaks no token, and records an audit event', async () => {
+      const token = await loginAs('owner@clearline.dev');
+      const inviteId = await mintPendingInvite();
+
+      const response = await fetch(`${ORIGIN}/api/team/invites/${inviteId}/resend`, {
+        method: 'POST',
+        headers: auth(token),
+      });
+      expect(response.status).toBe(200);
+      expect(await response.json()).toEqual({});
+
+      // The invite is still pending under the same id.
+      const roster = (await (
+        await fetch(`${ORIGIN}/api/team/members`, { headers: auth(token) })
+      ).json()) as TeamRosterResponse;
+      expect(roster.invites.map((i) => i.id)).toContain(inviteId);
+
+      expect(auditService.list()[0]!.action).toContain('Resent invite');
+    });
+
+    it('rejects an Employee’s resend with 403 (AC-07)', async () => {
+      const inviteId = await mintPendingInvite();
+      const employeeToken = await loginAs('employee@clearline.dev');
+
+      const response = await fetch(`${ORIGIN}/api/team/invites/${inviteId}/resend`, {
+        method: 'POST',
+        headers: auth(employeeToken),
+      });
+      expect(response.status).toBe(403);
+    });
+
+    it('returns 404 for an unknown invite', async () => {
+      const token = await loginAs('owner@clearline.dev');
+      const response = await fetch(`${ORIGIN}/api/team/invites/invite_nope/resend`, {
+        method: 'POST',
+        headers: auth(token),
+      });
+      expect(response.status).toBe(404);
+      expect((await response.json()).error).toBe('invite_not_found');
+    });
+  });
+
+  describe('DELETE /api/team/invites/:id', () => {
+    it('revokes an invite (204), drops it from the roster, and records an audit event', async () => {
+      const token = await loginAs('owner@clearline.dev');
+      const inviteId = await mintPendingInvite();
+
+      const response = await fetch(`${ORIGIN}/api/team/invites/${inviteId}`, {
+        method: 'DELETE',
+        headers: auth(token),
+      });
+      expect(response.status).toBe(204);
+
+      const roster = (await (
+        await fetch(`${ORIGIN}/api/team/members`, { headers: auth(token) })
+      ).json()) as TeamRosterResponse;
+      expect(roster.invites.map((i) => i.id)).not.toContain(inviteId);
+
+      expect(auditService.list()[0]!.action).toContain('Revoked invite');
+    });
+
+    it('rejects an Employee’s revoke with 403 (AC-07)', async () => {
+      const inviteId = await mintPendingInvite();
+      const employeeToken = await loginAs('employee@clearline.dev');
+
+      const response = await fetch(`${ORIGIN}/api/team/invites/${inviteId}`, {
+        method: 'DELETE',
+        headers: auth(employeeToken),
+      });
+      expect(response.status).toBe(403);
+    });
+
+    it('returns 404 for an unknown invite', async () => {
+      const token = await loginAs('owner@clearline.dev');
+      const response = await fetch(`${ORIGIN}/api/team/invites/invite_nope`, {
+        method: 'DELETE',
+        headers: auth(token),
+      });
+      expect(response.status).toBe(404);
+    });
+  });
+});
+
 describe('DELETE /api/team/members/:id (US-CW-031 AC-05)', () => {
   it('removes a member, records an audit event, and invalidates their session', async () => {
     const ownerToken = await loginAs('owner@clearline.dev');

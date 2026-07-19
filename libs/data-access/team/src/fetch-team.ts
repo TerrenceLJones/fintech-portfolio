@@ -68,3 +68,30 @@ export async function deleteMember(memberId: string): Promise<void> {
     throw new Error('team_remove_failed');
   }
 }
+
+/** Resend a pending invite — a fresh link supersedes the old one (US-CW-031 AC-09). 403 = forbidden caller; 404 = unknown invite. */
+export async function postInviteResend(inviteId: string): Promise<void> {
+  const response = await authenticatedFetch(
+    `/api/team/invites/${encodeURIComponent(inviteId)}/resend`,
+    { method: 'POST' },
+  );
+  if (response.status === 403) {
+    throw new TeamForbiddenError();
+  }
+  if (!response.ok) {
+    throw new Error('team_invite_resend_failed');
+  }
+}
+
+/** Revoke a pending invite (204 No Content) so its link can no longer be accepted (US-CW-031 AC-10). 403 = forbidden caller; 404 = unknown invite. */
+export async function deleteInvite(inviteId: string): Promise<void> {
+  const response = await authenticatedFetch(`/api/team/invites/${encodeURIComponent(inviteId)}`, {
+    method: 'DELETE',
+  });
+  if (response.status === 403) {
+    throw new TeamForbiddenError();
+  }
+  if (!response.ok) {
+    throw new Error('team_invite_revoke_failed');
+  }
+}

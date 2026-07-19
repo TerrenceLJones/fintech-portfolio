@@ -141,6 +141,53 @@ export function createTeamHandlers(
       return HttpResponse.json(body, { status: 200 });
     }),
 
+    // Resend a pending invite — Owner/Admin only. A fresh single-use link supersedes and invalidates
+    // the old one; the token itself is never returned (enumeration-safe, same as the create endpoint).
+    http.post('*/api/team/invites/:id/resend', async ({ request, params }) => {
+      const result = authorizeAdmin(request);
+      if ('fail' in result) return result.fail;
+
+      const outcome = await authService.resendInvite(result.actor.orgId, String(params.id));
+      if (outcome.outcome !== 'ok') return teamMutationError(outcome.outcome);
+
+      // A re-issued invite is a team change too — audit it (Design §18.4).
+      const actor = resolveAuditActor(request, authService);
+      if (actor) {
+        auditService.record({
+          actor,
+          category: 'role_change',
+          action: `Resent invite · ${outcome.invite!.email}`,
+          target: { label: outcome.invite!.email, ref: outcome.invite!.id },
+          diff: { from: 'Invited', to: 'Re-invited', tone: 'neutral' },
+        });
+      }
+
+      const body: InviteMemberResponse = {};
+      return HttpResponse.json(body, { status: 200 });
+    }),
+
+    // Revoke a pending invite — Owner/Admin only. The outstanding link can no longer be accepted (AC-10).
+    http.delete('*/api/team/invites/:id', ({ request, params }) => {
+      const result = authorizeAdmin(request);
+      if ('fail' in result) return result.fail;
+
+      const outcome = authService.revokeInvite(result.actor.orgId, String(params.id));
+      if (outcome.outcome !== 'ok') return teamMutationError(outcome.outcome);
+
+      const actor = resolveAuditActor(request, authService);
+      if (actor) {
+        auditService.record({
+          actor,
+          category: 'role_change',
+          action: `Revoked invite · ${outcome.invite!.email}`,
+          target: { label: outcome.invite!.email, ref: outcome.invite!.id },
+          diff: { from: 'Invited', to: 'Revoked', tone: 'negative' },
+        });
+      }
+
+      return new HttpResponse(null, { status: 204 });
+    }),
+
     // Change a member's role — Owner/Admin only; Owner is protected (AC-04 / US-CW-030 AC-03).
     http.patch('*/api/team/members/:id/role', async ({ request, params }) => {
       const result = authorizeAdmin(request);
@@ -217,12 +264,13 @@ export function createTeamHandlers(
   ];
 }
 
-/** Map a service-level team mutation failure to its HTTP response: 404 for an unknown member, 403 otherwise. */
+/** Map a service-level team mutation failure to its HTTP response: 404 for an unknown member/invite, 403 otherwise. */
 function teamMutationError(
-  outcome: 'owner_protected' | 'admin_revoke_forbidden' | 'member_not_found',
+  outcome: 'owner_protected' | 'admin_revoke_forbidden' | 'member_not_found' | 'invite_not_found',
 ): Response {
   const body: TeamErrorResponse = { error: outcome };
-  return HttpResponse.json(body, { status: outcome === 'member_not_found' ? 404 : 403 });
+  const notFound = outcome === 'member_not_found' || outcome === 'invite_not_found';
+  return HttpResponse.json(body, { status: notFound ? 404 : 403 });
 }
 
 export const teamHandlers = createTeamHandlers();

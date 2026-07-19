@@ -304,6 +304,116 @@ describe('grant / revoke Admin (US-CW-031 AC-08)', () => {
   });
 });
 
+describe('resendInvite (US-CW-031 AC-09 / Design §18.1)', () => {
+  async function createPendingInvite(email = 'newhire@clearline.dev', now?: number) {
+    const { token } = await auth.createInvite(
+      {
+        orgId: ORG_ID,
+        email,
+        role: 'finance_manager',
+        grantAdmin: false,
+        inviterName: 'Priya Nair',
+      },
+      now,
+    );
+    const invite = auth.getTeamRoster(ORG_ID, now)!.invites.find((i) => i.email === email)!;
+    return { token: token!, id: invite.id };
+  }
+
+  it('issues a fresh token, invalidates the old one, and keeps the same invite id', async () => {
+    const { token: oldToken, id } = await createPendingInvite();
+
+    const result = await auth.resendInvite(ORG_ID, id);
+    expect(result.outcome).toBe('ok');
+    expect(result.token).toMatch(/^invite_/);
+    expect(result.token).not.toBe(oldToken);
+
+    // The old link no longer works; the fresh one does.
+    expect((await auth.getInviteDetails(oldToken)).status).toBe('invalid');
+    expect((await auth.getInviteDetails(result.token!)).status).toBe('valid');
+
+    // Still exactly one pending invite, under the same id.
+    const invites = auth.getTeamRoster(ORG_ID)!.invites;
+    expect(invites).toHaveLength(1);
+    expect(invites[0]!.id).toBe(id);
+  });
+
+  it('restarts the 7-day expiry window from the resend time', async () => {
+    const issuedAt = 1_000_000;
+    const { token: oldToken, id } = await createPendingInvite('late@clearline.dev', issuedAt);
+    // The original token is on the brink of expiry…
+    const resentAt = issuedAt + INVITE_TOKEN_TTL_MS - 1;
+    const { token } = await auth.resendInvite(ORG_ID, id, resentAt);
+
+    // …the old one is now expired, but the resent one is valid well past the old window.
+    expect((await auth.getInviteDetails(oldToken!, resentAt)).status).toBe('invalid');
+    expect((await auth.getInviteDetails(token!, resentAt + INVITE_TOKEN_TTL_MS - 1)).status).toBe(
+      'valid',
+    );
+  });
+
+  it('reports invite_not_found for an unknown id and mints no token', async () => {
+    const result = await auth.resendInvite(ORG_ID, 'invite_nope');
+    expect(result.outcome).toBe('invite_not_found');
+    expect(result.token).toBeUndefined();
+  });
+
+  it('is org-scoped — cannot resend another org’s invite', async () => {
+    const { id } = await createPendingInvite();
+    expect((await auth.resendInvite('org_other', id)).outcome).toBe('invite_not_found');
+  });
+
+  it('cannot resurrect an already-accepted invite', async () => {
+    const { token, id } = await createPendingInvite();
+    await auth.acceptInvite(token, DEMO_USER_PASSWORD);
+    expect((await auth.resendInvite(ORG_ID, id)).outcome).toBe('invite_not_found');
+  });
+});
+
+describe('revokeInvite (US-CW-031 AC-10 / Design §18.1)', () => {
+  async function createPendingInvite(email = 'newhire@clearline.dev') {
+    const { token } = await auth.createInvite({
+      orgId: ORG_ID,
+      email,
+      role: 'finance_manager',
+      grantAdmin: false,
+      inviterName: 'Priya Nair',
+    });
+    const invite = auth.getTeamRoster(ORG_ID)!.invites.find((i) => i.email === email)!;
+    return { token: token!, id: invite.id };
+  }
+
+  it('drops the invite from the roster and kills its token', async () => {
+    const { token, id } = await createPendingInvite();
+
+    const result = auth.revokeInvite(ORG_ID, id);
+    expect(result.outcome).toBe('ok');
+    expect(result.invite!.email).toBe('newhire@clearline.dev');
+
+    expect(auth.getTeamRoster(ORG_ID)!.invites).toHaveLength(0);
+    // The outstanding link can no longer be used to join.
+    expect((await auth.getInviteDetails(token)).status).toBe('invalid');
+    expect((await auth.acceptInvite(token, DEMO_USER_PASSWORD)).outcome).toBe('invite_invalid');
+  });
+
+  it('reports invite_not_found for an unknown id', () => {
+    expect(auth.revokeInvite(ORG_ID, 'invite_nope').outcome).toBe('invite_not_found');
+  });
+
+  it('is org-scoped — cannot revoke another org’s invite', async () => {
+    const { id } = await createPendingInvite();
+    expect(auth.revokeInvite('org_other', id).outcome).toBe('invite_not_found');
+    // The invite is untouched.
+    expect(auth.getTeamRoster(ORG_ID)!.invites).toHaveLength(1);
+  });
+
+  it('reports invite_not_found for an already-accepted invite', async () => {
+    const { token, id } = await createPendingInvite();
+    await auth.acceptInvite(token, DEMO_USER_PASSWORD);
+    expect(auth.revokeInvite(ORG_ID, id).outcome).toBe('invite_not_found');
+  });
+});
+
 describe('removeMember (US-CW-031 AC-05 / US-CW-030 AC-03)', () => {
   it('removes a member, drops them from the roster, and revokes their sessions', async () => {
     const { accessToken } = await auth.login('employee@clearline.dev', DEMO_USER_PASSWORD, IP);

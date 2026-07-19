@@ -83,6 +83,21 @@ export const teamBeacon: DemoBeaconPageConfig = {
             },
           ],
         },
+        {
+          id: 'resend-revoke',
+          title: 'Resend or revoke a pending invite',
+          steps: [
+            {
+              text: 'On a **Pending** row, press **Resend** to issue a fresh link — it restarts the 7-day window and **invalidates the old link**.',
+            },
+            {
+              text: 'Or press the **revoke** (×) action and confirm to cancel it — the outstanding link stops working immediately and the invite drops off the roster.',
+            },
+            {
+              text: 'Both are written to the **audit log**. Use **Invite a teammate** above first if there’s no pending invite to act on.',
+            },
+          ],
+        },
       ],
     },
     {

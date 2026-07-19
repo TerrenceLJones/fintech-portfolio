@@ -118,7 +118,13 @@ export interface ChangeMemberRoleResponse {
  * `forbidden_role`: caller is neither Owner nor Admin (US-CW-031 AC-07). `owner_protected`: the target
  * is the Owner, who can't be removed or demoted (US-CW-030 AC-03). `admin_revoke_forbidden`: a non-Owner
  * tried to revoke Admin, which only the Owner may do (US-CW-031 AC-08). `member_not_found`: unknown member.
+ * `invite_not_found`: the pending invite being resent or revoked no longer exists (US-CW-031 AC-09/AC-10).
  */
 export interface TeamErrorResponse {
-  error: 'forbidden_role' | 'owner_protected' | 'admin_revoke_forbidden' | 'member_not_found';
+  error:
+    | 'forbidden_role'
+    | 'owner_protected'
+    | 'admin_revoke_forbidden'
+    | 'member_not_found'
+    | 'invite_not_found';
 }
