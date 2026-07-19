@@ -26,7 +26,8 @@
     "@clearline/domain-onboarding": "workspace:*",
     "@clearline/domain-payments": "workspace:*",
     "@clearline/domain-reconciliation": "workspace:*",
-    "@clearline/domain-budgets": "workspace:*"
+    "@clearline/domain-budgets": "workspace:*",
+    "@clearline/domain-profile": "workspace:*"
   },
   "devDependencies": {
     "@vitest/coverage-v8": "^4.1.9",

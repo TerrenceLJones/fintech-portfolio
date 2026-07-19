@@ -15,6 +15,7 @@ import { budgetsHandlers } from './handlers/budgets.handlers';
 import { auditHandlers } from './handlers/audit.handlers';
 import { teamHandlers } from './handlers/team.handlers';
 import { settingsHandlers } from './handlers/settings.handlers';
+import { profileHandlers } from './handlers/profile.handlers';
 
 export const server = setupServer(
   ...authHandlers,
@@ -33,4 +34,5 @@ export const server = setupServer(
   ...auditHandlers,
   ...teamHandlers,
   ...settingsHandlers,
+  ...profileHandlers,
 );

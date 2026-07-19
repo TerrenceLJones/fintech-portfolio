@@ -27,6 +27,7 @@ import { budgetsHandlers } from './handlers/budgets.handlers';
 import { auditHandlers } from './handlers/audit.handlers';
 import { teamHandlers } from './handlers/team.handlers';
 import { settingsHandlers } from './handlers/settings.handlers';
+import { profileHandlers } from './handlers/profile.handlers';
 import { sharedAnalyticsService } from './services/shared-analytics-service';
 import { sharedReconciliationService } from './services/shared-reconciliation-service';
 import { sharedBudgetsService } from './services/shared-budgets-service';
@@ -60,6 +61,7 @@ export const worker = setupWorker(
   ...auditHandlers,
   ...teamHandlers,
   ...settingsHandlers,
+  ...profileHandlers,
 );
 
 // Seed the demo user as an already-approved, fully-onboarded business so signing in as it lands on
@@ -432,4 +434,38 @@ export function simulateBudgetThresholdCrossingForE2E(department?: string): void
  */
 export function simulateBudgetRolloverForE2E(): void {
   sharedBudgetsService.rolloverPeriod();
+}
+
+const EMAIL_CHANGE_TOKEN_TTL_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Dev/demo + e2e control for US-CW-034 AC-03/04: begins a verified email change for the signed-in
+ * account and hands back the single-use token, standing in for the emailed confirmation link there's
+ * no inbox to read (same rationale as issueResetTokenForE2E / issueVerificationTokenForE2E). Lets the
+ * Personal Info Beacon open the confirm link and watch the login email swap. Resolves undefined if the
+ * change was rejected (malformed / same-as-current / already-taken). Behind import.meta.env.DEV.
+ */
+export async function issueEmailChangeTokenForE2E(
+  email: string,
+  newEmail: string,
+): Promise<string | undefined> {
+  const { token } = await sharedAuthService.requestEmailChange(email, newEmail);
+  return token;
+}
+
+/**
+ * Same as issueEmailChangeTokenForE2E, but backdated 1 minute past the 24-hour TTL so it's already
+ * expired the moment it's issued — for AC-04 coverage of the "This link has expired" screen.
+ * Behind import.meta.env.DEV.
+ */
+export async function issueExpiredEmailChangeTokenForE2E(
+  email: string,
+  newEmail: string,
+): Promise<string | undefined> {
+  const { token } = await sharedAuthService.requestEmailChange(
+    email,
+    newEmail,
+    Date.now() - EMAIL_CHANGE_TOKEN_TTL_MS - 60_000,
+  );
+  return token;
 }

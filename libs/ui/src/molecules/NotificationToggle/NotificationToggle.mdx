@@ -1,0 +1,30 @@
+import { Meta, Stories } from '@storybook/addon-docs/blocks';
+import * as NotificationToggleStories from './NotificationToggle.stories';
+
+<Meta of={NotificationToggleStories} />
+
+# NotificationToggle
+
+One row of the personal notification-preferences table (design §19.6). Independent Email and In-App
+`Switch`es, plus a frequency `Select` that appears only when a channel is on and the type supports
+frequency; otherwise a subtle "You won't be notified" label. Stateless and auto-saving via
+`onChange` — deliberately outside the unsaved-changes footer pattern.
+
+## User story
+
+**US-CW-034 — Personal Profile & Notification Preferences**
+
+As any authenticated user, I want to control which notifications I receive, on which channels, at
+what frequency — so I decide how and how often Clearline contacts me.
+
+## Acceptance criteria
+
+- **AC-07 — channel toggle auto-saves.** Toggling Email/In-App saves immediately (no Save button)
+  and reflects the new state.
+- **AC-08 — frequency follows channels.** Changing the frequency (Instant / Daily Digest / Weekly
+  Digest) saves; turning OFF all channels shows "You won't be notified" and removes the frequency
+  selector.
+- **AC-09 — non-frequency rows.** Types that don't support frequency (e.g. security alerts) never
+  render a frequency selector and are unaffected by a bulk Notification Summary.
+
+<Stories />

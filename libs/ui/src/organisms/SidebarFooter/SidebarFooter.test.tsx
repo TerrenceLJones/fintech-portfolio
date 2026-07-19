@@ -17,6 +17,12 @@ describe('SidebarFooter', () => {
     expect(screen.getByText('Finance Manager · $10k limit')).toBeInTheDocument();
   });
 
+  it('renders the avatar photo when one is set, replacing the initials (US-CW-034 AC-05)', () => {
+    render(<SidebarFooter identity={{ ...IDENTITY, avatarUrl: 'data:image/png;base64,AAAA' }} />);
+    const img = screen.getByRole('img', { name: 'Marcus Okafor' });
+    expect(img).toHaveAttribute('src', 'data:image/png;base64,AAAA');
+  });
+
   it('shows just the role when there is no detail', () => {
     render(
       <SidebarFooter identity={{ name: 'Priya Nair', initials: 'PN', roleLabel: 'Employee' }} />,

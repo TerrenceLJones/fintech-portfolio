@@ -85,6 +85,7 @@ export function createSessionHandlers(authService: AuthService = sharedAuthServi
           currency: EXPENSE_CURRENCY,
           isAdmin: result.isAdmin!,
           isOwner: result.isOwner!,
+          avatarUrl: result.avatarUrl ?? null,
         };
         return HttpResponse.json(body, { status: 200 });
       }

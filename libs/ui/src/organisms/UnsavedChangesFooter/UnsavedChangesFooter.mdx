@@ -1,0 +1,28 @@
+import { Meta, Stories } from '@storybook/addon-docs/blocks';
+import * as UnsavedChangesFooterStories from './UnsavedChangesFooter.stories';
+
+<Meta of={UnsavedChangesFooterStories} />
+
+# UnsavedChangesFooter
+
+The sticky Save / Discard bar that governs every form-bearing settings page (design §19 intro).
+US-CW-034 establishes it as a shared organism the later settings form pages reuse. Purely
+presentational: dirtiness tracking, the save, the revert, and the route-leave guard are the page's
+job — this only surfaces the choice, pinned to the bottom of its scroll container, and renders
+nothing when there are no changes.
+
+## User story
+
+**US-CW-034 — Personal Profile & Notification Preferences**
+
+As any authenticated user, I want an unsaved-changes safety net on every edit — so I never lose work
+and never save by accident.
+
+## Acceptance criteria
+
+- **AC-02 — unsaved-changes footer.** When I change any field without saving, a sticky
+  "Save changes" / "Discard" bar appears and stays visible regardless of scroll; "Discard" reverts
+  every field and dismisses the bar; navigating away with unsaved changes warns me first. This
+  component renders the bar; the page owns dirty-tracking and the leave-guard.
+
+<Stories />

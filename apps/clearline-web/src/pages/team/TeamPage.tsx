@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import type { PendingInvite, Role, TeamMember } from '@clearline/contracts';
 import {
@@ -10,8 +10,9 @@ import {
   EmptyState,
   Icon,
   Text,
-  Toast,
 } from '@clearline/ui';
+import { ToastViewport } from '../../components/ToastViewport';
+import { useToast } from '../../hooks/useToast';
 import {
   TeamForbiddenError,
   useChangeMemberRole,
@@ -55,14 +56,8 @@ export function TeamPage() {
   const [roleTarget, setRoleTarget] = useState<TeamMember | null>(null);
   const [removeTarget, setRemoveTarget] = useState<TeamMember | null>(null);
   const [revokeTarget, setRevokeTarget] = useState<PendingInvite | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
-
   // A resend leaves the row looking the same, so it confirms with a transient toast (design §7.2).
-  useEffect(() => {
-    if (!toast) return;
-    const timer = setTimeout(() => setToast(null), 4000);
-    return () => clearTimeout(timer);
-  }, [toast]);
+  const { toast, show: setToast } = useToast(4000);
 
   const summary = useMemo(() => {
     if (!roster.data) return '';
@@ -292,11 +287,7 @@ export function TeamPage() {
         onConfirm={handleRevoke}
       />
 
-      {toast ? (
-        <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2">
-          <Toast message={toast} />
-        </div>
-      ) : null}
+      <ToastViewport toast={toast} />
     </div>
   );
 }

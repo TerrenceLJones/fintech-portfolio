@@ -1,0 +1,22 @@
+{
+  "name": "@clearline/domain-profile",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Pure, framework-agnostic personal-profile rules for clearline-web (EPIC-CW-022 / US-CW-034): the notification catalogue (which types exist, how they read, which support a frequency selector) with its default preferences and bulk-summary application, avatar validation (MIME allowlist, 5 MB max, 256px minimum) with user-facing messages, and email-change policy (24h TTL, normalization, same-address rejection). No data-access or UI dependencies.",
+  "main": "src/index.ts",
+  "scripts": {
+    "lint": "eslint .",
+    "type-check": "tsc --noEmit",
+    "test": "vitest run",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@clearline/contracts": "workspace:*"
+  },
+  "devDependencies": {},
+  "metadata": {
+    "package_type": "shared",
+    "app": "clearline-web",
+    "scope": "Domain lib for EPIC-CW-022 (US-CW-034 Personal Profile & Notification Preferences)."
+  }
+}

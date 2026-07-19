@@ -8,6 +8,8 @@ export interface Authorization {
   isLoading: boolean;
   /** The signed-in user's name, straight from the session — feeds the sidebar identity footer (US-CW-032). Null until loaded. */
   displayName: string | null;
+  /** The user's avatar data URL, or null for the initials fallback — feeds the sidebar identity footer (US-CW-034 AC-05). */
+  avatarUrl: string | null;
   role: Role | null;
   isAdmin: boolean;
   /** The account creator/Owner flag (US-CW-030). Orthogonal to the tier; grants no permissions on its own in this epic. */
@@ -35,6 +37,7 @@ export function useAuthorization(): Authorization {
       return {
         isLoading: isPending,
         displayName: null,
+        avatarUrl: null,
         role: null,
         isAdmin: false,
         isOwner: false,
@@ -52,6 +55,7 @@ export function useAuthorization(): Authorization {
     return {
       isLoading: false,
       displayName: data.displayName,
+      avatarUrl: data.avatarUrl,
       role: data.role,
       isAdmin: data.isAdmin,
       isOwner: data.isOwner,

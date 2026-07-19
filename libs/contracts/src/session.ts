@@ -41,6 +41,12 @@ export interface SessionResponse {
    * team-management authority of ownership is layered on in EPIC-CW-018.
    */
   isOwner: boolean;
+  /**
+   * Data URL of the user's avatar, or null when it falls back to initials. Sourced here so the
+   * sidebar identity footer is a single avatar source of truth: changing it on Personal Info
+   * (US-CW-034 AC-05) invalidates the session query and the chip updates live.
+   */
+  avatarUrl: string | null;
 }
 
 export type LogoutResponse = Record<string, never>;

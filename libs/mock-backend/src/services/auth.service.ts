@@ -14,9 +14,20 @@ import {
   hashToken,
   type FailedAttempt,
 } from '@clearline/domain-auth';
+import {
+  EMAIL_CHANGE_TTL_MS,
+  applyNotificationSummary as applyNotificationSummaryPolicy,
+  defaultNotificationPrefs,
+  isSameEmail,
+  isValidEmail,
+} from '@clearline/domain-profile';
 import type {
+  NotificationFrequency,
+  NotificationPreference,
+  NotificationTypeKey,
   Organization,
   PendingInvite,
+  ProfileResponse,
   Role,
   TeamMember,
   TeamRosterResponse,
@@ -60,6 +71,38 @@ interface VerificationTokenRecord {
   email: string;
   issuedAt: number;
   used: boolean;
+}
+
+/**
+ * An outstanding personal email-change confirmation (US-CW-034 AC-03/04). Keyed by the SHA-256 hash
+ * of the single-use token (never the raw token), like reset/verification. `userId` — not the email —
+ * anchors it, so a subsequent swap of the same account's email can't strand a token; `newEmail` is
+ * the address that becomes the login on confirmation.
+ */
+interface EmailChangeTokenRecord {
+  userId: string;
+  newEmail: string;
+  issuedAt: number;
+  used: boolean;
+}
+
+export type RequestEmailChangeOutcome =
+  'success' | 'invalid_email' | 'same_as_current' | 'email_taken';
+
+export interface RequestEmailChangeServiceResult {
+  outcome: RequestEmailChangeOutcome;
+  /** Present only on success — the raw single-use token (stands in for the emailed link). Never surfaced over the network. */
+  token?: string;
+  /** Present only on success — the address now shown as "Pending". */
+  pendingEmail?: string;
+}
+
+export type ConfirmEmailChangeServiceOutcome = 'success' | 'token_invalid' | 'token_expired';
+
+export interface ConfirmEmailChangeServiceResult {
+  outcome: ConfirmEmailChangeServiceOutcome;
+  /** Present only on success — the now-active login email. */
+  email?: string;
 }
 
 /** An Organization record, keyed to the business it was provisioned for (US-CW-030). */
@@ -199,6 +242,8 @@ export interface SessionCheckResult {
   isAdmin?: boolean;
   /** Present only when outcome is 'active' — the account creator/Owner flag (US-CW-030). */
   isOwner?: boolean;
+  /** Present only when outcome is 'active' — the avatar data URL, or null for the initials fallback (US-CW-034). */
+  avatarUrl?: string | null;
   /** Present only when outcome is 'revoked'. */
   reason?: RevocationReason;
 }
@@ -244,6 +289,7 @@ export interface AuthServiceSnapshot {
   auditLog: AuditEvent[];
   resetTokens: [string, ResetTokenRecord][];
   verificationTokens: [string, VerificationTokenRecord][];
+  emailChangeTokens: [string, EmailChangeTokenRecord][];
   inviteTokens: [string, InviteTokenRecord][];
   organizations: [string, OrganizationRecord][];
   refreshTokenFamilies: SerializedRefreshTokenFamily[];
@@ -251,7 +297,11 @@ export interface AuthServiceSnapshot {
 }
 
 export interface NotificationEvent {
-  type: 'password_changed' | 'signup_verification' | 'signup_existing_account';
+  type:
+    | 'password_changed'
+    | 'signup_verification'
+    | 'signup_existing_account'
+    | 'email_change_requested';
   email: string;
   timestamp: number;
 }
@@ -297,6 +347,8 @@ export class AuthService {
   private readonly resetTokensByTokenHash = new Map<string, ResetTokenRecord>();
   /** Keyed by the SHA-256 hash of the token, never the raw token — see hashToken. */
   private readonly verificationTokensByTokenHash = new Map<string, VerificationTokenRecord>();
+  /** Outstanding email-change confirmations, keyed by the SHA-256 hash of the token (US-CW-034). */
+  private readonly emailChangeTokensByTokenHash = new Map<string, EmailChangeTokenRecord>();
   private readonly familiesById = new Map<string, RefreshTokenFamily>();
   /** Maps a refresh token's hash — current or already-used — back to its family, so a replayed stale token can still be traced to the family it must revoke. */
   private readonly familyIdByTokenHash = new Map<string, string>();
@@ -828,6 +880,7 @@ export class AuthService {
       approvalLimit: user.approvalLimit,
       isAdmin: user.isAdmin,
       isOwner: user.isOwner,
+      avatarUrl: user.avatarUrl ?? null,
     };
   }
 
@@ -1084,6 +1137,226 @@ export class AuthService {
     return !!record && !record.used && !isVerificationTokenExpired(record.issuedAt, now);
   }
 
+  // ===========================================================================
+  // Personal profile (US-CW-034). Every method is keyed by the caller's current
+  // login email, which the HTTP handler reads from the authenticated session; a
+  // null/no-op for an unknown email, mirroring setUserRole. The user record is
+  // the single source of truth the sidebar identity footer also reads through
+  // checkSession, so an avatar or name change surfaces there on the next fetch.
+  // ===========================================================================
+
+  private toProfile(user: SeedUser): ProfileResponse {
+    return {
+      userId: user.id,
+      displayName: user.displayName,
+      email: user.email,
+      phone: user.phone ?? null,
+      jobTitle: user.jobTitle ?? null,
+      avatarUrl: user.avatarUrl ?? null,
+      pendingEmail: user.pendingEmail ?? null,
+    };
+  }
+
+  /** The caller's editable identity + any pending email change (AC-01/03/05). Null for an unknown email. */
+  getProfile(email: string): ProfileResponse | null {
+    const user = this.usersByEmail.get(email.toLowerCase());
+    return user ? this.toProfile(user) : null;
+  }
+
+  /** Updates name/phone/job title in place (AC-01). Returns the fresh profile, or null for unknown email. */
+  updateProfile(
+    email: string,
+    patch: { displayName: string; phone: string | null; jobTitle: string | null },
+  ): ProfileResponse | null {
+    const user = this.usersByEmail.get(email.toLowerCase());
+    if (!user) return null;
+    user.displayName = patch.displayName;
+    user.phone = patch.phone;
+    user.jobTitle = patch.jobTitle;
+    return this.toProfile(user);
+  }
+
+  /** Sets the avatar to a (cropped) data URL (AC-05). Returns the fresh profile, or null for unknown email. */
+  setAvatar(email: string, avatarUrl: string): ProfileResponse | null {
+    const user = this.usersByEmail.get(email.toLowerCase());
+    if (!user) return null;
+    user.avatarUrl = avatarUrl;
+    return this.toProfile(user);
+  }
+
+  /** Clears the avatar, falling back to initials (AC-06). Returns the fresh profile, or null. */
+  removeAvatar(email: string): ProfileResponse | null {
+    const user = this.usersByEmail.get(email.toLowerCase());
+    if (!user) return null;
+    user.avatarUrl = null;
+    return this.toProfile(user);
+  }
+
+  private isEmailChangeTokenExpired(issuedAt: number, now: number): boolean {
+    return now - issuedAt > EMAIL_CHANGE_TTL_MS;
+  }
+
+  private userById(userId: string): SeedUser | undefined {
+    for (const user of this.usersByEmail.values()) {
+      if (user.id === userId) return user;
+    }
+    return undefined;
+  }
+
+  private invalidateEmailChangeTokensFor(userId: string): void {
+    for (const record of this.emailChangeTokensByTokenHash.values()) {
+      if (record.userId === userId && !record.used) record.used = true;
+    }
+  }
+
+  /**
+   * Swaps a user's login email everywhere it is used as a key: the usersByEmail map, every
+   * refresh-token family's `email` (checkSession resolves the user by it), and any failed-attempt
+   * bucket. `newKey` is already normalized (lowercased/trimmed).
+   */
+  private rekeyUserEmail(user: SeedUser, newKey: string): void {
+    const oldKey = user.email.toLowerCase();
+    user.email = newKey;
+    if (oldKey === newKey) return;
+    this.usersByEmail.delete(oldKey);
+    this.usersByEmail.set(newKey, user);
+    for (const family of this.familiesById.values()) {
+      if (family.email === oldKey) family.email = newKey;
+    }
+    const attempts = this.failedAttemptsByEmail.get(oldKey);
+    if (attempts) {
+      this.failedAttemptsByEmail.delete(oldKey);
+      this.failedAttemptsByEmail.set(newKey, attempts);
+    }
+  }
+
+  /**
+   * Begins a verified email change (AC-03). Rejects a malformed address, the current address, or one
+   * already claimed by another account. On success it mints a single-use token (hash stored, raw
+   * token returned like requestPasswordReset — it stands in for the emailed link), records the
+   * pending address on the user for the "Pending" indicator, and supersedes any prior outstanding
+   * token so only one pending address exists at a time (edge case). The login email is NOT changed
+   * yet — it swaps only on confirmation, so the current address keeps working for login until then.
+   */
+  async requestEmailChange(
+    email: string,
+    newEmail: string,
+    now: number = Date.now(),
+  ): Promise<RequestEmailChangeServiceResult> {
+    const user = this.usersByEmail.get(email.toLowerCase());
+    if (!user) return { outcome: 'invalid_email' };
+    if (!isValidEmail(newEmail)) return { outcome: 'invalid_email' };
+    if (isSameEmail(newEmail, user.email)) return { outcome: 'same_as_current' };
+
+    const newKey = newEmail.trim().toLowerCase();
+    const claimant = this.usersByEmail.get(newKey);
+    if (claimant && claimant.id !== user.id) return { outcome: 'email_taken' };
+
+    this.invalidateEmailChangeTokensFor(user.id);
+
+    const token = `emailchange_${crypto.randomUUID()}`;
+    const tokenHash = await hashToken(token);
+    this.emailChangeTokensByTokenHash.set(tokenHash, {
+      userId: user.id,
+      newEmail: newKey,
+      issuedAt: now,
+      used: false,
+    });
+    user.pendingEmail = newKey;
+    this.notificationsSent.push({ type: 'email_change_requested', email: newKey, timestamp: now });
+    return { outcome: 'success', token, pendingEmail: newKey };
+  }
+
+  async isEmailChangeTokenValid(token: string, now: number = Date.now()): Promise<boolean> {
+    const record = this.emailChangeTokensByTokenHash.get(await hashToken(token));
+    return !!record && !record.used && !this.isEmailChangeTokenExpired(record.issuedAt, now);
+  }
+
+  /**
+   * Applies a pending email change (AC-03/04). On success it swaps the login email — re-keying the
+   * user map and every refresh-token family so checkSession/login resolve the new address — clears
+   * the pending marker, and consumes the token. An expired or already-used/invalid token leaves the
+   * current email untouched (AC-04); an expired link additionally clears the now-stale pending
+   * marker so the profile no longer advertises a change that can never complete.
+   */
+  async confirmEmailChange(
+    token: string,
+    now: number = Date.now(),
+  ): Promise<ConfirmEmailChangeServiceResult> {
+    const record = this.emailChangeTokensByTokenHash.get(await hashToken(token));
+    if (!record || record.used) return { outcome: 'token_invalid' };
+
+    if (this.isEmailChangeTokenExpired(record.issuedAt, now)) {
+      record.used = true;
+      const staleUser = this.userById(record.userId);
+      if (staleUser && staleUser.pendingEmail === record.newEmail) staleUser.pendingEmail = null;
+      return { outcome: 'token_expired' };
+    }
+
+    const user = this.userById(record.userId);
+    if (!user) return { outcome: 'token_invalid' };
+
+    // The address may have been claimed by another account between request and confirm — refuse
+    // rather than collide two logins on one key.
+    const claimant = this.usersByEmail.get(record.newEmail);
+    if (claimant && claimant.id !== user.id) {
+      record.used = true;
+      user.pendingEmail = null;
+      return { outcome: 'token_invalid' };
+    }
+
+    this.rekeyUserEmail(user, record.newEmail);
+    user.pendingEmail = null;
+    record.used = true;
+    return { outcome: 'success', email: user.email };
+  }
+
+  /** Cancels an outstanding email change (AC-03 "Cancel change"): clears the marker + invalidates the token. */
+  cancelEmailChange(email: string): ProfileResponse | null {
+    const user = this.usersByEmail.get(email.toLowerCase());
+    if (!user) return null;
+    this.invalidateEmailChangeTokensFor(user.id);
+    user.pendingEmail = null;
+    return this.toProfile(user);
+  }
+
+  /** The caller's notification preferences, lazily defaulting a fresh account to all-on/instant (AC-07). */
+  getNotificationPrefs(email: string): NotificationPreference[] | null {
+    const user = this.usersByEmail.get(email.toLowerCase());
+    if (!user) return null;
+    if (!user.notificationPrefs) user.notificationPrefs = defaultNotificationPrefs();
+    return user.notificationPrefs;
+  }
+
+  /** Sets one notification row, auto-saved per interaction (AC-07/08). Returns the full set, or null. */
+  setNotificationPref(
+    email: string,
+    key: NotificationTypeKey,
+    patch: { email: boolean; inApp: boolean; frequency: NotificationFrequency },
+  ): NotificationPreference[] | null {
+    const prefs = this.getNotificationPrefs(email);
+    if (!prefs) return null;
+    const row = prefs.find((pref) => pref.key === key);
+    if (row) {
+      row.email = patch.email;
+      row.inApp = patch.inApp;
+      row.frequency = patch.frequency;
+    }
+    return prefs;
+  }
+
+  /** Bulk-applies a frequency to every frequency-supporting row (AC-09). Returns the full set, or null. */
+  applyNotificationSummary(
+    email: string,
+    frequency: NotificationFrequency,
+  ): NotificationPreference[] | null {
+    const user = this.usersByEmail.get(email.toLowerCase());
+    if (!user) return null;
+    const prefs = this.getNotificationPrefs(email)!;
+    user.notificationPrefs = applyNotificationSummaryPolicy(prefs, frequency);
+    return user.notificationPrefs;
+  }
+
   getAuditLog(): readonly AuditEvent[] {
     return this.auditLog;
   }
@@ -1109,6 +1382,7 @@ export class AuthService {
       auditLog: [...this.auditLog],
       resetTokens: [...this.resetTokensByTokenHash],
       verificationTokens: [...this.verificationTokensByTokenHash],
+      emailChangeTokens: [...this.emailChangeTokensByTokenHash],
       inviteTokens: [...this.invitesByTokenHash],
       organizations: [...this.orgsById],
       refreshTokenFamilies: [...this.familiesById.values()].map((family) => ({
@@ -1138,6 +1412,12 @@ export class AuthService {
     this.verificationTokensByTokenHash.clear();
     snapshot.verificationTokens.forEach(([hash, record]) =>
       this.verificationTokensByTokenHash.set(hash, record),
+    );
+
+    // `?? []` for backward compatibility with a snapshot taken before email-change existed.
+    this.emailChangeTokensByTokenHash.clear();
+    (snapshot.emailChangeTokens ?? []).forEach(([hash, record]) =>
+      this.emailChangeTokensByTokenHash.set(hash, record),
     );
 
     this.invitesByTokenHash.clear();

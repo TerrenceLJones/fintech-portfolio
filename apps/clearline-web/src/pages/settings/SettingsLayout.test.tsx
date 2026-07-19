@@ -34,6 +34,20 @@ function mockRole(role: Role, opts: { isAdmin?: boolean; isOwner?: boolean } = {
     http.get('*/api/settings/sections/:slug', ({ params }) =>
       HttpResponse.json({ slug: params.slug, authorized: true }),
     ),
+    // The Profile-group pages (Personal Info, Notifications) fetch their own data on mount; stub it
+    // so the shell tests exercise routing/nav, not those pages' internals (covered by their own tests).
+    http.get('*/api/profile', () =>
+      HttpResponse.json({
+        userId: 'user_1',
+        displayName: 'Marcus Okafor',
+        email: 'demo@clearline.dev',
+        phone: null,
+        jobTitle: null,
+        avatarUrl: null,
+        pendingEmail: null,
+      }),
+    ),
+    http.get('*/api/profile/notifications', () => HttpResponse.json({ preferences: [] })),
   );
 }
 

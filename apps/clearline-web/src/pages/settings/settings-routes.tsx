@@ -6,6 +6,8 @@ import { SettingsLayout } from './SettingsLayout';
 import { SettingsSectionPlaceholder } from './SettingsSectionPlaceholder';
 import { OrgSettingsSectionPlaceholder } from './OrgSettingsSectionPlaceholder';
 import { SettingsNotFound } from './SettingsNotFound';
+import { PersonalInfoPage } from './PersonalInfoPage';
+import { NotificationsPage } from './NotificationsPage';
 
 /** An Organization route wrapped in its RequirePermission guard, with the matching API path restated
  *  for the 403 line so the client denial and the server's independent 403 read the same (AC-04). The
@@ -35,9 +37,9 @@ export function settingsRoutes() {
     <Route path="/settings" element={<SettingsLayout />}>
       <Route index element={<Navigate to="personal" replace />} />
       {/* Profile group — every authenticated user. */}
-      <Route path="personal" element={<SettingsSectionPlaceholder title="Personal Info" />} />
+      <Route path="personal" element={<PersonalInfoPage />} />
       <Route path="security" element={<SettingsSectionPlaceholder title="Security" />} />
-      <Route path="notifications" element={<SettingsSectionPlaceholder title="Notifications" />} />
+      <Route path="notifications" element={<NotificationsPage />} />
       {/* Organization group — Controller/Admin/Owner org-config. */}
       {orgRoute('company', 'Company Profile', 'org-profile:manage')}
       {/* Team & Members — the US-CW-031 team surface relocated into Settings; gated by team:view

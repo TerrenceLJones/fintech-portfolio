@@ -1,4 +1,4 @@
-import type { Role } from '@clearline/contracts';
+import type { NotificationPreference, Role } from '@clearline/contracts';
 
 export interface SeedUser {
   id: string;
@@ -29,6 +29,18 @@ export interface SeedUser {
   orgId: string | null;
   /** Epoch ms the user joined their organization — the roster's "joined" column (Design §18.1). */
   joinedAt: number;
+  // --- Personal profile (US-CW-034). All optional; the service coalesces undefined to null/defaults
+  // so pre-existing fixtures and tests that construct a SeedUser need no change. ---
+  /** Contact phone, self-managed on Personal Info. */
+  phone?: string | null;
+  /** Job title, self-managed on Personal Info. */
+  jobTitle?: string | null;
+  /** Data URL of the uploaded avatar; undefined/null falls back to the initials avatar (AC-06). */
+  avatarUrl?: string | null;
+  /** A new login email awaiting confirmation (AC-03); undefined/null when none is outstanding. */
+  pendingEmail?: string | null;
+  /** Per-notification channel/frequency preferences; undefined defaults to defaultNotificationPrefs(). */
+  notificationPrefs?: NotificationPreference[];
 }
 
 /** The plaintext DEMO_USER_PASSWORD was hashed from, kept only so local dev/tests can log in as the seed user. */
@@ -78,6 +90,9 @@ export const SEED_USERS: SeedUser[] = [
     isOwner: false,
     orgId: SEED_ORGANIZATION.id,
     joinedAt: SEED_ORGANIZATION.createdAt + 7 * DAY_MS,
+    // Seeded so the Personal Info demo (US-CW-034) has populated fields out of the box.
+    phone: '+1 (415) 555-0142',
+    jobTitle: 'Finance Manager',
   },
   {
     id: 'user_2',

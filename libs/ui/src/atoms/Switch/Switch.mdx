@@ -1,0 +1,32 @@
+import { Meta, Stories } from '@storybook/addon-docs/blocks';
+import * as SwitchStories from './Switch.stories';
+
+<Meta of={SwitchStories} />
+
+# Switch
+
+The pill on/off toggle from design §19.6, wrapping Radix `Switch` (rather than a hand-rolled
+control) for focus, keyboard (Space/Enter), and `role="switch"` + `aria-checked` semantics. Accent
+track when on, neutral when off.
+
+## User story
+
+**US-CW-034 — Personal Profile & Notification Preferences**
+
+As any authenticated user, I want to control which notifications I receive, on which channels — so
+each notification type carries independent Email and In-App switches.
+
+## Acceptance criteria
+
+- **AC-07 — channel toggle.** Given Settings → Notifications, when I toggle a channel on or off for a
+  notification type, then the preference is saved immediately (no explicit Save) and a subtle
+  confirmation of the new state is shown. `Switch` is the channel control that fires
+  `onCheckedChange`; state is never conveyed by color alone because it also carries switch semantics
+  and an accessible name.
+
+### Edge case covered here
+
+The disabled state stays visually distinct and blocks interaction — used where a channel can't be
+changed (e.g. a mandated security alert).
+
+<Stories />

@@ -1,0 +1,31 @@
+import { Meta, Stories } from '@storybook/addon-docs/blocks';
+import * as AvatarCropDialogStories from './AvatarCropDialog.stories';
+
+<Meta of={AvatarCropDialogStories} />
+
+# AvatarCropDialog
+
+Client-side square crop/resize for a new avatar (US-CW-034). The crop happens entirely in the
+browser — the image is drawn to a canvas and read back as a data URL — so the raw photo never
+reaches a third-party image service. A single zoom control drives a centered cover-crop, enough to
+square a non-square upload deterministically.
+
+## User story
+
+**US-CW-034 — Personal Profile & Notification Preferences**
+
+As any authenticated user, I want to update my avatar — so my profile shows my photo, cropped to a
+tidy square.
+
+## Acceptance criteria
+
+- **AC-05 — crop on upload.** Given I upload a valid image (JPG/PNG/WebP, ≥ 256×256), a crop/resize
+  dialog opens, and after I confirm the crop the avatar updates in the settings page and the sidebar
+  identity footer. This dialog is the crop step; file validation happens before it opens.
+
+### Edge case covered here
+
+A non-square upload is constrained to a square before save — the output is always a square PNG,
+regardless of the source aspect ratio.
+
+<Stories />

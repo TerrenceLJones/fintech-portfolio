@@ -4,8 +4,10 @@ import { Text } from '../../atoms/Text';
 export interface SidebarIdentity {
   /** The signed-in user's name — rendered bold, truncated to the rail width. */
   name: string;
-  /** Avatar initials (e.g. "PN"). */
+  /** Avatar initials (e.g. "PN"), shown when there is no photo. */
   initials: string;
+  /** Avatar photo URL; when set it replaces the initials — the single avatar source of truth updated from Personal Info (US-CW-034 AC-05). */
+  avatarUrl?: string | null;
   /** Human-readable role (e.g. "Finance Manager"). */
   roleLabel: string;
   /** Secondary authority detail shown after the role (e.g. "$10k limit", "Unlimited", "Admin"); omit when there is none. */
@@ -47,7 +49,12 @@ export function SidebarFooter({ identity, loading }: SidebarFooterProps) {
 
   return (
     <div className="border-cl-border mt-auto flex items-center gap-2.5 border-t px-2 py-2.5">
-      <Avatar initials={identity.initials} size={30} />
+      <Avatar
+        initials={identity.initials}
+        src={identity.avatarUrl ?? undefined}
+        alt={identity.name}
+        size={30}
+      />
       <div className="flex min-w-0 flex-1 flex-col">
         <Text as="div" size="label" weight="semibold" className="truncate" title={identity.name}>
           {identity.name}

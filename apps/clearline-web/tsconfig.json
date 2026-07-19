@@ -17,6 +17,7 @@
     { "path": "../../libs/domain/payments" },
     { "path": "../../libs/domain/reconciliation" },
     { "path": "../../libs/domain/budgets" },
+    { "path": "../../libs/domain/profile" },
     { "path": "../../libs/mock-backend" },
     { "path": "../../libs/util/money" },
     { "path": "../../libs/data-access/auth" },
@@ -30,6 +31,7 @@
     { "path": "../../libs/data-access/budgets" },
     { "path": "../../libs/data-access/audit" },
     { "path": "../../libs/data-access/team" },
-    { "path": "../../libs/data-access/settings" }
+    { "path": "../../libs/data-access/settings" },
+    { "path": "../../libs/data-access/profile" }
   ]
 }

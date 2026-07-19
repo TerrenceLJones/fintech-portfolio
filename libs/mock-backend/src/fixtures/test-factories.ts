@@ -148,6 +148,7 @@ export function buildSessionResponse(overrides: Partial<SessionResponse> = {}): 
     currency: 'USD',
     isAdmin: false,
     isOwner: false,
+    avatarUrl: null,
     ...overrides,
   };
 }

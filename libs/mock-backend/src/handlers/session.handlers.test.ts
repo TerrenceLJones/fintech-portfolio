@@ -133,6 +133,7 @@ describe('GET /api/auth/session', () => {
       currency: EXPENSE_CURRENCY,
       isAdmin: user!.isAdmin,
       isOwner: user!.isOwner,
+      avatarUrl: null,
     });
   });
 

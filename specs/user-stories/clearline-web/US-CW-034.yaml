@@ -9,7 +9,7 @@ feature_area: 'core'
 title: 'Personal Profile & Notification Preferences'
 
 # Lifecycle status
-status: 'DRAFT'
+status: 'IMPLEMENTED'
 story_points: 8
 dependencies: ['US-CW-033', 'US-CW-029', 'US-CW-003']
 
@@ -22,10 +22,13 @@ history:
   - epic_id: 'EPIC-CW-022'
     action: 'created'
     date: '2026-07-17'
+  - epic_id: 'EPIC-CW-022'
+    action: 'implemented'
+    date: '2026-07-19'
 
 # Status timestamps — set when status transitions occur
-approved_date: null
-implementation_date: null
+approved_date: '2026-07-18'
+implementation_date: '2026-07-19'
 deprecated_date: null
 removed_date: null
 
@@ -162,10 +165,29 @@ edge_cases: |
 
 # Implementation Status
 implementation_status: |
-  🚧 Not yet implemented — DRAFT authored 2026-07-17 (EPIC-CW-022), specs-only for review.
-  Source: specs/designs/Clearline Design System - Consolidated.dc.html §19 (Settings & Profile; NotificationToggle
-  in the component set) and Gherkin §18 (Profile & Personal Settings — personal info, unsaved-changes footer,
-  email change with verification and expiry, avatar upload/crop/remove, notification channel/frequency prefs,
-  notification summary override). Anticipated new surface: /settings/personal + /settings/notifications pages, a
-  reusable UnsavedChangesFooter + AvatarCropDialog, NotificationToggle rows, and an email-change confirmation
-  flow reusing US-CW-029/US-CW-003 token machinery.
+  ✅ IMPLEMENTED 2026-07-19 (EPIC-CW-022, branch US-CW-034/personal-profile-notifications). All ten AC covered.
+  Source: specs/designs/Clearline Design System - Consolidated.dc.html §19 (SettingsNav §19.1, NotificationToggle
+  §19.6) and Gherkin §18.
+
+  Shipped:
+    - Pages: /settings/personal (PersonalInfoPage) and /settings/notifications (NotificationsPage), plus the
+      public /email-change/confirm landing page (EmailChangeConfirmPage), wired into settings-routes.tsx / App.tsx.
+    - New shared libs: @clearline/domain-profile (notification catalogue + defaults + bulk-apply, avatar
+      validation, email-change policy) and @clearline/data-access-profile (profile/avatar/email-change/
+      notification React Query hooks; profile + avatar mutations invalidate the session query).
+    - New @clearline/ui components (each with stories + mdx): Switch, NotificationToggle, UnsavedChangesFooter,
+      AvatarCropDialog; SidebarFooter gained an avatar; Toast made theme-aware (readable in dark mode).
+    - SessionResponse gained avatarUrl; useAuthorization/AppChrome thread it to the sidebar identity chip, so a
+      new avatar or name propagates there live (AC-05) — a single avatar source of truth.
+    - Mock backend: AuthService profile/email-change (single-use hashed token reusing US-CW-029/US-CW-003
+      machinery; confirmation re-keys the login email across the user map + refresh-token families) and
+      notification-preference methods; profile.handlers.ts; issueEmailChangeTokenForE2E dev control.
+    - AC-02 unsaved-changes: the shared UnsavedChangesFooter + a beforeunload guard, plus an in-app
+      navigation-guard context ("Discard unsaved changes?") since the app's BrowserRouter can't use useBlocker.
+    - Beacon: Personal Info + Notifications guides registered by their pages (override the layout settings guide
+      while mounted); the Personal Info guide surfaces the email-change confirmation link (valid + expired).
+    - Tests: domain unit tests, AuthService + handler tests, component tests, data-access hook tests, page tests
+      for every AC, and Playwright e2e for the Personal Info + Notifications flows.
+
+  Deferred (ticketed follow-ups, not blocking): a data-router migration to enable a full React Router route
+  blocker for SPA navigation; Playwright is the only suite requiring the dev server.

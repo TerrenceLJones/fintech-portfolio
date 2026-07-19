@@ -22,6 +22,13 @@ declare global {
         email: string,
         password: string,
       ) => Promise<string | undefined>;
+      /** Begins an email change for `email` to `newEmail` and returns the confirmation-link token, standing in for the emailed link (US-CW-034 AC-03/04). */
+      issueEmailChangeTokenForE2E: (email: string, newEmail: string) => Promise<string | undefined>;
+      /** Same, but backdated past the 24-hour TTL so it's already expired on arrival. */
+      issueExpiredEmailChangeTokenForE2E: (
+        email: string,
+        newEmail: string,
+      ) => Promise<string | undefined>;
       /** Backdates `email`'s active access token(s) so the next session check reports them expired — US-CW-002 AC-01. */
       expireAccessTokenForE2E: (email: string) => void;
       /** Overrides POST /api/auth/refresh's outcome — see browser.ts for why a real cookie round-trip can't be exercised here (US-CW-002 AC-01/AC-02/AC-03/AC-06). `email` is only used for 'success', to mint a token the account's session check will actually recognize. */

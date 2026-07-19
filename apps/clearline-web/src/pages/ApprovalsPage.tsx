@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import type { ApprovalErrorCode, ApprovalQueueItem } from '@clearline/contracts';
 import { canApprove } from '@clearline/domain-auth';
 import {
@@ -12,10 +12,11 @@ import {
   Modal,
   RejectReasonDialog,
   Text,
-  Toast,
   formatMoneyValue,
   type BulkActionFailure,
 } from '@clearline/ui';
+import { ToastViewport } from '../components/ToastViewport';
+import { useToast } from '../hooks/useToast';
 import { useAuthorization, useSession } from '@clearline/data-access-auth';
 import {
   ApprovalConflictError,
@@ -120,14 +121,8 @@ export function ApprovalsPage() {
       verb: 'approve',
     },
   );
-  const [toast, setToast] = useState<string | null>(null);
-
   // A full-success confirmation is transient (design §7.2) — auto-dismiss it after a few seconds.
-  useEffect(() => {
-    if (!toast) return;
-    const timer = setTimeout(() => setToast(null), 4000);
-    return () => clearTimeout(timer);
-  }, [toast]);
+  const { toast, show: setToast } = useToast(4000);
 
   if (queue.error instanceof ApprovalsForbiddenError) {
     return <AccessDenied requestLine="403 Forbidden · GET /api/approvals" />;
@@ -520,11 +515,7 @@ export function ApprovalsPage() {
         </Modal.Close>
       </Modal>
 
-      {toast ? (
-        <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2">
-          <Toast message={toast} />
-        </div>
-      ) : null}
+      <ToastViewport toast={toast} />
     </div>
   );
 }
