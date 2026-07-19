@@ -31,6 +31,15 @@ history:
   - epic_id: 'EPIC-CW-017'
     action: 'implemented'
     date: '2026-07-18'
+  - epic_id: 'EPIC-CW-022'
+    action: 'updated'
+    date: '2026-07-19'
+    note: >
+      Applied the EPIC-CW-022 RBAC extension (via US-CW-033): added the eight settings Permission tokens to the
+      Permission union in @clearline/contracts (org-profile/policies/card-program/bank-accounts/integrations:manage
+      for Controller|Admin|Owner; org-security/developer/billing:manage for Admin|Owner) and extended
+      permissionsForRole in @clearline/domain-auth to grant them. Personal-settings surfaces need no new
+      permission; team:view is reused unchanged. Non-breaking additive change to the existing model.
 
 # Status timestamps — set when status transitions occur
 approved_date: '2026-06-30'

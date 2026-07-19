@@ -3,6 +3,7 @@ export type * from './auth';
 export type * from './session';
 export type * from './onboarding';
 export type * from './rbac';
+export type * from './settings-sections';
 export type * from './cards';
 export type * from './payments';
 export type * from './expenses';

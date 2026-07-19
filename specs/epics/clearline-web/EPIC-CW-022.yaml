@@ -3,7 +3,7 @@ title: 'Settings & Profile'
 app: 'clearline-web'
 feature_area: 'core'
 status: 'APPROVED'
-approved_date: null
+approved_date: '2026-07-18'
 created_date: '2026-07-17'
 source_reference: >
   specs/designs/Clearline Design System - Consolidated.dc.html §19 "Settings & Profile" (the eight
@@ -31,7 +31,7 @@ depends_on_epics:
     'EPIC-CW-017',
     'EPIC-CW-015',
   ]
-extends_stories: ['US-CW-006', 'US-CW-028', 'US-CW-032']
+extends_stories: ['US-CW-006', 'US-CW-028', 'US-CW-031', 'US-CW-032']
 reuses_from:
   - 'RBAC permission model (permissionsForRole, hasPermission, Permission/Role in @clearline/contracts, RequirePermission guard, AccessDenied organism, useAuthorization, permission-filtered nav) from EPIC-CW-003 (US-CW-006 / US-CW-028)'
   - 'Persistent sidebar AppShell + role-scoped NavigationShell + user-identity SidebarFooter from EPIC-CW-021 (US-CW-028 / US-CW-032) — the /settings surface mounts inside this shell and the settings entry point lives in it'
@@ -98,11 +98,22 @@ changes:
       story_path: '/specs/user-stories/clearline-web/US-CW-028.yaml'
       title: 'Role-Aware Navigation Shell'
       reason: >
-        Adds a Settings entry point to the primary sidebar (a gear item, or a Settings action in the
-        SidebarFooter identity menu) routing to /settings. It is visible to every authenticated user because the
-        Profile group is universal; whether the Organization group renders is decided inside /settings by
-        SettingsNav (US-CW-033), not by the primary nav. The presentational NavigationShell contract is
-        otherwise unchanged. Declared here, applied at implementation time.
+        Adds a Settings entry point (a gear item) to the primary sidebar routing to /settings, visible to every
+        authenticated user because the Profile group is universal; whether the Organization group renders is
+        decided inside /settings by SettingsNav (US-CW-033), not by the primary nav. Also REMOVES the primary
+        sidebar's Team item: Team & Members is relocated into Settings → Team & Members (/settings/team) by
+        US-CW-033, so it is no longer a top-level primary-nav destination. The presentational NavigationShell
+        contract is otherwise unchanged. Declared here, applied at implementation time.
+    - story_id: 'US-CW-031'
+      story_path: '/specs/user-stories/clearline-web/US-CW-031.yaml'
+      title: 'Team Management: Invite, Role Assignment & Removal'
+      reason: >
+        Relocates the Team & Members surface from the top-level /team route into the Settings area at
+        /settings/team, where it renders inside the SettingsNav two-tier IA (US-CW-033) as an Organization item
+        gated by the unchanged team:view (isOwner OR isAdmin). The old top-level /team route and its
+        primary-sidebar item are removed (no redirect). The team-management logic itself — the roster query,
+        invite/role/removal handlers, and owner-protection policy — is unchanged; only the mount point and nav
+        surface move. Declared here, applied at implementation time.
     - story_id: 'US-CW-032'
       story_path: '/specs/user-stories/clearline-web/US-CW-032.yaml'
       title: 'Persistent Sidebar App Shell & User-Identity Footer'
@@ -119,10 +130,10 @@ notes: >
     Profile group (every authenticated user):
       US-CW-033 shell + nav · US-CW-034 Personal Info + Notifications · US-CW-035 Security
     Organization group (Controller / Admin / Owner — never Employees):
-      US-CW-036 Company Profile · US-CW-031 Team & Members (EXISTING, EPIC-CW-017) · US-CW-037 Approval
-      Policies & Spend Controls · US-CW-038 Card Program & Connected Accounts · US-CW-039 Integrations & Org
-      Notifications · US-CW-040 Security & Compliance (with US-CW-043 Ownership Transfer mounted inside it,
-      Owner-only) · US-CW-041 Developer · US-CW-042 Billing & Plan
+      US-CW-036 Company Profile · US-CW-031 Team & Members (EXISTING, EPIC-CW-017 — relocated into Settings at
+      /settings/team) · US-CW-037 Approval Policies & Spend Controls · US-CW-038 Card Program & Connected
+      Accounts · US-CW-039 Integrations & Org Notifications · US-CW-040 Security & Compliance (with US-CW-043
+      Ownership Transfer mounted inside it, Owner-only) · US-CW-041 Developer · US-CW-042 Billing & Plan
 
   Cross-cutting design requirements (design §19 intro — these are requirements, not preferences, and every
   story restates the ones it touches):
@@ -151,8 +162,11 @@ notes: >
   step-up re-auth, so it depends on both and should follow them; it is Owner-gated (isOwner), not gated by the
   org-settings permission set, and extends EPIC-CW-017's team domain.
 
-  Explicitly OUT OF SCOPE: Team & Members management (owned by EPIC-CW-017 / US-CW-031 — this epic only wires
-  its nav item into SettingsNav). Ownership Transfer (US-CW-043) is the one membership-adjacent capability this
+  Explicitly OUT OF SCOPE: Team & Members *management* logic — invite, role assignment, removal (owned by
+  EPIC-CW-017 / US-CW-031). This epic RELOCATES that surface into Settings: it wires Team & Members into
+  SettingsNav and mounts the existing TeamPage unchanged at /settings/team (guarded by team:view), and removes
+  the old top-level /team route and its primary-sidebar item (no redirect) — without re-implementing team
+  management. Ownership Transfer (US-CW-043) is the one membership-adjacent capability this
   epic DOES own, because its surface is Settings → Security & Compliance and EPIC-CW-017 explicitly deferred it
   to a future epic; it extends EPIC-CW-017's team domain rather than duplicating it. Real KYB re-verification,
   real SSO/SAML brokering, real Plaid/Stripe/
@@ -160,6 +174,12 @@ notes: >
   Mock Backend Architecture — these are frontend responsibilities within that system, not a production
   financial/identity stack.
 
-  Status is DRAFT: authored as specs-only for review. The changes.updates entries are declared but NOT yet
-  applied to the already-IMPLEMENTED US-CW-006 / US-CW-028 / US-CW-032 records — editing those (and adding the
-  new Permission tokens to @clearline/contracts) is an implementation-time step for whoever picks this up.
+  Status APPROVED (2026-07-18); in progress — 1 of 11 stories implemented. US-CW-033 (Settings Shell &
+  Role-Scoped SettingsNav) — the foundation — was IMPLEMENTED 2026-07-19 (branch US-CW-033/settings-shell-nav,
+  PR #47). With it, these declared changes.updates were APPLIED: US-CW-006 (the 8 settings Permission tokens +
+  permissionsForRole grants), US-CW-028 (universal Settings entry added to the primary sidebar AND the Team item
+  removed from it), and US-CW-031 (Team & Members relocated into Settings at /settings/team; old /team route +
+  nav item removed). STILL PENDING: the US-CW-032 update (an identity-footer link into Personal Info / Security)
+  — not yet applied; the SidebarFooter remains presentational and the Settings entry point currently lives in
+  the primary sidebar. Remaining stories US-CW-034…US-CW-043 are unstarted. The epic advances to IMPLEMENTED
+  only once all its stories land.

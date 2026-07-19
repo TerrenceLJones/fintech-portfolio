@@ -36,19 +36,45 @@ const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
 };
 
 /**
+ * Organization-configuration permissions granted to a Controller OR any Admin/Owner (EPIC-CW-022 /
+ * US-CW-033). These back the Settings → Organization sections that a Controller can manage.
+ */
+const ORG_CONFIG_PERMISSIONS: readonly Permission[] = [
+  'org-profile:manage',
+  'policies:manage',
+  'card-program:manage',
+  'bank-accounts:manage',
+  'integrations:manage',
+];
+
+/**
+ * The most sensitive Organization-settings permissions — security & compliance, developer keys, and
+ * billing — reserved for an Admin or Owner (never a plain Controller), per US-CW-033 AC-03.
+ */
+const ADMIN_OWNER_ONLY_PERMISSIONS: readonly Permission[] = [
+  'org-security:manage',
+  'developer:manage',
+  'billing:manage',
+];
+
+/**
  * The full permission set for a user, combining their approval-tier role with the orthogonal
- * team-administration authority. `team:view` is granted by EITHER the Admin flag OR the Owner flag
- * (US-CW-006 AC-08 / US-CW-030 AC-02) — both sit orthogonal to the Employee/Finance Manager/Controller
- * ladder, so an Employee who is Owner or Admin sees the Team surface but gains no approval authority.
- * `team:view` is the only permission either flag adds. Duplicate-free even when a user holds both.
+ * team-administration authority and the organization-settings capabilities. `team:view` is granted by
+ * EITHER the Admin flag OR the Owner flag (US-CW-006 AC-08 / US-CW-030 AC-02) — both sit orthogonal to
+ * the Employee/Finance Manager/Controller ladder, so an Employee who is Owner or Admin sees the Team
+ * surface but gains no approval authority. The org-config set is granted to a Controller or any
+ * Admin/Owner; the Admin/Owner-only set only to an Admin or Owner (EPIC-CW-022 / US-CW-033).
+ * Duplicate-free even when a user holds several of these overlapping grants.
  */
 export function permissionsForRole(
   role: Role,
   { isAdmin, isOwner = false }: { isAdmin: boolean; isOwner?: boolean },
 ): Permission[] {
-  const rolePerms = ROLE_PERMISSIONS[role];
-  const withTeam: Permission[] = isAdmin || isOwner ? [...rolePerms, 'team:view'] : [...rolePerms];
-  return [...new Set(withTeam)];
+  const perms: Permission[] = [...ROLE_PERMISSIONS[role]];
+  if (isAdmin || isOwner) perms.push('team:view');
+  if (role === 'controller' || isAdmin || isOwner) perms.push(...ORG_CONFIG_PERMISSIONS);
+  if (isAdmin || isOwner) perms.push(...ADMIN_OWNER_ONLY_PERMISSIONS);
+  return [...new Set(perms)];
 }
 
 export function hasPermission(permissions: readonly Permission[], permission: Permission): boolean {

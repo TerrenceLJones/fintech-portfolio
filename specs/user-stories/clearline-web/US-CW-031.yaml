@@ -34,6 +34,15 @@ history:
   - epic_id: 'EPIC-CW-018'
     action: 'implemented'
     date: '2026-07-18'
+  - epic_id: 'EPIC-CW-022'
+    action: 'updated'
+    date: '2026-07-19'
+    note: >
+      Relocated the Team & Members surface into Settings (via US-CW-033): the existing TeamPage now mounts,
+      unchanged, at /settings/team as an Organization item in SettingsNav gated by the unchanged team:view
+      (isOwner OR isAdmin). The old top-level /team route and its primary-sidebar item were removed (no
+      redirect). Team-management logic — roster query, invite/role/removal handlers, owner-protection policy —
+      is untouched; only the mount point and nav surface moved.
 
 # Status timestamps — set when status transitions occur
 approved_date: '2026-07-06'

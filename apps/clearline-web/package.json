@@ -26,6 +26,7 @@
     "@clearline/data-access-payments": "workspace:*",
     "@clearline/data-access-reconciliation": "workspace:*",
     "@clearline/data-access-team": "workspace:*",
+    "@clearline/data-access-settings": "workspace:*",
     "@clearline/demo-beacon": "workspace:*",
     "@clearline/design-tokens": "workspace:*",
     "@clearline/domain-auth": "workspace:*",

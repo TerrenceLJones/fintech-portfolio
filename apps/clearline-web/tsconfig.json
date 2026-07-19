@@ -29,6 +29,7 @@
     { "path": "../../libs/data-access/reconciliation" },
     { "path": "../../libs/data-access/budgets" },
     { "path": "../../libs/data-access/audit" },
-    { "path": "../../libs/data-access/team" }
+    { "path": "../../libs/data-access/team" },
+    { "path": "../../libs/data-access/settings" }
   ]
 }

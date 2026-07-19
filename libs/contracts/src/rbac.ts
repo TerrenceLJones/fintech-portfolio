@@ -23,7 +23,18 @@ export type Permission =
   | 'budget:view'
   | 'audit:view'
   | 'team:view'
-  | 'payments:create';
+  | 'payments:create'
+  // Organization-settings capabilities (EPIC-CW-022 / US-CW-033). The first group is granted to a
+  // Controller or to any Admin/Owner; the second is Admin/Owner-only. As with every permission, the
+  // /settings UI merely hides on these while each org-settings endpoint independently re-checks them.
+  | 'org-profile:manage'
+  | 'policies:manage'
+  | 'card-program:manage'
+  | 'bank-accounts:manage'
+  | 'integrations:manage'
+  | 'org-security:manage'
+  | 'developer:manage'
+  | 'billing:manage';
 
 /** L1 awaits a first approver; L2 is an escalation routed to a Controller (over a manager's limit). */
 export type ApprovalStatus = 'pending_l1' | 'pending_l2';

@@ -39,6 +39,15 @@ history:
       given, so the role-scoped sets (AC-01/02/03), empty-list-without-crash, and mid-session removal (AC-05)
       all still hold; only the axis and active styling changed. Stories/tests updated to assert vertical
       orientation, the active accent treatment, and the empty-list render.
+  - epic_id: 'EPIC-CW-022'
+    action: 'updated'
+    date: '2026-07-19'
+    note: >
+      Applied the EPIC-CW-022 primary-nav changes (via US-CW-033): added a permission-less Settings (gear) entry
+      to the primary sidebar, visible to every authenticated user and routing to /settings; and REMOVED the Team
+      item, since Team & Members was relocated into Settings (/settings/team). NavItemDef.permission is now
+      optional so a universal item can render without a token. The presentational NavigationShell contract is
+      unchanged. Nav catalogue + tests updated.
 
 # Status timestamps — set when status transitions occur
 approved_date: '2026-07-01'

@@ -77,6 +77,54 @@ describe('permissionsForRole', () => {
     const perms = permissionsForRole('controller', { isAdmin: true });
     expect(new Set(perms).size).toBe(perms.length);
   });
+
+  // Organization-settings permissions (EPIC-CW-022 / US-CW-033).
+  const ORG_CONFIG_PERMS = [
+    'org-profile:manage',
+    'policies:manage',
+    'card-program:manage',
+    'bank-accounts:manage',
+    'integrations:manage',
+  ] as const;
+  const ADMIN_OWNER_ONLY_PERMS = [
+    'org-security:manage',
+    'developer:manage',
+    'billing:manage',
+  ] as const;
+
+  it('grants no organization-settings permissions to an Employee or Finance Manager', () => {
+    const employee = permissionsForRole('employee', { isAdmin: false });
+    const manager = permissionsForRole('finance_manager', { isAdmin: false });
+    for (const perm of [...ORG_CONFIG_PERMS, ...ADMIN_OWNER_ONLY_PERMS]) {
+      expect(employee).not.toContain(perm);
+      expect(manager).not.toContain(perm);
+    }
+  });
+
+  it('grants a plain Controller the org-config set but NOT the Admin/Owner-only set', () => {
+    const perms = permissionsForRole('controller', { isAdmin: false });
+    for (const perm of ORG_CONFIG_PERMS) expect(perms).toContain(perm);
+    for (const perm of ADMIN_OWNER_ONLY_PERMS) expect(perms).not.toContain(perm);
+    // A plain Controller is not an Owner/Admin, so still no team:view (unchanged behaviour).
+    expect(perms).not.toContain('team:view');
+  });
+
+  it('grants an Admin the full org set — org-config AND Admin/Owner-only — regardless of role', () => {
+    const perms = permissionsForRole('employee', { isAdmin: true });
+    for (const perm of [...ORG_CONFIG_PERMS, ...ADMIN_OWNER_ONLY_PERMS])
+      expect(perms).toContain(perm);
+  });
+
+  it('grants an Owner the full org set even when they are not also an Admin', () => {
+    const perms = permissionsForRole('controller', { isAdmin: false, isOwner: true });
+    for (const perm of [...ORG_CONFIG_PERMS, ...ADMIN_OWNER_ONLY_PERMS])
+      expect(perms).toContain(perm);
+  });
+
+  it('does not duplicate org permissions when a Controller is also an Admin', () => {
+    const perms = permissionsForRole('controller', { isAdmin: true });
+    expect(new Set(perms).size).toBe(perms.length);
+  });
 });
 
 describe('defaultApprovalLimitForRole', () => {

@@ -1,0 +1,39 @@
+import { Meta, Stories } from '@storybook/addon-docs/blocks';
+import * as SettingsNavStories from './SettingsNav.stories';
+
+<Meta of={SettingsNavStories} />
+
+# SettingsNav
+
+The role-scoped, two-tier secondary navigation for the `/settings` surface (design §19.1). A
+**Profile** group every authenticated user holds, and an **Organization** group that renders only the
+sections the viewer's role and admin/owner status permit. It is presentational and router-agnostic —
+the app filters the groups (so an unauthorized section is simply _absent_, never shown disabled) and
+handles routing through `onNavigate`.
+
+## User story
+
+**US-CW-033 — Settings Shell & Role-Scoped SettingsNav**
+
+As any authenticated Clearline user I want a `/settings` area with a role-scoped two-tier SettingsNav
+so that the Profile group is always available, the Organization group appears only for a Controller,
+Admin, or Owner (never merely disabled or locked), and I can move between sections without losing my
+place.
+
+## Acceptance criteria covered here
+
+- **AC-02 — Employee sees Profile only.** The Organization group is not rendered at all (the
+  `EmployeeProfileOnly` story), a direct consequence of the caller filtering the groups.
+- **AC-03 — Role-scoped Organization items.** A Controller sees the org-config sections but not the
+  Admin/Owner-only ones (the `ControllerView` story); an Admin/Owner sees everything
+  (`AdminOwnerFullAccess`).
+- **AC-05 — Active treatment.** The active section carries the accent treatment (accent-weak
+  background + accent-text) and `aria-current="page"`. Items are real links, so they're deep-linkable
+  and open in a new tab, yet a plain click is intercepted for reload-free SPA navigation.
+- **AC-07 — Narrow viewport.** Below `md` the two tiers collapse to a single labeled `<select>` whose
+  value tracks the current section, so it stays reachable and named.
+- **AC-08 — Accessibility.** Each tier is a `role="group"` with an accessible label ("Profile" /
+  "Organization"), every item is a focusable link with a ≥3px focus ring, and the active section is
+  announced via `aria-current`.
+
+<Stories />

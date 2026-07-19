@@ -9,7 +9,7 @@ feature_area: 'core'
 title: 'Settings Shell & Role-Scoped SettingsNav'
 
 # Lifecycle status
-status: 'DRAFT'
+status: 'IMPLEMENTED'
 story_points: 8
 dependencies: ['US-CW-006', 'US-CW-028', 'US-CW-032', 'US-CW-031']
 
@@ -22,10 +22,13 @@ history:
   - epic_id: 'EPIC-CW-022'
     action: 'created'
     date: '2026-07-17'
+  - epic_id: 'EPIC-CW-022'
+    action: 'implemented'
+    date: '2026-07-19'
 
 # Status timestamps — set when status transitions occur
-approved_date: null
-implementation_date: null
+approved_date: '2026-07-18'
+implementation_date: '2026-07-19'
 deprecated_date: null
 removed_date: null
 
@@ -65,6 +68,9 @@ acceptance_criteria:
         Connected Accounts, Integrations, Notifications (org), Security & Compliance, Developer, Billing & Plan
       And Admin/Owner-only items (Security & Compliance, Developer, Billing & Plan) are hidden from a Controller
       who is not also an Admin or Owner
+      And Team & Members (team:view, granted by Owner or Admin) appears here at /settings/team — the existing
+      US-CW-031 team page relocated into Settings; the old top-level /team route and its primary-sidebar item
+      are removed (no redirect)
     status: 'active'
   - id: 'AC-04'
     description: |
@@ -120,12 +126,15 @@ technical_notes: |
   `card-program:manage`, `bank-accounts:manage`, `integrations:manage` (Controller | Admin | Owner) and
   `org-security:manage`, `developer:manage`, `billing:manage` (Admin | Owner only). The Organization group
   header renders iff the user holds ANY org-scoped permission. `team:view` (isOwner OR isAdmin, from US-CW-031)
-  is reused unchanged for Team & Members; that section's page is owned by US-CW-031, this story only lists it.
+  gates the Team & Members item, which this story relocates into SettingsNav at /settings/team by mounting the
+  existing US-CW-031 TeamPage unchanged (its invite/role/removal logic is not re-implemented); the old
+  top-level /team route and its primary-sidebar item are removed (no redirect).
 
   Routing: /settings with nested routes /settings/personal, /settings/security, /settings/notifications,
-  /settings/company, /settings/team (US-CW-031), /settings/approval-policies, /settings/spend-controls,
-  /settings/card-program, /settings/connected-accounts, /settings/integrations, /settings/org-notifications,
-  /settings/security-compliance, /settings/developer, /settings/billing. Each Organization route is wrapped in
+  /settings/company, /settings/team (US-CW-031, relocated here), /settings/approval-policies,
+  /settings/spend-controls, /settings/card-program, /settings/connected-accounts, /settings/integrations,
+  /settings/org-notifications, /settings/security-compliance, /settings/developer, /settings/billing. The old
+  top-level /team route is removed (no redirect). Each Organization route is wrapped in
   a RequirePermission guard (US-CW-006) that renders AccessDenied on failure; the matching MSW/API handler
   re-checks permissionsForRole and returns 403 independently (AC-04), mirroring the approvals handler.
 
@@ -149,14 +158,20 @@ edge_cases: |
   - Unknown /settings/{section} slug — routed to a not-found within the settings shell, not a blank content
     region
   - Narrow viewport — SettingsNav collapses to a drawer/menu; current section still labeled and reachable (AC-07)
-  - (inferred) A Team & Members item is shown by SettingsNav but its page/logic belongs to US-CW-031 — this
-    story must not re-implement team management, only route to it
+  - Team & Members lives in SettingsNav at /settings/team (the relocated US-CW-031 TeamPage, gated team:view);
+    the old top-level /team route is removed (no redirect), so a deep-link to /team no longer resolves. This
+    story relocates and routes to team management but never re-implements it
 
 # Implementation Status
 implementation_status: |
-  🚧 Not yet implemented — DRAFT authored 2026-07-17 (EPIC-CW-022), specs-only for review.
-  Source: specs/designs/Clearline Design System - Consolidated.dc.html §19.1 (SettingsNav · role-scoped two-tier
-  sidebar; Employee "Profile only" vs Admin/Controller "Profile + Org" views) and Gherkin §20 (Employee cannot
-  see Organization settings; direct nav to an Organization URL returns 403). Anticipated new surface: a
-  SettingsNav organism in @clearline/ui, a /settings route tree with RequirePermission-guarded Organization
-  routes, the settings permission tokens in @clearline/contracts, and MSW handlers that re-check authorization.
+  ✅ Implemented 2026-07-19 (EPIC-CW-022). Delivered: the 8 settings Permission tokens in @clearline/contracts
+  + permissionsForRole grants and the shared SETTINGS_SECTION_PERMISSION policy in @clearline/domain-auth; the
+  SettingsNav organism (+ stories + mdx) and a `settings` gear glyph in @clearline/ui; a /settings route tree
+  (SettingsLayout + role-scoped nav + RequirePermission-guarded Organization routes + in-shell not-found) in
+  clearline-web with placeholders for the section stories (US-CW-034…042); the GET /api/settings/sections/:slug
+  MSW handler (independent 401/403/404/200) and the @clearline/data-access-settings lib backing AC-04's
+  server-side check; the universal Settings entry in the primary sidebar (US-CW-028); and the relocation of Team
+  & Members into Settings at /settings/team (US-CW-031), removing the top-level /team route and nav item.
+  Verified by unit/integration suites across the affected packages plus Playwright e2e (settings.spec.ts).
+  Source: specs/designs/Clearline Design System - Consolidated.dc.html §19.1 and Gherkin §20. Shipped in
+  branch US-CW-033/settings-shell-nav (PR #47).
