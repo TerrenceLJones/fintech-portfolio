@@ -218,7 +218,8 @@ test('Security: changing the password confirms and does not sign the user out (A
   await openSecurity(page);
 
   await page.getByLabel('Current password').fill(DEMO_PASSWORD);
-  await page.getByLabel('New password').fill('New-Str0ng-Pass!1');
+  // Exact match — "New password" is a substring of "Confirm new password".
+  await page.getByLabel('New password', { exact: true }).fill('New-Str0ng-Pass!1');
   await page.getByLabel('Confirm new password').fill('New-Str0ng-Pass!1');
   await page.getByRole('button', { name: 'Update password' }).click();
 
@@ -242,7 +243,10 @@ test('Security: the current session cannot be signed out, but another can (AC-08
 }) => {
   await openSecurity(page);
 
-  const currentCard = page.getByTestId('session-card').filter({ hasText: 'This device' });
+  // Filter by the unique device name — filtering by "This device" would also match every card's
+  // "Sign out this device" button text (Playwright hasText is a substring match).
+  const currentCard = page.getByTestId('session-card').filter({ hasText: 'Chrome on macOS' });
+  await expect(currentCard.getByText('This device', { exact: true })).toBeVisible();
   await expect(currentCard.getByRole('button', { name: 'Sign out this device' })).toBeDisabled();
 
   const otherCard = page.getByTestId('session-card').filter({ hasText: 'Firefox on Windows' });
