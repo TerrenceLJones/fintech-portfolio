@@ -32,6 +32,7 @@
     { "path": "../../libs/data-access/audit" },
     { "path": "../../libs/data-access/team" },
     { "path": "../../libs/data-access/settings" },
-    { "path": "../../libs/data-access/profile" }
+    { "path": "../../libs/data-access/profile" },
+    { "path": "../../libs/data-access/security" }
   ]
 }

@@ -56,7 +56,8 @@
       "@clearline/data-access-team": ["libs/data-access/team/src/index.ts"],
       "@clearline/data-access-settings": ["libs/data-access/settings/src/index.ts"],
       "@clearline/domain-profile": ["libs/domain/profile/src/index.ts"],
-      "@clearline/data-access-profile": ["libs/data-access/profile/src/index.ts"]
+      "@clearline/data-access-profile": ["libs/data-access/profile/src/index.ts"],
+      "@clearline/data-access-security": ["libs/data-access/security/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp", "dist"]

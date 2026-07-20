@@ -12,6 +12,10 @@ import {
   isValidPassword,
   hashPassword,
   hashToken,
+  buildOtpauthUri,
+  generateBackupCodes,
+  generateTotpSecret,
+  verifyTotpCode,
   type FailedAttempt,
 } from '@clearline/domain-auth';
 import {
@@ -22,6 +26,7 @@ import {
   isValidEmail,
 } from '@clearline/domain-profile';
 import type {
+  DeviceSession,
   NotificationFrequency,
   NotificationPreference,
   NotificationTypeKey,
@@ -31,8 +36,20 @@ import type {
   Role,
   TeamMember,
   TeamRosterResponse,
+  TrustedDevice,
+  TwoFactorStatus,
 } from '@clearline/contracts';
 import { SEED_ORGANIZATION, SEED_USERS, type SeedUser } from '../fixtures/users.fixture';
+import {
+  defaultCurrentSession,
+  defaultTwoFactor,
+  seedDeviceSessionsByEmail,
+  seedTrustedDevicesByEmail,
+  seedTwoFactorByEmail,
+  type StoredDeviceSession,
+  type StoredTrustedDevice,
+  type StoredTwoFactor,
+} from '../fixtures/security.fixture';
 
 /** No real user's hash — exists only so an unregistered-email login takes the same PBKDF2 time as a real one. */
 const DUMMY_HASH_FOR_TIMING_PARITY =
@@ -112,6 +129,8 @@ interface OrganizationRecord {
   ein: string;
   /** Epoch ms the organization was provisioned (KYB approval). */
   createdAt: number;
+  /** Whether the org mandates 2FA for members (US-CW-035 AC-07); stub until US-CW-040 owns it. */
+  enforceTwoFactor?: boolean;
 }
 
 /**
@@ -294,6 +313,10 @@ export interface AuthServiceSnapshot {
   organizations: [string, OrganizationRecord][];
   refreshTokenFamilies: SerializedRefreshTokenFamily[];
   notifications: NotificationEvent[];
+  // Optional for backward compatibility with a snapshot taken before US-CW-035 existed.
+  twoFactor?: [string, StoredTwoFactor][];
+  deviceSessions?: [string, StoredDeviceSession[]][];
+  trustedDevices?: [string, StoredTrustedDevice[]][];
 }
 
 export interface NotificationEvent {
@@ -333,6 +356,24 @@ export interface AuditEvent {
   timestamp: number;
 }
 
+/** Result of a self-service password change (US-CW-035 AC-01/02). */
+export type ChangePasswordResult =
+  | { outcome: 'success' }
+  | { outcome: 'incorrect_password' }
+  | { outcome: 'weak_password' }
+  | { outcome: 'unknown_user' };
+
+/** Result of verifying a 6-digit code to complete TOTP setup (US-CW-035 AC-04/05). */
+export type VerifyTotpSetupResult =
+  | { outcome: 'success'; backupCodes: string[] }
+  | { outcome: 'incorrect_code' }
+  | { outcome: 'no_pending_setup' }
+  | { outcome: 'unknown_user' };
+
+/** Result of disabling 2FA (US-CW-035 AC-07); `org_enforced` when the org mandates it. */
+export type DisableTwoFactorResult =
+  { outcome: 'success' } | { outcome: 'org_enforced' } | { outcome: 'unknown_user' };
+
 /**
  * Failed-attempt tracking is keyed by the attempted email regardless of whether that email is
  * registered. Only tracking attempts against real accounts would let an attacker distinguish
@@ -361,6 +402,12 @@ export class AuthService {
   private readonly orgsById = new Map<string, OrganizationRecord>();
   /** EIN → orgId, so a repeated onboarding of the same EIN reuses its org rather than minting a second (US-CW-030 AC-04). */
   private readonly orgIdByEin = new Map<string, string>();
+  /** Per-user 2FA state (US-CW-035). Secret + backup-code hashes never leave the server. */
+  private readonly twoFactorByEmail: Map<string, StoredTwoFactor>;
+  /** Per-user active device sessions, most-recently-active first when listed (US-CW-035 AC-08). */
+  private readonly deviceSessionsByEmail: Map<string, StoredDeviceSession[]>;
+  /** Per-user trusted-device exemptions (US-CW-035 AC-10). */
+  private readonly trustedDevicesByEmail: Map<string, StoredTrustedDevice[]>;
 
   constructor(
     users: SeedUser[] = SEED_USERS,
@@ -373,6 +420,11 @@ export class AuthService {
       this.orgsById.set(org.id, { ...org });
       this.orgIdByEin.set(org.ein, org.id);
     }
+    // Security state is deep-seeded from its own fixture (see security.fixture.ts for why it's kept
+    // off SeedUser). The seed builders return fresh objects, so no fixture aliasing is possible.
+    this.twoFactorByEmail = seedTwoFactorByEmail(users);
+    this.deviceSessionsByEmail = seedDeviceSessionsByEmail(users);
+    this.trustedDevicesByEmail = seedTrustedDevicesByEmail(users);
   }
 
   private toOrganization(record: OrganizationRecord): Organization {
@@ -1365,6 +1417,198 @@ export class AuthService {
     return this.notificationsSent;
   }
 
+  // ===========================================================================
+  // Account security (US-CW-035). All self-service and keyed by the caller's own
+  // login email (the handler reads it from the authenticated session); a null /
+  // 'unknown_user' outcome for an unknown email. The 2FA secret and backup-code
+  // hashes never leave the server; audit events are emitted by the handler layer.
+  // ===========================================================================
+
+  /**
+   * Change the caller's password (AC-01/02). Rejects a wrong current password or a new password below
+   * the strict sign-up strength bar (>= 12 chars, mixed case, number, symbol). Deliberately does NOT
+   * revoke the caller's other sessions — a self-service change is not a compromise signal, unlike a
+   * password RESET (contrast resetPassword, US-CW-003). Other sessions persist until explicitly revoked.
+   */
+  async changePassword(
+    email: string,
+    currentPassword: string,
+    newPassword: string,
+  ): Promise<ChangePasswordResult> {
+    const user = this.usersByEmail.get(email.toLowerCase());
+    if (!user) return { outcome: 'unknown_user' };
+    const matches = await verifyPassword(currentPassword, user.passwordHash);
+    if (!matches) return { outcome: 'incorrect_password' };
+    if (!isValidSignUpPassword(newPassword)) return { outcome: 'weak_password' };
+    user.passwordHash = await hashPassword(newPassword);
+    return { outcome: 'success' };
+  }
+
+  private isOrgTwoFactorEnforced(email: string): boolean {
+    const user = this.usersByEmail.get(email.toLowerCase());
+    const org = user?.orgId ? this.orgsById.get(user.orgId) : undefined;
+    return org?.enforceTwoFactor ?? false;
+  }
+
+  /**
+   * Resolve the caller's user record and lazily initialise their security state. The security maps are
+   * seeded only for the accounts present at construction; a user created afterwards (sign-up US-CW-029,
+   * invite acceptance US-CW-031) has no entry until they first visit this surface — without this they'd
+   * get spurious 401s on every /api/security call. Returns the user with all three security entries
+   * guaranteed present, or null for a genuinely unknown email.
+   */
+  private ensureSecurityState(email: string, now: number = Date.now()): SeedUser | null {
+    const key = email.toLowerCase();
+    const user = this.usersByEmail.get(key);
+    if (!user) return null;
+    if (!this.twoFactorByEmail.has(key)) this.twoFactorByEmail.set(key, defaultTwoFactor());
+    if (!this.deviceSessionsByEmail.has(key))
+      this.deviceSessionsByEmail.set(key, [defaultCurrentSession(now)]);
+    if (!this.trustedDevicesByEmail.has(key)) this.trustedDevicesByEmail.set(key, []);
+    return user;
+  }
+
+  /** The caller's 2FA status plus whether their org mandates it (AC-07). Null for an unknown email. */
+  getTwoFactorStatus(email: string): TwoFactorStatus | null {
+    if (!this.ensureSecurityState(email)) return null;
+    const tf = this.twoFactorByEmail.get(email.toLowerCase())!;
+    return { enabled: tf.enabled, orgEnforced: this.isOrgTwoFactorEnforced(email) };
+  }
+
+  /**
+   * Begin TOTP setup (AC-03): mint a fresh secret, stash it as pending (NOT yet active — the account
+   * stays 2FA-off until a correct code is verified, AC-05), and return the secret + otpauth URI so the
+   * client can render the QR locally. Re-invoking replaces any prior pending secret. Null for unknown email.
+   */
+  startTotpSetup(email: string): { secret: string; otpauthUri: string } | null {
+    const key = email.toLowerCase();
+    const user = this.ensureSecurityState(key);
+    if (!user) return null;
+    const tf = this.twoFactorByEmail.get(key)!;
+    const secret = generateTotpSecret();
+    tf.pendingSecret = secret;
+    return { secret, otpauthUri: buildOtpauthUri({ secret, accountName: user.email }) };
+  }
+
+  /**
+   * Complete TOTP setup by verifying a 6-digit code against the pending secret (AC-04/05). On success,
+   * activate 2FA and return ten one-time backup codes (shown exactly once — only their hashes are kept,
+   * AC-06). On a wrong code, the secret stays pending/unverified so 2FA cannot be enabled (AC-05).
+   */
+  async verifyTotpSetup(
+    email: string,
+    code: string,
+    now: number = Date.now(),
+  ): Promise<VerifyTotpSetupResult> {
+    if (!this.ensureSecurityState(email)) return { outcome: 'unknown_user' };
+    const tf = this.twoFactorByEmail.get(email.toLowerCase())!;
+    if (!tf.pendingSecret) return { outcome: 'no_pending_setup' };
+    const valid = await verifyTotpCode(tf.pendingSecret, code, now);
+    if (!valid) return { outcome: 'incorrect_code' };
+    const backupCodes = generateBackupCodes();
+    tf.secret = tf.pendingSecret;
+    tf.pendingSecret = null;
+    tf.enabled = true;
+    tf.backupCodeHashes = await Promise.all(backupCodes.map((c) => hashToken(c)));
+    return { outcome: 'success', backupCodes };
+  }
+
+  /**
+   * Disable 2FA (AC-07). Refused with `org_enforced` when the org mandates it — the client also hides
+   * the control, but the server independently decides (client-hides-server-decides). Disabling voids all
+   * trusted-device exemptions, which only make sense while 2FA is on.
+   */
+  disableTwoFactor(email: string): DisableTwoFactorResult {
+    const key = email.toLowerCase();
+    if (!this.ensureSecurityState(key)) return { outcome: 'unknown_user' };
+    const tf = this.twoFactorByEmail.get(key)!;
+    if (this.isOrgTwoFactorEnforced(email)) return { outcome: 'org_enforced' };
+    tf.enabled = false;
+    tf.secret = null;
+    tf.backupCodeHashes = [];
+    tf.pendingSecret = null;
+    this.trustedDevicesByEmail.set(key, []);
+    return { outcome: 'success' };
+  }
+
+  private toDeviceSession(session: StoredDeviceSession): DeviceSession {
+    return {
+      id: session.id,
+      deviceType: session.deviceType,
+      browser: session.browser,
+      os: session.os,
+      city: session.city,
+      country: session.country,
+      lastActiveAt: new Date(session.lastActiveAt).toISOString(),
+      current: session.current,
+    };
+  }
+
+  /** The caller's active sessions, most-recently-active first (AC-08). Null for an unknown email. */
+  listSessions(email: string): DeviceSession[] | null {
+    if (!this.ensureSecurityState(email)) return null;
+    const list = this.deviceSessionsByEmail.get(email.toLowerCase())!;
+    return [...list]
+      .sort((a, b) => b.lastActiveAt - a.lastActiveAt)
+      .map((session) => this.toDeviceSession(session));
+  }
+
+  /**
+   * Revoke a single OTHER session by id (AC-09). The current session can never be revoked here — the
+   * server refuses even if the client sends its id (AC-08). Idempotent: returns false (not an error)
+   * when the session is already gone, so a concurrent double-revoke surfaces no error to the user.
+   */
+  revokeSession(email: string, sessionId: string): boolean {
+    if (!this.ensureSecurityState(email)) return false;
+    const list = this.deviceSessionsByEmail.get(email.toLowerCase())!;
+    const index = list.findIndex((session) => session.id === sessionId && !session.current);
+    if (index === -1) return false;
+    list.splice(index, 1);
+    return true;
+  }
+
+  /** Revoke every session except the caller's current one (AC-09). Returns how many were revoked. */
+  revokeOtherSessions(email: string): number | null {
+    const key = email.toLowerCase();
+    if (!this.ensureSecurityState(key)) return null;
+    const list = this.deviceSessionsByEmail.get(key)!;
+    const revokedCount = list.filter((session) => !session.current).length;
+    this.deviceSessionsByEmail.set(
+      key,
+      list.filter((session) => session.current),
+    );
+    return revokedCount;
+  }
+
+  private toTrustedDevice(device: StoredTrustedDevice): TrustedDevice {
+    return {
+      id: device.id,
+      label: device.label,
+      trustedAt: new Date(device.trustedAt).toISOString(),
+      lastUsedAt: new Date(device.lastUsedAt).toISOString(),
+    };
+  }
+
+  /** The caller's trusted-device exemptions (AC-10). Null for an unknown email. */
+  listTrustedDevices(email: string): TrustedDevice[] | null {
+    if (!this.ensureSecurityState(email)) return null;
+    const list = this.trustedDevicesByEmail.get(email.toLowerCase())!;
+    return list.map((device) => this.toTrustedDevice(device));
+  }
+
+  /**
+   * Remove a trusted-device exemption (AC-10) so that device's next login re-prompts for 2FA. Idempotent:
+   * returns false when it's already gone.
+   */
+  removeTrustedDevice(email: string, deviceId: string): boolean {
+    if (!this.ensureSecurityState(email)) return false;
+    const list = this.trustedDevicesByEmail.get(email.toLowerCase())!;
+    const index = list.findIndex((device) => device.id === deviceId);
+    if (index === -1) return false;
+    list.splice(index, 1);
+    return true;
+  }
+
   /**
    * Plain-object copy of all internal state, safe to JSON.stringify — see PersistedAuthService.
    * Deliberately excludes accessTokensByToken: PersistedAuthService's whole purpose is surviving
@@ -1390,6 +1634,9 @@ export class AuthService {
         usedTokenHashes: [...family.usedTokenHashes],
       })),
       notifications: [...this.notificationsSent],
+      twoFactor: [...this.twoFactorByEmail],
+      deviceSessions: [...this.deviceSessionsByEmail],
+      trustedDevices: [...this.trustedDevicesByEmail],
     };
   }
 
@@ -1454,6 +1701,25 @@ export class AuthService {
 
     this.notificationsSent.length = 0;
     this.notificationsSent.push(...snapshot.notifications);
+
+    // Security state (US-CW-035): rebuilt from the snapshot when present; a snapshot predating it
+    // leaves the constructor-seeded state in place rather than wiping it.
+    if (snapshot.twoFactor) {
+      this.twoFactorByEmail.clear();
+      snapshot.twoFactor.forEach(([email, record]) => this.twoFactorByEmail.set(email, record));
+    }
+    if (snapshot.deviceSessions) {
+      this.deviceSessionsByEmail.clear();
+      snapshot.deviceSessions.forEach(([email, list]) =>
+        this.deviceSessionsByEmail.set(email, list),
+      );
+    }
+    if (snapshot.trustedDevices) {
+      this.trustedDevicesByEmail.clear();
+      snapshot.trustedDevices.forEach(([email, list]) =>
+        this.trustedDevicesByEmail.set(email, list),
+      );
+    }
   }
 
   private hasActiveFamily(email: string): boolean {

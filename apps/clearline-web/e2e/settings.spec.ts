@@ -205,3 +205,57 @@ test('Notifications: toggling a channel auto-saves, and the bulk summary applies
   await page.getByRole('button', { name: 'Apply' }).click();
   await expect(page.getByText('Summary applied')).toBeVisible();
 });
+
+async function openSecurity(page: Parameters<typeof fillLoginForm>[0]) {
+  await openSettings(page);
+  await settingsNav(page).getByRole('link', { name: 'Security' }).click();
+  await expect(page.getByRole('heading', { name: 'Security' })).toBeVisible();
+}
+
+test('Security: changing the password confirms and does not sign the user out (AC-01)', async ({
+  page,
+}) => {
+  await openSecurity(page);
+
+  await page.getByLabel('Current password').fill(DEMO_PASSWORD);
+  await page.getByLabel('New password').fill('New-Str0ng-Pass!1');
+  await page.getByLabel('Confirm new password').fill('New-Str0ng-Pass!1');
+  await page.getByRole('button', { name: 'Update password' }).click();
+
+  await expect(page.getByText('Password updated')).toBeVisible();
+  // Still signed in on this device — the current session is preserved (AC-01).
+  await expect(page.getByRole('heading', { name: 'Security' })).toBeVisible();
+});
+
+test('Security: 2FA setup renders the QR entirely in the browser (AC-03)', async ({ page }) => {
+  await openSecurity(page);
+  await page.getByRole('button', { name: 'Enable authenticator app' }).click();
+
+  await expect(page.getByRole('heading', { name: 'Scan the QR code' })).toBeVisible();
+  await expect(page.getByTestId('totp-qr')).toBeVisible();
+  await page.getByRole('button', { name: /can't scan a QR code/ }).click();
+  await expect(page.getByTestId('totp-manual-secret')).toBeVisible();
+});
+
+test('Security: the current session cannot be signed out, but another can (AC-08/09)', async ({
+  page,
+}) => {
+  await openSecurity(page);
+
+  const currentCard = page.getByTestId('session-card').filter({ hasText: 'This device' });
+  await expect(currentCard.getByRole('button', { name: 'Sign out this device' })).toBeDisabled();
+
+  const otherCard = page.getByTestId('session-card').filter({ hasText: 'Firefox on Windows' });
+  await otherCard.getByRole('button', { name: 'Sign out this device' }).click();
+  await page.getByRole('button', { name: 'Sign out', exact: true }).click();
+  await expect(page.getByText('Device signed out')).toBeVisible();
+  await expect(page.getByText('Firefox on Windows')).toHaveCount(0);
+});
+
+test('Security: removing a trusted device confirms (AC-10)', async ({ page }) => {
+  await openSecurity(page);
+
+  const device = page.getByTestId('trusted-device').first();
+  await device.getByRole('button', { name: 'Remove' }).click();
+  await expect(page.getByText('Device removed')).toBeVisible();
+});

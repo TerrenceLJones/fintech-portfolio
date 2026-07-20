@@ -64,6 +64,12 @@ export const SEED_ORGANIZATION = {
   ein: '11-2223334',
   /** Fixed epoch (2026-04-01T00:00:00Z) so seed data is deterministic across test runs. */
   createdAt: 1_743_465_600_000,
+  /**
+   * Whether the org mandates 2FA for its members (US-CW-035 AC-07). False in the seed; a stub owned
+   * here until US-CW-040 (Org Security & Compliance) provides the real toggle. When true, the personal
+   * Security page hides the "Disable" control and shows the admin-contact message instead.
+   */
+  enforceTwoFactor: false,
 } as const;
 
 const DAY_MS = 24 * 60 * 60 * 1000;

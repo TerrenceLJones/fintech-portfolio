@@ -6,9 +6,11 @@ import type { Role } from './rbac';
  * financial flow maps to exactly one — payments, approval decisions, card-control changes, and
  * role/permission changes — plus `audit_access` for the self-referential event emitted when the log
  * itself is opened (AC-06). A category is never conveyed by colour alone; it always carries a text label.
+ * `account_security` covers a user's self-service security actions — password change, 2FA enable/disable,
+ * session revocation, trusted-device removal (US-CW-035 AC-11) — never recording the secret itself.
  */
 export type AuditCategory =
-  'payment' | 'approval' | 'card_control' | 'role_change' | 'audit_access';
+  'payment' | 'approval' | 'card_control' | 'role_change' | 'audit_access' | 'account_security';
 
 /**
  * A before → after diff on an audit event — the prior value and the new value for a card-control or
