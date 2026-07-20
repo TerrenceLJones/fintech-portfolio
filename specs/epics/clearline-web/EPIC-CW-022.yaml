@@ -174,7 +174,7 @@ notes: >
   Mock Backend Architecture — these are frontend responsibilities within that system, not a production
   financial/identity stack.
 
-  Status APPROVED (2026-07-18); in progress — 2 of 11 stories implemented. US-CW-033 (Settings Shell &
+  Status APPROVED (2026-07-18); in progress — 3 of 11 stories implemented. US-CW-033 (Settings Shell &
   Role-Scoped SettingsNav) — the foundation — was IMPLEMENTED 2026-07-19 (branch US-CW-033/settings-shell-nav,
   PR #47). With it, these declared changes.updates were APPLIED: US-CW-006 (the 8 settings Permission tokens +
   permissionsForRole grants), US-CW-028 (universal Settings entry added to the primary sidebar AND the Team item
@@ -183,7 +183,13 @@ notes: >
   US-CW-034/personal-profile-notifications) — /settings/personal + /settings/notifications + the /email-change/
   confirm flow, the shared UnsavedChangesFooter + AvatarCropDialog + NotificationToggle + Switch conventions, the
   new @clearline/domain-profile and @clearline/data-access-profile libs, and SessionResponse.avatarUrl threaded to
-  the sidebar identity chip. STILL PENDING: the US-CW-032 update (a clickable identity-footer link into Personal
-  Info / Security) — not yet applied; the SidebarFooter now renders the avatar but is otherwise presentational,
-  and the Settings entry point still lives in the primary sidebar. Remaining stories US-CW-035…US-CW-043 are
-  unstarted. The epic advances to IMPLEMENTED only once all its stories land.
+  the sidebar identity chip. US-CW-035 (Account Security — Password, 2FA, Sessions & Trusted Devices) was
+  IMPLEMENTED 2026-07-20 (branch US-CW-035/account-security) — /settings/security with password change, a
+  dependency-free RFC 6238 authenticator-app 2FA flow (client-side QR, reveal-once backup codes), active-session
+  review/revocation with the current session protected, and trusted-device removal; the new
+  @clearline/data-access-security lib, mock-backend security service/handlers/fixtures, a Web-Crypto TOTP helper
+  in @clearline/domain-auth, and the `account_security` AuditCategory. STILL PENDING: the US-CW-032 update (a
+  clickable identity-footer link into Personal Info / Security) — not yet applied; the SidebarFooter now renders
+  the avatar but is otherwise presentational, and the Settings entry point still lives in the primary sidebar.
+  Remaining stories US-CW-036…US-CW-043 are unstarted. The epic advances to IMPLEMENTED only once all its
+  stories land.

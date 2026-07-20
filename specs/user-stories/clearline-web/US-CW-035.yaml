@@ -9,7 +9,7 @@ feature_area: 'core'
 title: 'Account Security — Password, 2FA, Sessions & Trusted Devices'
 
 # Lifecycle status
-status: 'DRAFT'
+status: 'IMPLEMENTED'
 story_points: 13
 dependencies: ['US-CW-033', 'US-CW-001', 'US-CW-003', 'US-CW-040']
 
@@ -22,10 +22,13 @@ history:
   - epic_id: 'EPIC-CW-022'
     action: 'created'
     date: '2026-07-17'
+  - epic_id: 'EPIC-CW-022'
+    action: 'implemented'
+    date: '2026-07-20'
 
 # Status timestamps — set when status transitions occur
-approved_date: null
-implementation_date: null
+approved_date: '2026-07-18'
+implementation_date: '2026-07-20'
 deprecated_date: null
 removed_date: null
 
@@ -182,10 +185,20 @@ edge_cases: |
 
 # Implementation Status
 implementation_status: |
-  🚧 Not yet implemented — DRAFT authored 2026-07-17 (EPIC-CW-022), specs-only for review.
-  Source: specs/designs/Clearline Design System - Consolidated.dc.html §19.2 (TOTPSetupFlow · generate → verify →
-  complete, client-side QR, backup codes shown once) and §19.4 (SessionCard · active sessions, disabled
-  current-session sign-out), and Gherkin §19 (password management, TOTP enable/disable incl. org-enforced,
-  backup codes once, session management, trusted devices). Anticipated new surface: /settings/security page, a
-  TOTPSetupFlow XState machine + client-side QR renderer, SessionCard list, trusted-devices list, and a
-  password-change form reusing US-CW-001 hashing.
+  ✅ IMPLEMENTED 2026-07-20 (branch US-CW-035/account-security). The /settings/security page ships all four
+  self-service surfaces — password change (AC-01/02), authenticator-app 2FA generate → verify → complete with
+  reveal-once backup codes (AC-03–06), org-enforced-2FA branch (AC-07, against a seeded org flag stubbed until
+  US-CW-040), active-session review + single/bulk revoke with the current session protected (AC-08/09),
+  trusted-device removal (AC-10) — and audits every security-sensitive success server-side without ever
+  recording a secret (AC-11).
+
+  Notable implementation decisions (vs. the DRAFT notes):
+  - TOTP is a dependency-free RFC 6238 implementation on Web Crypto in @clearline/domain-auth (base32 +
+    HMAC-SHA1 + backup codes), validated against the RFC test vectors — no `otpauth` dependency. The QR is
+    rendered client-side from the otpauth URI via `qrcode` so the secret never reaches a third-party service.
+  - The generate → verify → complete flow is a `use-totp-setup` hook (the repo's established multi-phase-flow
+    pattern, e.g. use-step-up-challenge), NOT XState — XState is not used anywhere in this codebase.
+  - New @clearline/data-access-security package; new mock-backend security service methods + handlers +
+    fixtures; `account_security` added to the AuditCategory union.
+
+  Source: design §19.2 (TOTPSetupFlow), §19.4 (SessionCard), §19.9 (destructive confirmations) and Gherkin §19.
