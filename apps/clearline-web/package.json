@@ -25,6 +25,7 @@
     "@clearline/data-access-expenses": "workspace:*",
     "@clearline/data-access-onboarding": "workspace:*",
     "@clearline/data-access-payments": "workspace:*",
+    "@clearline/data-access-policies": "workspace:*",
     "@clearline/data-access-profile": "workspace:*",
     "@clearline/data-access-security": "workspace:*",
     "@clearline/data-access-reconciliation": "workspace:*",

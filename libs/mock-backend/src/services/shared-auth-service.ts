@@ -145,6 +145,18 @@ export class PersistedAuthService extends AuthService {
     this.persist();
     return result;
   }
+
+  override setApprovalTiers(...args: Parameters<AuthService['setApprovalTiers']>) {
+    const result = super.setApprovalTiers(...args);
+    this.persist();
+    return result;
+  }
+
+  override setSpendControls(...args: Parameters<AuthService['setSpendControls']>) {
+    const result = super.setSpendControls(...args);
+    this.persist();
+    return result;
+  }
 }
 
 /**

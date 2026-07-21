@@ -9,6 +9,8 @@ import { PersonalInfoPage } from './PersonalInfoPage';
 import { NotificationsPage } from './NotificationsPage';
 import { SecurityPage } from './SecurityPage';
 import { CompanyProfilePage } from './CompanyProfilePage';
+import { ApprovalPoliciesPage } from './ApprovalPoliciesPage';
+import { SpendControlsPage } from './SpendControlsPage';
 
 /** An Organization route wrapped in its RequirePermission guard, with the matching API path restated
  *  for the 403 line so the client denial and the server's independent 403 read the same (AC-04). The
@@ -59,8 +61,28 @@ export function settingsRoutes() {
       <Route element={<RequirePermission permission="team:view" apiPath="/api/team/members" />}>
         <Route path="team" element={<TeamPage />} />
       </Route>
-      {orgRoute('approval-policies', 'Approval Policies', 'policies:manage')}
-      {orgRoute('spend-controls', 'Spend Controls', 'policies:manage')}
+      {/* Approval Policies & Spend Controls are real pages (US-CW-037), gated by policies:manage; each
+        page re-probes the server so it degrades to AccessDenied on an independent 403 (AC-09). */}
+      <Route
+        element={
+          <RequirePermission
+            permission="policies:manage"
+            apiPath="/api/settings/sections/approval-policies"
+          />
+        }
+      >
+        <Route path="approval-policies" element={<ApprovalPoliciesPage />} />
+      </Route>
+      <Route
+        element={
+          <RequirePermission
+            permission="policies:manage"
+            apiPath="/api/settings/sections/spend-controls"
+          />
+        }
+      >
+        <Route path="spend-controls" element={<SpendControlsPage />} />
+      </Route>
       {orgRoute('card-program', 'Card Program', 'card-program:manage')}
       {orgRoute('connected-accounts', 'Connected Accounts', 'bank-accounts:manage')}
       {orgRoute('integrations', 'Integrations', 'integrations:manage')}

@@ -8,6 +8,8 @@ export type * from './profile';
 export type * from './cards';
 export type * from './payments';
 export type * from './expenses';
+export type * from './approval-policy';
+export type * from './spend-controls';
 export type * from './analytics';
 export type * from './reconciliation';
 export type * from './budgets';

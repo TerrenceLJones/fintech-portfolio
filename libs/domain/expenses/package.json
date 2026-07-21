@@ -11,7 +11,8 @@
     "build": "tsc"
   },
   "dependencies": {
-    "@clearline/contracts": "workspace:*"
+    "@clearline/contracts": "workspace:*",
+    "@clearline/money": "workspace:*"
   },
   "devDependencies": {},
   "metadata": {

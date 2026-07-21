@@ -34,6 +34,7 @@
     { "path": "../../libs/data-access/settings" },
     { "path": "../../libs/data-access/profile" },
     { "path": "../../libs/data-access/security" },
-    { "path": "../../libs/data-access/company" }
+    { "path": "../../libs/data-access/company" },
+    { "path": "../../libs/data-access/policies" }
   ]
 }

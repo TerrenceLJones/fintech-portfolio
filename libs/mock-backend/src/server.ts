@@ -18,6 +18,7 @@ import { settingsHandlers } from './handlers/settings.handlers';
 import { profileHandlers } from './handlers/profile.handlers';
 import { securityHandlers } from './handlers/security.handlers';
 import { companyHandlers } from './handlers/company.handlers';
+import { policiesHandlers } from './handlers/policies.handlers';
 
 export const server = setupServer(
   ...authHandlers,
@@ -39,4 +40,5 @@ export const server = setupServer(
   ...profileHandlers,
   ...securityHandlers,
   ...companyHandlers,
+  ...policiesHandlers,
 );

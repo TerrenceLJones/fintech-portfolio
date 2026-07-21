@@ -1,0 +1,24 @@
+import { Meta, Canvas, Controls } from '@storybook/addon-docs/blocks';
+import * as PolicyRuleRowStories from './PolicyRuleRow.stories';
+
+<Meta of={PolicyRuleRowStories} />
+
+# PolicyRuleRow
+
+One display row of the approval-policy tier table (design §19.7, US-CW-037). It shows an inclusive
+amount range, the required approver level, and edit/delete actions.
+
+- **State is never colour alone.** Auto-approve is conveyed by a check icon **and** the "Auto-approve"
+  label (design §19 doctrine), so it reads without relying on the positive tint.
+- **Presentational only.** The page owns the tier list; while a tier is being edited it swaps this row
+  for an inline editor in the same table position, so editing happens "within the row" (§19.7).
+- **`deletable={false}`** hides the delete affordance — the sole remaining tier can't be removed, since
+  a coherent policy must still tile `[$0, ∞)`.
+
+<Canvas of={PolicyRuleRowStories.Ladder} />
+
+## The single-tier case
+
+<Canvas of={PolicyRuleRowStories.SingleTierNotDeletable} />
+
+<Controls />

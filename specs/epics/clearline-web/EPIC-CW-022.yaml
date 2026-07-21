@@ -174,7 +174,7 @@ notes: >
   Mock Backend Architecture — these are frontend responsibilities within that system, not a production
   financial/identity stack.
 
-  Status APPROVED (2026-07-18); in progress — 4 of 11 stories implemented. US-CW-033 (Settings Shell &
+  Status APPROVED (2026-07-18); in progress — 5 of 11 stories implemented. US-CW-033 (Settings Shell &
   Role-Scoped SettingsNav) — the foundation — was IMPLEMENTED 2026-07-19 (branch US-CW-033/settings-shell-nav,
   PR #47). With it, these declared changes.updates were APPLIED: US-CW-006 (the 8 settings Permission tokens +
   permissionsForRole grants), US-CW-028 (universal Settings entry added to the primary sidebar AND the Team item
@@ -198,5 +198,13 @@ notes: >
   before → after audit event (new `company_profile` AuditCategory). Company data lives on AuthService's
   OrganizationRecord (extended + seeded, snapshot v3), backed by new GET/PATCH /api/company handlers and the new
   @clearline/data-access-company lib. The originally-scoped company-logo upload (AC-03) was cut from the story
-  before implementation, so the app-header brand slot is unchanged. Remaining stories US-CW-037…US-CW-043 are
-  unstarted. The epic advances to IMPLEMENTED only once all its stories land.
+  before implementation, so the app-header brand slot is unchanged. US-CW-037 (Approval Policies & Spend
+  Controls) was IMPLEMENTED 2026-07-20 (branch US-CW-037/approval-policies-spend-controls) — the
+  /settings/approval-policies + /settings/spend-controls pages editing the ONE approval-tier + spend-control
+  model the expense routing and submission enforcement consume (AC-10, no divergent copy): the tier ladder now
+  lives in @clearline/domain-expenses (approval-tier-policy.ts) with a gap/overlap validator, and the old
+  hardcoded L2_ROUTING_THRESHOLD is derived from the default ladder. Introduced @clearline/data-access-policies,
+  the PolicyRuleRow @clearline/ui molecule (design §19.7), mock-backend policies.handlers.ts + org-record
+  persistence + the `approval_policy`/`spend_control` AuditCategory members, a `memo` field on the expense
+  contract for the memo threshold, and two demo-beacon guides. This applied no further changes.updates. Remaining
+  stories US-CW-038…US-CW-043 are unstarted. The epic advances to IMPLEMENTED only once all its stories land.

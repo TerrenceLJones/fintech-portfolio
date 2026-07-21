@@ -26,12 +26,15 @@ import {
   isValidEmail,
 } from '@clearline/domain-profile';
 import type {
+  ApprovalPolicyTier,
+  ApprovalPolicyTierInput,
   CompanyProfileResponse,
   DeviceSession,
   NotificationFrequency,
   NotificationPreference,
   NotificationTypeKey,
   Organization,
+  OutOfPolicyBehavior,
   PendingInvite,
   ProfileResponse,
   Role,
@@ -40,6 +43,7 @@ import type {
   TrustedDevice,
   TwoFactorStatus,
 } from '@clearline/contracts';
+import { DEFAULT_APPROVAL_TIERS } from '@clearline/domain-expenses';
 import { SEED_ORGANIZATION, SEED_USERS, type SeedUser } from '../fixtures/users.fixture';
 import {
   defaultCurrentSession,
@@ -148,6 +152,25 @@ interface OrganizationRecord {
   postalCode?: string;
   /** Fiscal-year start month 1–12; a change applies next budget period, not retroactively (AC-01). */
   fiscalYearStartMonth?: number;
+  // --- Approval Policies & Spend Controls (US-CW-037). Both optional and coalesced to defaults by the
+  // getters, so orgs provisioned before this story (and older snapshots) stay valid; editing persists a
+  // concrete value. This is the single policy model the expense routing/enforcement consumes (AC-10). ---
+  /** The approval-limit tier ladder; absent = the default ladder (DEFAULT_APPROVAL_TIERS). */
+  approvalTiers?: ApprovalPolicyTier[];
+  /** Spend controls; absent = the default controls (getSpendControls coalesces). */
+  spendControls?: StoredSpendControls;
+}
+
+/**
+ * The org's stored spend controls (US-CW-037). Category caps are a category-agnostic id→limit map
+ * (`null` = unlimited); the HTTP handler joins it with the expense category list for labels, so this
+ * store never needs to know the category catalogue.
+ */
+export interface StoredSpendControls {
+  receiptRequiredThresholdMinorUnits: number;
+  memoRequiredThresholdMinorUnits: number;
+  outOfPolicyBehavior: OutOfPolicyBehavior;
+  categoryCaps: Record<string, number | null>;
 }
 
 /**
@@ -1318,6 +1341,62 @@ export class AuthService {
     org.postalCode = patch.postalCode;
     org.fiscalYearStartMonth = patch.fiscalYearStartMonth;
     return this.toCompanyProfile(org);
+  }
+
+  // ===========================================================================
+  // Approval Policies & Spend Controls (US-CW-037). Org-scoped org-config, gated
+  // by policies:manage in the handler. This is the single policy model the expense
+  // routing + submission enforcement consume (AC-10) — editing here changes routing
+  // and enforcement directly, via the ExpensesService policy provider.
+  // ===========================================================================
+
+  /** The org's approval-limit tiers, defaulting to the standard ladder when none has been saved. */
+  getApprovalTiers(orgId: string): ApprovalPolicyTier[] | null {
+    const org = this.orgsById.get(orgId);
+    if (!org) return null;
+    return org.approvalTiers ?? DEFAULT_APPROVAL_TIERS.map((tier) => ({ ...tier }));
+  }
+
+  /**
+   * Persists a new tier ladder, assigning each tier a stable id (the client sends none). Callers must
+   * validate coherence (no gap/overlap) before saving — the handler does via validateApprovalTiers.
+   */
+  setApprovalTiers(orgId: string, inputs: ApprovalPolicyTierInput[]): ApprovalPolicyTier[] | null {
+    const org = this.orgsById.get(orgId);
+    if (!org) return null;
+    org.approvalTiers = inputs.map((input, index) => ({
+      id: `tier_${orgId}_${index}`,
+      minMinorUnits: input.minMinorUnits,
+      maxMinorUnits: input.maxMinorUnits,
+      approver: input.approver,
+    }));
+    return org.approvalTiers.map((tier) => ({ ...tier }));
+  }
+
+  /** The org's spend controls, coalesced to defaults (receipt $75, memo off, flag, no caps). */
+  getSpendControls(orgId: string): StoredSpendControls | null {
+    const org = this.orgsById.get(orgId);
+    if (!org) return null;
+    const stored = org.spendControls;
+    return {
+      receiptRequiredThresholdMinorUnits: stored?.receiptRequiredThresholdMinorUnits ?? 7_500,
+      memoRequiredThresholdMinorUnits: stored?.memoRequiredThresholdMinorUnits ?? 0,
+      outOfPolicyBehavior: stored?.outOfPolicyBehavior ?? 'flag',
+      categoryCaps: { ...(stored?.categoryCaps ?? {}) },
+    };
+  }
+
+  /** Persists spend controls in place. Returns the fresh controls, or null for an unknown org. */
+  setSpendControls(orgId: string, patch: StoredSpendControls): StoredSpendControls | null {
+    const org = this.orgsById.get(orgId);
+    if (!org) return null;
+    org.spendControls = {
+      receiptRequiredThresholdMinorUnits: patch.receiptRequiredThresholdMinorUnits,
+      memoRequiredThresholdMinorUnits: patch.memoRequiredThresholdMinorUnits,
+      outOfPolicyBehavior: patch.outOfPolicyBehavior,
+      categoryCaps: { ...patch.categoryCaps },
+    };
+    return this.getSpendControls(orgId);
   }
 
   private isEmailChangeTokenExpired(issuedAt: number, now: number): boolean {

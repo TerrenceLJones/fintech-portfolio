@@ -1,4 +1,5 @@
 import type { Money } from './money';
+import type { OutOfPolicyBehavior } from './spend-controls';
 
 /**
  * The submitted-expense lifecycle (US-CW-011 / US-CW-012). An expense is submitted into `pending_l1`
@@ -29,6 +30,14 @@ export interface ExpenseContextResponse {
   categories: ExpenseCategory[];
   /** A receipt is required for expenses strictly over this amount (minor units) — US-CW-011 AC-02. */
   receiptRequiredThresholdMinorUnits: number;
+  /** A memo is required for expenses strictly over this amount (minor units) — US-CW-037 AC-06. */
+  memoRequiredThresholdMinorUnits: number;
+  /**
+   * How the submission gate treats an over-category-limit expense (US-CW-037 AC-07). `flag` keeps the
+   * advisory warning + submit-anyway; `block` turns it into a hard block the form pre-enforces and the
+   * server independently rejects.
+   */
+  outOfPolicyBehavior: OutOfPolicyBehavior;
   /**
    * The organization's expense currency (ISO 4217). Expenses are single-currency — unlike vendor
    * payments there is no FX — so the form parses, formats, and submits amounts in this one currency,
@@ -50,6 +59,8 @@ export interface Expense {
   categoryLabel: string;
   merchant: string;
   amount: Money;
+  /** Free-text justification. Required at submit for amounts over the memo threshold (US-CW-037 AC-06). */
+  memo?: string;
   /** ISO 8601 date the expense was submitted. */
   submittedDate: string;
   status: ExpenseStatus;
@@ -72,6 +83,8 @@ export interface CreateExpenseRequest {
   amount: Money;
   categoryId: string;
   merchant: string;
+  /** Free-text justification, required for amounts over the memo threshold (US-CW-037 AC-06). */
+  memo?: string;
   receiptFilename?: string;
   policyLimitAcknowledged?: boolean;
 }
@@ -87,9 +100,17 @@ export interface MyExpensesResponse {
 /**
  * Server-side expense-validation failures (422). Mirrors the client-side @clearline/domain-expenses
  * gate so a submission that bypasses the UI is re-checked at the boundary (US-CW-011 technical notes).
- * The category policy-limit warning is deliberately NOT here — it is advisory and never blocks submit.
+ * The category policy-limit warning is advisory under `flag`, but under the `block` out-of-policy
+ * behavior (US-CW-037 AC-07) an over-limit expense is rejected here with `over_policy_blocked`; a
+ * per-category monthly cap that would be exceeded rejects with `over_category_cap` (AC-08).
  */
-export type ExpenseErrorCode = 'invalid_amount' | 'category_required' | 'receipt_required';
+export type ExpenseErrorCode =
+  | 'invalid_amount'
+  | 'category_required'
+  | 'receipt_required'
+  | 'memo_required'
+  | 'over_policy_blocked'
+  | 'over_category_cap';
 
 export interface ExpenseErrorResponse {
   error: ExpenseErrorCode;

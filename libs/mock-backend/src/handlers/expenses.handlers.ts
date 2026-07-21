@@ -33,6 +33,8 @@ function resolveActor(request: Request, authService: AuthService): ExpenseActor 
       isAdmin: session.isAdmin!,
       isOwner: session.isOwner!,
     }),
+    // The caller's org, so their org's own approval + spend-control policy drives routing (US-CW-037).
+    orgId: authService.getOrgIdForUser(session.userId!) ?? '',
   };
 }
 
@@ -55,6 +57,8 @@ export function createExpensesHandlers(
       const body: ExpenseContextResponse = {
         categories: result.categories,
         receiptRequiredThresholdMinorUnits: result.receiptRequiredThresholdMinorUnits,
+        memoRequiredThresholdMinorUnits: result.memoRequiredThresholdMinorUnits,
+        outOfPolicyBehavior: result.outOfPolicyBehavior,
         currency: result.currency,
       };
       return HttpResponse.json(body, { status: 200 });

@@ -9,7 +9,7 @@ feature_area: 'core'
 title: 'Approval Policies & Spend Controls'
 
 # Lifecycle status
-status: 'DRAFT'
+status: 'IMPLEMENTED'
 story_points: 13
 dependencies: ['US-CW-033', 'US-CW-006', 'US-CW-012', 'US-CW-011', 'US-CW-019']
 
@@ -22,10 +22,13 @@ history:
   - epic_id: 'EPIC-CW-022'
     action: 'created'
     date: '2026-07-17'
+  - epic_id: 'EPIC-CW-022'
+    action: 'implemented'
+    date: '2026-07-20'
 
 # Status timestamps — set when status transitions occur
-approved_date: null
-implementation_date: null
+approved_date: '2026-07-20'
+implementation_date: '2026-07-20'
 deprecated_date: null
 removed_date: null
 
@@ -156,10 +159,31 @@ edge_cases: |
 
 # Implementation Status
 implementation_status: |
-  🚧 Not yet implemented — DRAFT authored 2026-07-17 (EPIC-CW-022), specs-only for review.
-  Source: specs/designs/Clearline Design System - Consolidated.dc.html §19.1 (Approval Policies + Spend Controls
-  items; PolicyRuleRow component) and Gherkin §21 (approval policy tiers with overlap/gap validation and reset;
-  spend controls — receipt/memo thresholds, out-of-policy block-vs-flag, per-category monthly caps). Anticipated
-  new surface: /settings/approval-policies + /settings/spend-controls pages editing the shared approval-policy
-  model (US-CW-023 / EPIC-CW-006) and the category-cap model (EPIC-CW-013), with a gap/overlap validator on
-  minor units.
+  ✅ IMPLEMENTED 2026-07-20 (EPIC-CW-022, branch US-CW-037/approval-policies-spend-controls). The
+  /settings/approval-policies and /settings/spend-controls pages now edit the ONE policy model the expense
+  routing + submission enforcement consume — no divergent copy (AC-10).
+
+  The load-bearing invariant: the approval-limit tier ladder lives in @clearline/domain-expenses
+  (approval-tier-policy.ts) as the single source; routeSubmittedStatus and the mock-backend submit routing
+  derive from it, and the old hardcoded L2_ROUTING_THRESHOLD_MINOR_UNITS is now computed from the default
+  ladder. Tiers use an inclusive-max model (next.min = prev.max + 1) that reproduces the current routing
+  boundary exactly ($10,000 still routes L1), so lifting routing onto the editable model changes no
+  EPIC-CW-006 behaviour. validateApprovalTiers detects overlap/gap/inverted/no-floor/no-ceiling on integer
+  minor units and emits the specific AC-03/AC-04 copy; the server re-validates on PATCH so an incoherent
+  policy can never persist. Auto-approve is a supported, editable approver level (auto-approved expenses skip
+  the queue) but is not part of the default ladder.
+
+  Spend controls (AC-06/07/08) are enforced at submission via a policy provider injected into ExpensesService:
+  receipt + new memo thresholds sourced from the org config, out-of-policy `block` hard-rejects an over-limit
+  expense (vs `flag`), and per-category monthly caps block a submission that would push month-to-date category
+  spend over the cap. A `memo` field was added to the expense contract to make the memo threshold real.
+
+  New: @clearline/data-access-policies (hooks over /api/approval-policy + /api/spend-controls), the PolicyRuleRow
+  molecule (design §19.7) in @clearline/ui, mock-backend policies.handlers.ts + org-record persistence on
+  AuthService (coalesced defaults, like Company Profile), the `approval_policy` + `spend_control` AuditCategory
+  members with before→after events, and two colocated demo-beacon guides. Reset-to-defaults (AC-05) and
+  block-entirely (AC-07) confirm first via ConfirmationDialog, naming the specific consequence (design §19.9).
+  Every org route + API returns 403 independently of client routing (AC-09).
+
+  Source: specs/designs/Clearline Design System - Consolidated.dc.html §19.7 (PolicyRuleRow · inline tier
+  editing) and §19.9 (destructive confirmations), Gherkin §21.

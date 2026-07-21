@@ -5,5 +5,5 @@
     "rootDir": "src"
   },
   "include": ["src/**/*.ts"],
-  "references": [{ "path": "../../contracts" }]
+  "references": [{ "path": "../../contracts" }, { "path": "../../util/money" }]
 }

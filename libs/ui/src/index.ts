@@ -62,6 +62,8 @@ export { Modal } from './molecules/Modal';
 export type { ModalProps } from './molecules/Modal';
 export { NotificationToggle } from './molecules/NotificationToggle';
 export type { NotificationToggleProps } from './molecules/NotificationToggle';
+export { PolicyRuleRow, POLICY_RULE_GRID } from './molecules/PolicyRuleRow';
+export type { PolicyRuleRowProps } from './molecules/PolicyRuleRow';
 export { AvatarCropDialog } from './molecules/AvatarCropDialog';
 export type { AvatarCropDialogProps } from './molecules/AvatarCropDialog';
 export { InactivityWarningModal } from './molecules/InactivityWarningModal';

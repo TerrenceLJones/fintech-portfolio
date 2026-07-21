@@ -1,0 +1,33 @@
+{
+  "name": "@clearline/data-access-policies",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Approval Policies & Spend Controls data-access layer for clearline-web (EPIC-CW-022 / US-CW-037): React Query hooks over /api/approval-policy and /api/spend-controls for reading and persisting the org's approval-tier ladder and spend controls. No UI, no business rules.",
+  "main": "src/index.ts",
+  "scripts": {
+    "lint": "eslint .",
+    "type-check": "tsc --noEmit",
+    "test": "vitest run",
+    "build": "tsc"
+  },
+  "peerDependencies": {
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "dependencies": {
+    "@clearline/contracts": "workspace:*",
+    "@clearline/data-access-auth": "workspace:*",
+    "@tanstack/react-query": "^5.101.2"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@clearline/mock-backend": "workspace:*",
+    "msw": "^2.14.6"
+  },
+  "metadata": {
+    "package_type": "shared",
+    "app": "clearline-web",
+    "scope": "Data-access lib for EPIC-CW-022 (US-CW-037 Approval Policies & Spend Controls)."
+  }
+}

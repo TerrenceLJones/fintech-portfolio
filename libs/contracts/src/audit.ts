@@ -10,6 +10,8 @@ import type { Role } from './rbac';
  * session revocation, trusted-device removal (US-CW-035 AC-11) — never recording the secret itself.
  * `company_profile` covers org-config edits to the Company Profile — primary contact, business address,
  * fiscal-year start (US-CW-036 AC-04); the KYB-verified legal name and EIN are immutable and never a target.
+ * `approval_policy` covers edits to the approval-limit tier ladder and `spend_control` covers spend-control
+ * changes — receipt/memo thresholds, out-of-policy behavior, per-category monthly caps (US-CW-037 AC-10).
  */
 export type AuditCategory =
   | 'payment'
@@ -18,7 +20,9 @@ export type AuditCategory =
   | 'role_change'
   | 'audit_access'
   | 'account_security'
-  | 'company_profile';
+  | 'company_profile'
+  | 'approval_policy'
+  | 'spend_control';
 
 /**
  * A before → after diff on an audit event — the prior value and the new value for a card-control or
