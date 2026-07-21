@@ -9,6 +9,14 @@ async function getSpendControls(): Promise<SpendControlsResponse> {
   return response.json();
 }
 
+/** Thrown when a spend-controls save is rejected (422) — carries the server's code for inline copy. */
+export class SpendControlsUpdateError extends Error {
+  constructor(public readonly code: string) {
+    super(code);
+    this.name = 'SpendControlsUpdateError';
+  }
+}
+
 /** The org's spend controls: receipt/memo thresholds, out-of-policy behavior, category caps (AC-06/07/08). */
 export function useSpendControls() {
   return useQuery({
@@ -26,7 +34,10 @@ async function patchSpendControls(
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(request),
   });
-  if (!response.ok) throw new Error('spend_controls_update_failed');
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => ({}))) as { error?: string };
+    throw new SpendControlsUpdateError(payload.error ?? 'spend_controls_update_failed');
+  }
   return response.json();
 }
 

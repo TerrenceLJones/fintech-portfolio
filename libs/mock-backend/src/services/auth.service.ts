@@ -29,6 +29,7 @@ import type {
   ApprovalPolicyTier,
   ApprovalPolicyTierInput,
   CompanyProfileResponse,
+  IssuancePolicy,
   DeviceSession,
   NotificationFrequency,
   NotificationPreference,
@@ -44,6 +45,12 @@ import type {
   TwoFactorStatus,
 } from '@clearline/contracts';
 import { DEFAULT_APPROVAL_TIERS } from '@clearline/domain-expenses';
+import {
+  DEFAULT_ALLOWED_MCCS,
+  DEFAULT_ISSUANCE_POLICY,
+  DEFAULT_MONTHLY_LIMIT_MINOR_UNITS,
+  DEFAULT_PER_TRANSACTION_LIMIT_MINOR_UNITS,
+} from '../fixtures/card-program.fixture';
 import { SEED_ORGANIZATION, SEED_USERS, type SeedUser } from '../fixtures/users.fixture';
 import {
   defaultCurrentSession,
@@ -159,6 +166,22 @@ interface OrganizationRecord {
   approvalTiers?: ApprovalPolicyTier[];
   /** Spend controls; absent = the default controls (getSpendControls coalesces). */
   spendControls?: StoredSpendControls;
+  // --- Card Program defaults (US-CW-038). Optional and coalesced to defaults by getCardProgramDefaults,
+  // so orgs provisioned before this story (and older snapshots) stay valid; editing persists a concrete
+  // value. These seed newly issued cards (AC-01); existing cards are never retroactively changed. ---
+  cardProgram?: StoredCardProgram;
+}
+
+/**
+ * The org's stored card-program defaults (US-CW-038). Limits are integer minor units; allowed MCCs are
+ * category `code`s (empty = unrestricted). These are the values a newly issued virtual card inherits and
+ * the issuance policy that gates who may request one — the getter coalesces to the seed defaults.
+ */
+export interface StoredCardProgram {
+  defaultMonthlyLimitMinorUnits: number;
+  defaultPerTransactionLimitMinorUnits: number;
+  defaultAllowedMccs: string[];
+  issuancePolicy: IssuancePolicy;
 }
 
 /**
@@ -1397,6 +1420,34 @@ export class AuthService {
       categoryCaps: { ...patch.categoryCaps },
     };
     return this.getSpendControls(orgId);
+  }
+
+  /** The org's card-program defaults, coalesced to the seed defaults ($2,000 / $500, Software+Office). */
+  getCardProgramDefaults(orgId: string): StoredCardProgram | null {
+    const org = this.orgsById.get(orgId);
+    if (!org) return null;
+    const stored = org.cardProgram;
+    return {
+      defaultMonthlyLimitMinorUnits:
+        stored?.defaultMonthlyLimitMinorUnits ?? DEFAULT_MONTHLY_LIMIT_MINOR_UNITS,
+      defaultPerTransactionLimitMinorUnits:
+        stored?.defaultPerTransactionLimitMinorUnits ?? DEFAULT_PER_TRANSACTION_LIMIT_MINOR_UNITS,
+      defaultAllowedMccs: [...(stored?.defaultAllowedMccs ?? DEFAULT_ALLOWED_MCCS)],
+      issuancePolicy: stored?.issuancePolicy ?? DEFAULT_ISSUANCE_POLICY,
+    };
+  }
+
+  /** Persists card-program defaults in place. Returns the fresh defaults, or null for an unknown org. */
+  setCardProgramDefaults(orgId: string, patch: StoredCardProgram): StoredCardProgram | null {
+    const org = this.orgsById.get(orgId);
+    if (!org) return null;
+    org.cardProgram = {
+      defaultMonthlyLimitMinorUnits: patch.defaultMonthlyLimitMinorUnits,
+      defaultPerTransactionLimitMinorUnits: patch.defaultPerTransactionLimitMinorUnits,
+      defaultAllowedMccs: [...patch.defaultAllowedMccs],
+      issuancePolicy: patch.issuancePolicy,
+    };
+    return this.getCardProgramDefaults(orgId);
   }
 
   private isEmailChangeTokenExpired(issuedAt: number, now: number): boolean {

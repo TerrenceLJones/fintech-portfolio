@@ -9,7 +9,7 @@ feature_area: 'core'
 title: 'Card Program Defaults & Connected Bank Accounts'
 
 # Lifecycle status
-status: 'DRAFT'
+status: 'IMPLEMENTED'
 story_points: 13
 dependencies: ['US-CW-033', 'US-CW-014', 'US-CW-016']
 
@@ -22,18 +22,21 @@ history:
   - epic_id: 'EPIC-CW-022'
     action: 'created'
     date: '2026-07-17'
+  - epic_id: 'EPIC-CW-022'
+    action: 'implemented'
+    date: '2026-07-21'
 
 # Status timestamps — set when status transitions occur
-approved_date: null
-implementation_date: null
+approved_date: '2026-07-18'
+implementation_date: '2026-07-21'
 deprecated_date: null
 removed_date: null
 
 # User Story
 user_story:
   persona: 'Controller, Admin, or Owner of a Clearline Organization'
-  capability: 'set the default limits, MCC restrictions, and issuance policy applied to newly issued virtual cards, and connect / verify / remove the organization''s bank accounts via Plaid or manual micro-deposit verification'
-  business_value: 'New cards inherit sane program defaults without per-card setup, card-request rights are controlled, and the organization''s funding/reconciliation bank accounts are connected through the same trusted flows used elsewhere in the product'
+  capability: "set the default limits, MCC restrictions, and issuance policy applied to newly issued virtual cards, and connect / verify / remove the organization's bank accounts via Plaid or manual micro-deposit verification"
+  business_value: "New cards inherit sane program defaults without per-card setup, card-request rights are controlled, and the organization's funding/reconciliation bank accounts are connected through the same trusted flows used elsewhere in the product"
   description: |
     As a Controller, Admin, or Owner
     I want Card Program defaults and Connected Accounts management
@@ -149,9 +152,34 @@ edge_cases: |
 
 # Implementation Status
 implementation_status: |
-  🚧 Not yet implemented — DRAFT authored 2026-07-17 (EPIC-CW-022), specs-only for review.
-  Source: specs/designs/Clearline Design System - Consolidated.dc.html §19.1 (Card Program + Connected Accounts
-  items) and Gherkin §22 (card program defaults — limits, MCC, issuance policy; connected accounts — Plaid link,
-  manual micro-deposit verification with 3-attempt lock, removal, Plaid reconnect). Anticipated new surface:
-  /settings/card-program (seeding US-CW-014 issuance) and /settings/connected-accounts (reusing the US-CW-016
-  Plaid Link + a manual micro-deposit flow).
+  ✅ IMPLEMENTED 2026-07-21 (EPIC-CW-022, branch US-CW-038/card-program-connected-accounts). Two
+  Organization-group settings surfaces, shipped together:
+
+  Card Program (/settings/card-program, gated by card-program:manage) — edits the org defaults a newly
+  issued card inherits: default monthly + per-transaction limits, a searchable MCC restriction list
+  (matches by category name OR numeric MCC code, AC-02), and the issuance policy for "who can request a
+  card" (AC-03), all behind the shared unsaved-changes footer with a before → after `card_program` audit
+  event and a server-authoritative 403 (AC-09). Defaults persist on AuthService's OrganizationRecord
+  (coalesced getters, no snapshot bump). AC-01 "new cards start with these defaults" is wired by merging
+  the org defaults into the issuance context (GET /api/cards/context) so the US-CW-014 issuance form
+  prefills the monthly limit + MCCs, and by seeding the per-transaction default onto the issued card.
+  AC-03 gates the card wallet's new "Request a card" affordance via a lightweight, any-authenticated-user
+  GET /api/card-program/issuance-policy whose `canRequest` is computed server-side from the caller's role.
+
+  Connected Accounts (/settings/connected-accounts, gated by bank-accounts:manage) — a fresh vertical
+  slice (there is no real Plaid in the repo) mirroring the reconciliation service architecture: a new
+  ConnectedAccountsService + shared singleton + fixtures, and connected-accounts.handlers.ts over
+  connect-via-Plaid (mock, lands verified — AC-04), manual connection + two-micro-deposit verification
+  with a 3-attempt lock (AC-05/06), reconnect for a seeded reconnect-required (ITEM_LOGIN_REQUIRED)
+  account (AC-08), and removal behind a §19.9 confirmation that names the masked account and never
+  disturbs in-flight payments (AC-07). Every mutation records a `connected_account` audit event carrying
+  only the masked last four.
+
+  New libs: @clearline/data-access-card-program and @clearline/data-access-connected-accounts. New
+  contracts: card-program.ts, connected-accounts.ts, the `card_program`/`connected_account` AuditCategory
+  members, an optional per-transaction limit on the card contract, and card-program defaults on the
+  issuance context. New domain helpers in @clearline/domain-cards (canRequestCard, searchMerchantCategories,
+  validateCardProgramLimits). Two demo-beacon guides. This applied no further changes.updates. Real Plaid,
+  ACH availability, and per-transaction decline-engine enforcement remain mocked/out-of-scope per the
+  Mock Backend Architecture.
+  Source: specs/designs/Clearline Design System - Consolidated.dc.html §19 and Gherkin §22.

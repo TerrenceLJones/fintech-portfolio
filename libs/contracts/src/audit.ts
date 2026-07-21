@@ -12,6 +12,9 @@ import type { Role } from './rbac';
  * fiscal-year start (US-CW-036 AC-04); the KYB-verified legal name and EIN are immutable and never a target.
  * `approval_policy` covers edits to the approval-limit tier ladder and `spend_control` covers spend-control
  * changes — receipt/memo thresholds, out-of-policy behavior, per-category monthly caps (US-CW-037 AC-10).
+ * `card_program` covers edits to the card-program defaults — default limits, MCC restrictions, issuance
+ * policy — and `connected_account` covers connecting, verifying, reconnecting, and removing bank accounts
+ * (US-CW-038 AC-10); an account number is never recorded, only its masked last four.
  */
 export type AuditCategory =
   | 'payment'
@@ -22,7 +25,9 @@ export type AuditCategory =
   | 'account_security'
   | 'company_profile'
   | 'approval_policy'
-  | 'spend_control';
+  | 'spend_control'
+  | 'card_program'
+  | 'connected_account';
 
 /**
  * A before → after diff on an audit event — the prior value and the new value for a card-control or

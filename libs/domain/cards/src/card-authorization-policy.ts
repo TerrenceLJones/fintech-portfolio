@@ -10,6 +10,11 @@ export interface CardAuthorizationInput {
   authorizedSpendMinorUnits: number;
   amountMinorUnits: number;
   /**
+   * The card's per-transaction ceiling seeded from the Card Program default (US-CW-038 AC-01). Absent =
+   * no per-transaction cap; a single charge above it is declined regardless of remaining monthly limit.
+   */
+  perTransactionLimitMinorUnits?: number;
+  /**
    * A reported card-status hold (lost/stolen/fraud) that overrides every ordinary check. Present only
    * when a card has been flagged; its true reason is recorded but never shown to the cardholder (AC-07).
    */
@@ -23,7 +28,8 @@ export type CardAuthorizationDecision =
  * The single gate every card authorization passes through server-side (US-CW-014). Checks run in
  * priority order so the most fundamental block wins and each decline maps to exactly one reason: a
  * security hold (lost/stolen/fraud) outranks a freeze, which outranks a merchant-category block,
- * which outranks an insufficient limit. A freeze must take effect immediately here — at the
+ * which outranks a per-transaction-limit block, which outranks an insufficient monthly limit. A freeze
+ * must take effect immediately here — at the
  * authorization layer, not just in the UI — so no new transaction is approved once frozen (AC-05).
  *
  * The `reason` returned is the TRUE reason, recorded for audit and risk. What the cardholder is
@@ -35,6 +41,12 @@ export function authorizeCardTransaction(input: CardAuthorizationInput): CardAut
   if (input.frozen) return { approved: false, reason: 'frozen' };
   if (!isMccAllowed(input.allowedMccs, input.transactionMcc)) {
     return { approved: false, reason: 'mcc_restricted' };
+  }
+  if (
+    input.perTransactionLimitMinorUnits !== undefined &&
+    input.amountMinorUnits > input.perTransactionLimitMinorUnits
+  ) {
+    return { approved: false, reason: 'over_transaction_limit' };
   }
   if (
     exceedsRemainingLimit(

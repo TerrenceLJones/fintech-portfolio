@@ -63,4 +63,52 @@ describe('authorizeCardTransaction', () => {
       ),
     ).toEqual({ approved: false, reason: 'mcc_restricted' });
   });
+
+  it('declines with "over_transaction_limit" when a single charge exceeds the per-transaction cap (US-CW-038 AC-01)', () => {
+    expect(
+      authorizeCardTransaction(
+        baseInput({ perTransactionLimitMinorUnits: 50_000, amountMinorUnits: 60_000 }),
+      ),
+    ).toEqual({ approved: false, reason: 'over_transaction_limit' });
+  });
+
+  it('approves a charge at or below the per-transaction cap', () => {
+    expect(
+      authorizeCardTransaction(
+        baseInput({ perTransactionLimitMinorUnits: 50_000, amountMinorUnits: 50_000 }),
+      ),
+    ).toEqual({ approved: true });
+  });
+
+  it('applies no per-transaction cap when the limit is absent', () => {
+    expect(authorizeCardTransaction(baseInput({ amountMinorUnits: 999_999_999 }))).not.toEqual({
+      approved: false,
+      reason: 'over_transaction_limit',
+    });
+  });
+
+  it('prioritises an MCC block over a per-transaction-limit block', () => {
+    expect(
+      authorizeCardTransaction(
+        baseInput({
+          transactionMcc: 'restaurants',
+          perTransactionLimitMinorUnits: 1_000,
+          amountMinorUnits: 60_000,
+        }),
+      ),
+    ).toEqual({ approved: false, reason: 'mcc_restricted' });
+  });
+
+  it('prioritises a per-transaction-limit block over an insufficient monthly limit', () => {
+    // Over both the per-transaction cap and the remaining monthly limit — the per-transaction reason wins.
+    expect(
+      authorizeCardTransaction(
+        baseInput({
+          perTransactionLimitMinorUnits: 50_000,
+          authorizedSpendMinorUnits: 199_000,
+          amountMinorUnits: 60_000,
+        }),
+      ),
+    ).toEqual({ approved: false, reason: 'over_transaction_limit' });
+  });
 });

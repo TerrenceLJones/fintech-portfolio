@@ -59,7 +59,11 @@
       "@clearline/data-access-profile": ["libs/data-access/profile/src/index.ts"],
       "@clearline/data-access-security": ["libs/data-access/security/src/index.ts"],
       "@clearline/data-access-company": ["libs/data-access/company/src/index.ts"],
-      "@clearline/data-access-policies": ["libs/data-access/policies/src/index.ts"]
+      "@clearline/data-access-policies": ["libs/data-access/policies/src/index.ts"],
+      "@clearline/data-access-card-program": ["libs/data-access/card-program/src/index.ts"],
+      "@clearline/data-access-connected-accounts": [
+        "libs/data-access/connected-accounts/src/index.ts"
+      ]
     }
   },
   "exclude": ["node_modules", "tmp", "dist"]

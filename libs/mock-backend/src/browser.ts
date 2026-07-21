@@ -31,6 +31,8 @@ import { profileHandlers } from './handlers/profile.handlers';
 import { securityHandlers } from './handlers/security.handlers';
 import { companyHandlers } from './handlers/company.handlers';
 import { policiesHandlers } from './handlers/policies.handlers';
+import { cardProgramHandlers } from './handlers/card-program.handlers';
+import { connectedAccountsHandlers } from './handlers/connected-accounts.handlers';
 import { sharedAnalyticsService } from './services/shared-analytics-service';
 import { sharedReconciliationService } from './services/shared-reconciliation-service';
 import { sharedBudgetsService } from './services/shared-budgets-service';
@@ -68,6 +70,8 @@ export const worker = setupWorker(
   ...securityHandlers,
   ...companyHandlers,
   ...policiesHandlers,
+  ...cardProgramHandlers,
+  ...connectedAccountsHandlers,
 );
 
 // Seed the demo user as an already-approved, fully-onboarded business so signing in as it lands on

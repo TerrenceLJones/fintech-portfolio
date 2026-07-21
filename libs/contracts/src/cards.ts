@@ -28,6 +28,11 @@ export interface VirtualCard {
   /** Expiry MM/YY, display only. */
   exp: string;
   monthlyLimit: Money;
+  /**
+   * Per-transaction ceiling seeded from the Card Program default at issuance (US-CW-038 AC-01). Optional
+   * so cards issued before this field, and older snapshots, stay valid; absent = no per-transaction cap.
+   */
+  perTransactionLimit?: Money;
   /** Approved spend so far this cycle; remaining = monthlyLimit − authorizedSpend (derived). */
   authorizedSpend: Money;
   status: CardStatus;
@@ -55,6 +60,14 @@ export interface CardholderCandidate {
 export interface IssueCardContextResponse {
   candidates: CardholderCandidate[];
   merchantCategories: MerchantCategory[];
+  /**
+   * The org's Card Program defaults a new card inherits (US-CW-038 AC-01) — the issuance form prefills
+   * the monthly limit and MCC restrictions from these. Optional so a context served without a
+   * resolvable org (or before US-CW-038) still validates and simply prefills nothing.
+   */
+  defaultMonthlyLimit?: Money;
+  defaultPerTransactionLimit?: Money;
+  defaultAllowedMccs?: string[];
 }
 
 /** A card-issuance submission (US-CW-014 AC-01). The server mints the PAN, expiry, and card id. */
@@ -62,6 +75,8 @@ export interface IssueCardRequest {
   holderId: string;
   monthlyLimit: Money;
   allowedMccs: string[];
+  /** Per-transaction ceiling; the handler seeds it from the Card Program default when omitted (US-CW-038). */
+  perTransactionLimit?: Money;
 }
 
 /** Toggle the freeze state. `frozen: true` stops the card authorizing new transactions at once (AC-05). */
@@ -76,7 +91,12 @@ export interface FreezeCardRequest {
  * `cardholderDeclineMessage`. The true reason is still recorded server-side for support and risk.
  */
 export type CardDeclineReason =
-  'frozen' | 'mcc_restricted' | 'insufficient_limit' | 'lost_or_stolen' | 'fraud';
+  | 'frozen'
+  | 'mcc_restricted'
+  | 'insufficient_limit'
+  | 'over_transaction_limit'
+  | 'lost_or_stolen'
+  | 'fraud';
 
 export type CardTransactionStatus = 'approved' | 'declined';
 

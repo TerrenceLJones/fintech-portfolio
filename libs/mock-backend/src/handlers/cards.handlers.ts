@@ -11,6 +11,7 @@ import type {
   SessionErrorResponse,
 } from '@clearline/contracts';
 import { hasPermission, permissionsForRole } from '@clearline/domain-auth';
+import { CARD_CURRENCY } from '../fixtures/cards.fixture';
 import { AuthService } from '../services/auth.service';
 import { CardsService, type CardActor } from '../services/cards.service';
 import { AuditService } from '../services/audit.service';
@@ -71,7 +72,26 @@ export function createCardsHandlers(
     http.get('*/api/cards/context', ({ request }) => {
       const gate = requirePermission(request, authService, 'cards:manage');
       if ('error' in gate) return gate.error;
-      const body: IssueCardContextResponse = cardsService.getIssueContext();
+      // Merge in the org's Card Program defaults so the issuance form prefills them — new cards start
+      // with the org's default limits and MCC restrictions (US-CW-038 AC-01).
+      const orgId = authService.getOrgIdForUser(gate.actor.userId);
+      const defaults = orgId ? authService.getCardProgramDefaults(orgId) : null;
+      const body: IssueCardContextResponse = {
+        ...cardsService.getIssueContext(),
+        ...(defaults
+          ? {
+              defaultMonthlyLimit: {
+                amountMinorUnits: defaults.defaultMonthlyLimitMinorUnits,
+                currency: CARD_CURRENCY,
+              },
+              defaultPerTransactionLimit: {
+                amountMinorUnits: defaults.defaultPerTransactionLimitMinorUnits,
+                currency: CARD_CURRENCY,
+              },
+              defaultAllowedMccs: defaults.defaultAllowedMccs,
+            }
+          : {}),
+      };
       return HttpResponse.json(body, { status: 200 });
     }),
 
@@ -87,7 +107,22 @@ export function createCardsHandlers(
       if ('error' in gate) return gate.error;
 
       const payload = (await request.json()) as IssueCardRequest;
-      const result = cardsService.issueCard(payload, gate.actor);
+      // Seed the per-transaction ceiling from the org's Card Program default when the form omits it, so a
+      // newly issued card carries the org default (US-CW-038 AC-01).
+      const orgId = authService.getOrgIdForUser(gate.actor.userId);
+      const defaults = orgId ? authService.getCardProgramDefaults(orgId) : null;
+      const seeded: IssueCardRequest = {
+        ...payload,
+        ...(payload.perTransactionLimit || !defaults
+          ? {}
+          : {
+              perTransactionLimit: {
+                amountMinorUnits: defaults.defaultPerTransactionLimitMinorUnits,
+                currency: CARD_CURRENCY,
+              },
+            }),
+      };
+      const result = cardsService.issueCard(seeded, gate.actor);
       if (result.outcome === 'forbidden') return forbidden();
       if (result.outcome === 'invalid_limit') {
         return HttpResponse.json({ error: 'invalid_limit' } satisfies CardErrorResponse, {

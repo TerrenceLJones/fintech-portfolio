@@ -10,6 +10,7 @@ export const GENERIC_DECLINE_MESSAGE =
 
 const MCC_MESSAGE = "Transaction declined — this card can't be used at this type of merchant";
 const LIMIT_MESSAGE = 'Transaction declined — insufficient limit remaining';
+const PER_TRANSACTION_MESSAGE = 'Transaction declined — over the per-transaction limit';
 
 /**
  * The message shown to the CARDHOLDER for a declined authorization, filtered through the security
@@ -25,6 +26,8 @@ export function cardholderDeclineMessage(reason: CardDeclineReason): string {
       return MCC_MESSAGE;
     case 'insufficient_limit':
       return LIMIT_MESSAGE;
+    case 'over_transaction_limit':
+      return PER_TRANSACTION_MESSAGE;
     case 'frozen':
     case 'lost_or_stolen':
     case 'fraud':
@@ -45,6 +48,8 @@ export function feedDeclineLabel(reason: CardDeclineReason, mccLabel?: string): 
       return mccLabel ? `MCC restricted (${mccLabel})` : 'MCC restricted';
     case 'insufficient_limit':
       return 'insufficient limit remaining';
+    case 'over_transaction_limit':
+      return 'over per-transaction limit';
     case 'frozen':
       return 'card frozen';
     case 'lost_or_stolen':

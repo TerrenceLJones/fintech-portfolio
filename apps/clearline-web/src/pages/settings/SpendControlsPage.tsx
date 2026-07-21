@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import {
   AccessDenied,
+  Alert,
   Button,
   ConfirmationDialog,
   Select,
@@ -10,7 +11,11 @@ import {
   UnsavedChangesFooter,
 } from '@clearline/ui';
 import { SettingsForbiddenError, useSettingsSectionAccess } from '@clearline/data-access-settings';
-import { useSpendControls, useUpdateSpendControls } from '@clearline/data-access-policies';
+import {
+  SpendControlsUpdateError,
+  useSpendControls,
+  useUpdateSpendControls,
+} from '@clearline/data-access-policies';
 import type { OutOfPolicyBehavior, SpendControlsResponse } from '@clearline/contracts';
 import { toMajorUnits, toMinorUnits } from '@clearline/money';
 import { useDemoBeacon } from '@clearline/demo-beacon';
@@ -280,6 +285,14 @@ export function SpendControlsPage() {
           over the limit. Historical spend already over a new cap is not retroactively invalidated.
         </Text>
       </section>
+
+      {updateControls.error instanceof SpendControlsUpdateError ? (
+        <Alert
+          tone="negative"
+          title="Couldn’t save spend controls"
+          message="Enter whole-dollar amounts of $0 or more for every threshold and category cap."
+        />
+      ) : null}
 
       <UnsavedChangesFooter
         visible={dirty}

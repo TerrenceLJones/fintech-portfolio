@@ -58,6 +58,20 @@ export {
   SEED_RECONCILIATION_ACCOUNT,
   SEED_RECONCILIATION,
 } from './reconciliation.fixture';
+export {
+  CARD_PROGRAM_CURRENCY,
+  CARD_PROGRAM_MERCHANT_CATEGORIES,
+  DEFAULT_MONTHLY_LIMIT_MINOR_UNITS,
+  DEFAULT_PER_TRANSACTION_LIMIT_MINOR_UNITS,
+  DEFAULT_ALLOWED_MCCS,
+  DEFAULT_ISSUANCE_POLICY,
+} from './card-program.fixture';
+export {
+  SEED_CONNECTED_ACCOUNTS,
+  MICRO_DEPOSIT_AMOUNTS_MINOR_UNITS,
+  MICRO_DEPOSIT_MAX_ATTEMPTS,
+} from './connected-accounts.fixture';
+export type { SeedConnectedAccount } from './connected-accounts.fixture';
 export { SEED_BUDGETS, BUDGET_THRESHOLD_DEMO_DEPARTMENT } from './budgets.fixture';
 export type { BudgetSeed, BudgetSeedDepartment, BudgetSeedPeriod } from './budgets.fixture';
 export { SEED_AUDIT_EVENTS } from './audit.fixture';

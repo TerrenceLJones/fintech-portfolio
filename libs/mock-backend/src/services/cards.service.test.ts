@@ -143,6 +143,31 @@ describe('CardsService.authorizeTransaction (US-CW-014 AC-02/03/04/05)', () => {
     expect(service.getBacklog(cardId).at(-1)?.merchantName).toBe('Notion Labs');
   });
 
+  it('declines a charge over the card’s per-transaction limit seeded at issuance (US-CW-038 AC-01)', () => {
+    const service = new CardsService();
+    // Issue a card carrying a $500 per-transaction ceiling within a healthy $2,000 monthly limit.
+    const issued = service.issueCard(
+      issueRequest({ perTransactionLimit: usd(50_000) }),
+      controller,
+    );
+    if (issued.outcome !== 'ok') throw new Error('setup');
+    const cardId = issued.card.id;
+    expect(issued.card.perTransactionLimit).toEqual(usd(50_000));
+
+    const result = service.authorizeTransaction(cardId, {
+      merchantName: 'Apple',
+      merchantInitials: 'Ap',
+      mcc: 'software',
+      mccLabel: 'Software',
+      amountMinorUnits: 60_000, // $600 > the $500 per-transaction cap, but well under the monthly limit.
+    });
+    expect(result.outcome).toBe('declined');
+    if (result.outcome !== 'declined') return;
+    expect(result.transaction.declineReason).toBe('over_transaction_limit');
+    // Nothing moved — the decline never debits authorized spend.
+    expect(service.getCard(cardId)?.authorizedSpend.amountMinorUnits).toBe(0);
+  });
+
   it('declines an out-of-category charge without moving the limit, tagging the reason (AC-03)', () => {
     const service = new CardsService();
     const before = service.getCard('card_4021')?.authorizedSpend.amountMinorUnits;

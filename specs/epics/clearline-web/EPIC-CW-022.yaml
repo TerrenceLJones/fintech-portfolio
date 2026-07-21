@@ -174,7 +174,7 @@ notes: >
   Mock Backend Architecture — these are frontend responsibilities within that system, not a production
   financial/identity stack.
 
-  Status APPROVED (2026-07-18); in progress — 5 of 11 stories implemented. US-CW-033 (Settings Shell &
+  Status APPROVED (2026-07-18); in progress — 6 of 11 stories implemented. US-CW-033 (Settings Shell &
   Role-Scoped SettingsNav) — the foundation — was IMPLEMENTED 2026-07-19 (branch US-CW-033/settings-shell-nav,
   PR #47). With it, these declared changes.updates were APPLIED: US-CW-006 (the 8 settings Permission tokens +
   permissionsForRole grants), US-CW-028 (universal Settings entry added to the primary sidebar AND the Team item
@@ -206,5 +206,24 @@ notes: >
   hardcoded L2_ROUTING_THRESHOLD is derived from the default ladder. Introduced @clearline/data-access-policies,
   the PolicyRuleRow @clearline/ui molecule (design §19.7), mock-backend policies.handlers.ts + org-record
   persistence + the `approval_policy`/`spend_control` AuditCategory members, a `memo` field on the expense
-  contract for the memo threshold, and two demo-beacon guides. This applied no further changes.updates. Remaining
-  stories US-CW-038…US-CW-043 are unstarted. The epic advances to IMPLEMENTED only once all its stories land.
+  contract for the memo threshold, and two demo-beacon guides. This applied no further changes.updates. US-CW-038
+  (Card Program Defaults & Connected Bank Accounts) was IMPLEMENTED 2026-07-21 (branch
+  US-CW-038/card-program-connected-accounts) — two Organization-group surfaces in one PR. /settings/card-program
+  (gated by card-program:manage) edits the org defaults a newly issued card inherits — default monthly +
+  per-transaction limits, a searchable MCC restriction list matching by name OR numeric MCC code (AC-02), and the
+  "who can request a card" issuance policy (AC-03) — persisted on AuthService's OrganizationRecord with a
+  before → after `card_program` audit event; AC-01 is wired by prefilling the US-CW-014 issuance form from the org
+  defaults (merged into GET /api/cards/context) and seeding the per-transaction default onto the issued card, and
+  AC-03 gates the card wallet's new "Request a card" affordance via an any-authenticated-user
+  GET /api/card-program/issuance-policy whose canRequest is server-computed from the caller's role.
+  /settings/connected-accounts (gated by bank-accounts:manage) is a fresh vertical slice — there is no real Plaid
+  in the repo — mirroring the reconciliation service architecture: a new ConnectedAccountsService + shared
+  singleton + fixtures and connected-accounts.handlers.ts over connect-via-Plaid (mock, lands verified), manual
+  connection + two-micro-deposit verification with a 3-attempt lock (AC-05/06), reconnect of a seeded
+  reconnect-required account (AC-08), and a §19.9 remove confirmation that names the masked account and never
+  disturbs in-flight payments (AC-07), each recording a `connected_account` audit event. Introduced
+  @clearline/data-access-card-program and @clearline/data-access-connected-accounts, new card-program/
+  connected-accounts contracts + the `card_program`/`connected_account` AuditCategory members + an optional card
+  per-transaction limit, domain helpers in @clearline/domain-cards (canRequestCard, searchMerchantCategories,
+  validateCardProgramLimits), and two demo-beacon guides. This applied no further changes.updates. Remaining
+  stories US-CW-039…US-CW-043 are unstarted. The epic advances to IMPLEMENTED only once all its stories land.

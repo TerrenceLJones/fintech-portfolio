@@ -7,7 +7,7 @@ import {
   CardsForbiddenError,
   CardIssueError,
 } from '@clearline/data-access-cards';
-import { parseAmountToMinorUnits } from '@clearline/money';
+import { parseAmountToMinorUnits, toMajorUnits } from '@clearline/money';
 
 const CURRENCY = 'USD';
 
@@ -44,6 +44,17 @@ export function useIssueCardForm(): IssueCardFormView {
   const [holderId, setHolderId] = useState('');
   const [limitInput, setLimitInput] = useState('');
   const [selectedMccs, setSelectedMccs] = useState<string[]>([]);
+  const [prefilled, setPrefilled] = useState(false);
+
+  // Prefill the monthly limit and MCC restrictions from the org's Card Program defaults the first time
+  // the context arrives, so a new card starts with the org defaults (US-CW-038 AC-01). The Controller
+  // can still override before issuing. Runs once, before any user edit.
+  const defaultMonthlyLimit = context.data?.defaultMonthlyLimit;
+  if (!prefilled && defaultMonthlyLimit) {
+    setPrefilled(true);
+    setLimitInput(String(toMajorUnits(defaultMonthlyLimit)));
+    setSelectedMccs(context.data?.defaultAllowedMccs ?? []);
+  }
 
   const candidates = context.data?.candidates ?? [];
   const categories = context.data?.merchantCategories ?? [];
@@ -64,6 +75,11 @@ export function useIssueCardForm(): IssueCardFormView {
         holderId,
         monthlyLimit: { amountMinorUnits: limitMinorUnits, currency: CURRENCY },
         allowedMccs: selectedMccs,
+        // Carry the org's default per-transaction limit onto the new card (US-CW-038 AC-01); the server
+        // also seeds it from the default when omitted.
+        ...(context.data?.defaultPerTransactionLimit
+          ? { perTransactionLimit: context.data.defaultPerTransactionLimit }
+          : {}),
       },
       { onSuccess: (data) => navigate(`/cards/${data.card.id}`) },
     );

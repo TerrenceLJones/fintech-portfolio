@@ -19,6 +19,12 @@ describe('cardholderDeclineMessage (the security gate — US-CW-014 AC-07)', () 
     );
   });
 
+  it('shows the specific copy for an over-per-transaction-limit decline (US-CW-038)', () => {
+    expect(cardholderDeclineMessage('over_transaction_limit')).toBe(
+      'Transaction declined — over the per-transaction limit',
+    );
+  });
+
   it('collapses a lost/stolen decline to the identical generic message (AC-07)', () => {
     expect(cardholderDeclineMessage('lost_or_stolen')).toBe(GENERIC_DECLINE_MESSAGE);
   });
@@ -54,6 +60,10 @@ describe('feedDeclineLabel (Controller feed row reason — AC-03/AC-04)', () => 
     expect(feedDeclineLabel('insufficient_limit')).toBe('insufficient limit remaining');
   });
 
+  it('labels an over-per-transaction-limit decline for the feed', () => {
+    expect(feedDeclineLabel('over_transaction_limit')).toBe('over per-transaction limit');
+  });
+
   it('labels a security hold for the Controller feed without the redundant "declined" wording', () => {
     // Rendered as "Declined · security hold" — never "Declined · declined", and it does not name
     // lost vs stolen vs fraud (that stays server-side).
@@ -69,6 +79,7 @@ describe('CardDeclineReason exhaustiveness', () => {
       'frozen',
       'mcc_restricted',
       'insufficient_limit',
+      'over_transaction_limit',
       'lost_or_stolen',
       'fraud',
     ];

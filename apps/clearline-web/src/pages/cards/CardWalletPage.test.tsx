@@ -35,10 +35,20 @@ const WALLET: VirtualCard[] = [
   card({ id: 'card_5567', holderName: 'Sam Park — Sales', last4: '5567', status: 'frozen' }),
 ];
 
-function renderPage(role: 'controller' | 'employee' = 'controller', cards: VirtualCard[] = WALLET) {
+function renderPage(
+  role: 'controller' | 'employee' = 'controller',
+  cards: VirtualCard[] = WALLET,
+  issuanceCanRequest = false,
+) {
   setAccessToken('access_valid');
   server.use(
     http.get('*/api/cards', () => HttpResponse.json({ cards })),
+    http.get('*/api/card-program/issuance-policy', () =>
+      HttpResponse.json({
+        issuancePolicy: issuanceCanRequest ? 'everyone' : 'managers_and_above',
+        canRequest: issuanceCanRequest,
+      }),
+    ),
     http.get('*/api/auth/session', () =>
       HttpResponse.json({
         userId: 'user_1',
@@ -93,5 +103,20 @@ describe('CardWalletPage', () => {
     renderPage('employee');
     await screen.findByText('Dara Reyes — Design');
     expect(screen.queryByRole('button', { name: /issue card/i })).not.toBeInTheDocument();
+  });
+
+  it('shows "Request a card" to an Employee when the issuance policy permits it (US-CW-038 AC-03)', async () => {
+    renderPage('employee', WALLET, true);
+    const request = await screen.findByRole('button', { name: /request a card/i });
+    await userEvent.click(request);
+    expect(
+      await screen.findByText(/Request sent — a Finance Manager or Controller will review it/i),
+    ).toBeInTheDocument();
+  });
+
+  it('hides "Request a card" when the policy restricts requesting to managers (AC-03)', async () => {
+    renderPage('employee', WALLET, false);
+    await screen.findByText('Dara Reyes — Design');
+    expect(screen.queryByRole('button', { name: /request a card/i })).not.toBeInTheDocument();
   });
 });
