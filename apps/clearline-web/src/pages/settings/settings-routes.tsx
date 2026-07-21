@@ -13,6 +13,8 @@ import { ApprovalPoliciesPage } from './ApprovalPoliciesPage';
 import { SpendControlsPage } from './SpendControlsPage';
 import { CardProgramPage } from './CardProgramPage';
 import { ConnectedAccountsPage } from './ConnectedAccountsPage';
+import { IntegrationsPage } from './IntegrationsPage';
+import { OrgNotificationsPage } from './OrgNotificationsPage';
 
 /** An Organization route wrapped in its RequirePermission guard, with the matching API path restated
  *  for the 403 line so the client denial and the server's independent 403 read the same (AC-04). The
@@ -107,8 +109,29 @@ export function settingsRoutes() {
       >
         <Route path="connected-accounts" element={<ConnectedAccountsPage />} />
       </Route>
-      {orgRoute('integrations', 'Integrations', 'integrations:manage')}
-      {orgRoute('org-notifications', 'Notifications', 'integrations:manage')}
+      {/* Integrations & Organization Notifications are real pages (US-CW-039), gated by
+        integrations:manage; each page re-probes the server so it degrades to AccessDenied on an
+        independent 403 (AC-09). */}
+      <Route
+        element={
+          <RequirePermission
+            permission="integrations:manage"
+            apiPath="/api/settings/sections/integrations"
+          />
+        }
+      >
+        <Route path="integrations" element={<IntegrationsPage />} />
+      </Route>
+      <Route
+        element={
+          <RequirePermission
+            permission="integrations:manage"
+            apiPath="/api/settings/sections/org-notifications"
+          />
+        }
+      >
+        <Route path="org-notifications" element={<OrgNotificationsPage />} />
+      </Route>
       {/* Organization group — Admin/Owner only. */}
       {orgRoute('security-compliance', 'Security & Compliance', 'org-security:manage')}
       {orgRoute('developer', 'Developer', 'developer:manage')}

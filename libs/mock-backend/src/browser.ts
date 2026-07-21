@@ -33,6 +33,9 @@ import { companyHandlers } from './handlers/company.handlers';
 import { policiesHandlers } from './handlers/policies.handlers';
 import { cardProgramHandlers } from './handlers/card-program.handlers';
 import { connectedAccountsHandlers } from './handlers/connected-accounts.handlers';
+import { integrationsHandlers } from './handlers/integrations.handlers';
+import { orgNotificationsHandlers } from './handlers/org-notifications.handlers';
+import { sharedIntegrationsService } from './services/shared-integrations-service';
 import { sharedAnalyticsService } from './services/shared-analytics-service';
 import { sharedReconciliationService } from './services/shared-reconciliation-service';
 import { sharedBudgetsService } from './services/shared-budgets-service';
@@ -72,6 +75,8 @@ export const worker = setupWorker(
   ...policiesHandlers,
   ...cardProgramHandlers,
   ...connectedAccountsHandlers,
+  ...integrationsHandlers,
+  ...orgNotificationsHandlers,
 );
 
 // Seed the demo user as an already-approved, fully-onboarded business so signing in as it lands on
@@ -478,4 +483,15 @@ export async function issueExpiredEmailChangeTokenForE2E(
     Date.now() - EMAIL_CHANGE_TOKEN_TTL_MS - 60_000,
   );
   return token;
+}
+
+/**
+ * Demo/e2e control for US-CW-039 AC-04: push a connected accounting integration into the `error`
+ * state so the IntegrationCard's "Error" badge and Reconnect action are exercisable without waiting
+ * for a real sync failure. Scoped to the demo org. Behind import.meta.env.DEV via the Beacon.
+ */
+export function forceIntegrationSyncErrorForE2E(
+  provider: 'quickbooks' | 'xero' | 'netsuite',
+): void {
+  sharedIntegrationsService.forceSyncError(SEED_ORGANIZATION.id, provider);
 }

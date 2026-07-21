@@ -87,6 +87,8 @@ export { NavigationShell } from './organisms/NavigationShell';
 export type { NavigationShellProps, NavigationShellItem } from './organisms/NavigationShell';
 export { SettingsNav } from './organisms/SettingsNav';
 export type { SettingsNavProps, SettingsNavGroup, SettingsNavItem } from './organisms/SettingsNav';
+export { IntegrationCard } from './organisms/IntegrationCard';
+export type { IntegrationCardProps } from './organisms/IntegrationCard';
 export { SidebarFooter } from './organisms/SidebarFooter';
 export type { SidebarFooterProps, SidebarIdentity } from './organisms/SidebarFooter';
 export { UnsavedChangesFooter } from './organisms/UnsavedChangesFooter';

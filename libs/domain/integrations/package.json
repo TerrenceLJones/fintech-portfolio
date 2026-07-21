@@ -1,0 +1,22 @@
+{
+  "name": "@clearline/domain-integrations",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Pure, framework-agnostic accounting-integration rules (US-CW-039): the provider catalogue (QuickBooks/Xero/NetSuite display names + badge initials), GL-mapping completeness checks (unmapped-category detection driving the Partial-sync and amber-flag behaviour), and the sync-outcome derivation. No data-access or UI dependencies, mirrors libs/domain/cards.",
+  "main": "src/index.ts",
+  "scripts": {
+    "lint": "eslint .",
+    "type-check": "tsc --noEmit",
+    "test": "vitest run",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@clearline/contracts": "workspace:*"
+  },
+  "devDependencies": {},
+  "metadata": {
+    "package_type": "shared",
+    "app": "clearline-web",
+    "scope": "Domain lib for EPIC-CW-022 (US-CW-039 Accounting Integrations & Organization Notifications)."
+  }
+}

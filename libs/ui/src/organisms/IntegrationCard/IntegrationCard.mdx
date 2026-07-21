@@ -1,0 +1,29 @@
+import { Meta, Stories } from '@storybook/addon-docs/blocks';
+import * as IntegrationCardStories from './IntegrationCard.stories';
+
+<Meta of={IntegrationCardStories} />
+
+# IntegrationCard
+
+A single accounting-provider connection card for the `/settings/integrations` surface (design §19.8).
+It renders one of four connection states — **Connected**, **Syncing…**, **Error**, and
+**Disconnected** — for QuickBooks, Xero, or NetSuite, and raises the connect / sync / configure-mapping
+/ view-log / reconnect / disconnect intents through callbacks. The page owns the OAuth handshake, the
+GL-mapping dialog, the sync run, and the destructive-disconnect confirmation; the card is purely
+presentational.
+
+Status is **never conveyed by colour alone** (design §19 intro / US-CW-020): every state pairs a glyph
+with a text label. The transient **Syncing…** state is driven by the `syncing` prop while a sync
+request is in flight — the server only ever returns a completed connection.
+
+## User story
+
+**US-CW-039 — Accounting Integrations & Organization Notifications**
+
+As a Controller, Admin, or Owner I want to connect QuickBooks/Xero/NetSuite, map GL codes, trigger and
+audit syncs (seeing failures clearly), disconnect safely, and route org-level notifications — so that
+spend data flows into the company's books through a controlled connection with visible sync health.
+
+## States
+
+<Stories />

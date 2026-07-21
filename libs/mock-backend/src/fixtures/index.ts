@@ -72,6 +72,21 @@ export {
   MICRO_DEPOSIT_MAX_ATTEMPTS,
 } from './connected-accounts.fixture';
 export type { SeedConnectedAccount } from './connected-accounts.fixture';
+export {
+  SEED_INTEGRATIONS,
+  SEED_CHART_OF_ACCOUNTS,
+  SEED_QUICKBOOKS_GL_MAPPING,
+  GL_MAPPING_CATEGORIES,
+  DEMO_SYNC_RECORD_COUNT,
+} from './integrations.fixture';
+export type { SeedIntegration } from './integrations.fixture';
+export {
+  SEED_ORG_MEMBERS,
+  SEED_BUDGET_ALERT_RECIPIENT_IDS,
+  SEED_APPROVAL_REMINDER_FREQUENCY,
+  ORG_REMINDER_FREQUENCIES,
+} from './org-notifications.fixture';
+export type { SeedOrgMember } from './org-notifications.fixture';
 export { SEED_BUDGETS, BUDGET_THRESHOLD_DEMO_DEPARTMENT } from './budgets.fixture';
 export type { BudgetSeed, BudgetSeedDepartment, BudgetSeedPeriod } from './budgets.fixture';
 export { SEED_AUDIT_EVENTS } from './audit.fixture';

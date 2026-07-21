@@ -15,6 +15,9 @@ import type { Role } from './rbac';
  * `card_program` covers edits to the card-program defaults — default limits, MCC restrictions, issuance
  * policy — and `connected_account` covers connecting, verifying, reconnecting, and removing bank accounts
  * (US-CW-038 AC-10); an account number is never recorded, only its masked last four.
+ * `accounting_integration` covers accounting-provider changes — connect, GL mapping, sync, reconnect,
+ * disconnect (US-CW-039 AC-10) — and `org_notification` covers org-level notification routing —
+ * budget-alert recipient add/remove and approval-queue reminder-frequency changes (US-CW-039 AC-10).
  */
 export type AuditCategory =
   | 'payment'
@@ -27,7 +30,9 @@ export type AuditCategory =
   | 'approval_policy'
   | 'spend_control'
   | 'card_program'
-  | 'connected_account';
+  | 'connected_account'
+  | 'accounting_integration'
+  | 'org_notification';
 
 /**
  * A before → after diff on an audit event — the prior value and the new value for a card-control or

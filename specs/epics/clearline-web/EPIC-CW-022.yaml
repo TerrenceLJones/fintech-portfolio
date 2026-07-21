@@ -236,5 +236,18 @@ notes: >
   @clearline/data-access-card-program and @clearline/data-access-connected-accounts, new card-program/
   connected-accounts contracts + the `card_program`/`connected_account` AuditCategory members + an optional card
   per-transaction limit, domain helpers in @clearline/domain-cards (canRequestCard, searchMerchantCategories,
-  validateCardProgramLimits), and two demo-beacon guides. This applied no further changes.updates. Remaining
-  stories US-CW-039…US-CW-043 are unstarted. The epic advances to IMPLEMENTED only once all its stories land.
+  validateCardProgramLimits), and two demo-beacon guides. This applied no further changes.updates. US-CW-039
+  (Accounting Integrations & Organization Notifications) was IMPLEMENTED 2026-07-21 (branch
+  US-CW-039/accounting-integrations-org-notifications) — the two remaining connect-driven Organization-group
+  surfaces, replacing the US-CW-033 placeholder routes, both gated by integrations:manage with a
+  server-authoritative 403. /settings/integrations introduces the IntegrationCard @clearline/ui organism
+  (design §19.8, four icon+text states) driving QuickBooks/Xero/NetSuite over a mocked OAuth consent flow
+  (AC-01), a GL-mapping dialog with amber "Not mapped" rows (AC-02), Sync now + Partial/Failed sync log
+  (AC-03/05), reconnect from a seeded error state (AC-04), and a §19.9 mapping-preserving disconnect
+  confirmation (AC-06). /settings/org-notifications is an immediate-save budget-alert recipient list (AC-07)
+  + approval-queue reminder-frequency selector (AC-08). Introduced @clearline/domain-integrations,
+  @clearline/data-access-integrations and @clearline/data-access-org-notifications, integrations/
+  org-notifications contracts + the `accounting_integration`/`org_notification` AuditCategory members,
+  IntegrationsService + OrgNotificationsService (shared singletons, fixtures, handlers), and two demo-beacon
+  guides. This applied no further changes.updates. Remaining stories US-CW-040…US-CW-043 are unstarted. The
+  epic advances to IMPLEMENTED only once all its stories land.

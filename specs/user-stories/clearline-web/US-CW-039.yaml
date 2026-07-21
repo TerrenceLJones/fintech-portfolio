@@ -9,7 +9,7 @@ feature_area: 'core'
 title: 'Accounting Integrations & Organization Notifications'
 
 # Lifecycle status
-status: 'DRAFT'
+status: 'IMPLEMENTED'
 story_points: 13
 dependencies: ['US-CW-033', 'US-CW-016', 'US-CW-019', 'US-CW-034']
 
@@ -22,10 +22,13 @@ history:
   - epic_id: 'EPIC-CW-022'
     action: 'created'
     date: '2026-07-17'
+  - epic_id: 'EPIC-CW-022'
+    action: 'implemented'
+    date: '2026-07-21'
 
 # Status timestamps — set when status transitions occur
-approved_date: null
-implementation_date: null
+approved_date: '2026-07-21'
+implementation_date: '2026-07-21'
 deprecated_date: null
 removed_date: null
 
@@ -154,9 +157,27 @@ edge_cases: |
 
 # Implementation Status
 implementation_status: |
-  🚧 Not yet implemented — DRAFT authored 2026-07-17 (EPIC-CW-022), specs-only for review.
-  Source: specs/designs/Clearline Design System - Consolidated.dc.html §19.8 (IntegrationCard · four states) and
-  Gherkin §23 (accounting integrations — OAuth connect, GL mapping, sync now/log, error+reconnect, disconnect;
-  org notification routing — budget-alert recipients, approval-queue reminder frequency). Anticipated new
-  surface: /settings/integrations (IntegrationCard + GL-mapping table + sync log) and /settings/org-notifications
-  (recipient lists + reminder frequency), both backed by MSW.
+  ✅ IMPLEMENTED 2026-07-21 (branch US-CW-039/accounting-integrations-org-notifications). Two
+  Organization-group surfaces replacing the US-CW-033 placeholder routes, both gated by
+  `integrations:manage` with a server-authoritative 403 and AccessDenied fallback (AC-09).
+
+  /settings/integrations — the new IntegrationCard organism (@clearline/ui, design §19.8, four states:
+  connected/syncing/error/disconnected, status always icon + text) drives QuickBooks/Xero/NetSuite over a
+  mocked OAuth consent flow (OAuthConsentDialog — Authorize lands Connected, Cancel leaves Disconnected,
+  AC-01), a GL-mapping dialog mapping Clearline expense categories to a provider chart of accounts with
+  amber "Not mapped" rows (AC-02), Sync now with the "47 transactions exported" toast and a Partial
+  outcome when a category is unmapped (AC-03), a sync log table (AC-05), reconnect from a seeded error
+  state (AC-04), and a §19.9 disconnect confirmation that names the provider and states mappings are
+  preserved (AC-06). /settings/org-notifications — an immediate-save (no unsaved-changes footer) budget
+  threshold-alert recipient list (removable Chips + a member picker, AC-07) and an approval-queue reminder
+  frequency selector (AC-08).
+
+  New libs: @clearline/domain-integrations (provider catalogue + GL-mapping completeness/sync-outcome
+  helpers), @clearline/data-access-integrations and @clearline/data-access-org-notifications (React Query
+  hooks). New contracts (integrations.ts, org-notifications.ts) and two AuditCategory members
+  (`accounting_integration`, `org_notification`) recording actor + before → after on every mutation
+  (AC-10). Mock-backend: IntegrationsService + OrgNotificationsService (+ shared singletons, fixtures,
+  handlers wired into browser.ts and server.ts) — no real accounting backend, per the epic. Demo-beacon
+  guides for both pages. This applied no further changes.updates.
+  Source: specs/designs/Clearline Design System - Consolidated.dc.html §19.8 (IntegrationCard · four states)
+  and Gherkin §23.

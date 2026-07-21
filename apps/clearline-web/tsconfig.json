@@ -12,6 +12,7 @@
     { "path": "../../libs/contracts" },
     { "path": "../../libs/domain/auth" },
     { "path": "../../libs/domain/cards" },
+    { "path": "../../libs/domain/integrations" },
     { "path": "../../libs/domain/expenses" },
     { "path": "../../libs/domain/onboarding" },
     { "path": "../../libs/domain/payments" },
@@ -37,6 +38,8 @@
     { "path": "../../libs/data-access/company" },
     { "path": "../../libs/data-access/policies" },
     { "path": "../../libs/data-access/card-program" },
-    { "path": "../../libs/data-access/connected-accounts" }
+    { "path": "../../libs/data-access/connected-accounts" },
+    { "path": "../../libs/data-access/integrations" },
+    { "path": "../../libs/data-access/org-notifications" }
   ]
 }

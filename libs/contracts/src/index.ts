@@ -12,6 +12,8 @@ export type * from './approval-policy';
 export type * from './spend-controls';
 export type * from './card-program';
 export type * from './connected-accounts';
+export type * from './integrations';
+export type * from './org-notifications';
 export type * from './analytics';
 export type * from './reconciliation';
 export type * from './budgets';

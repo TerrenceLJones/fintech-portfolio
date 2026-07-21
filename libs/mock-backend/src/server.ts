@@ -21,6 +21,8 @@ import { companyHandlers } from './handlers/company.handlers';
 import { policiesHandlers } from './handlers/policies.handlers';
 import { cardProgramHandlers } from './handlers/card-program.handlers';
 import { connectedAccountsHandlers } from './handlers/connected-accounts.handlers';
+import { integrationsHandlers } from './handlers/integrations.handlers';
+import { orgNotificationsHandlers } from './handlers/org-notifications.handlers';
 
 export const server = setupServer(
   ...authHandlers,
@@ -45,4 +47,6 @@ export const server = setupServer(
   ...policiesHandlers,
   ...cardProgramHandlers,
   ...connectedAccountsHandlers,
+  ...integrationsHandlers,
+  ...orgNotificationsHandlers,
 );
