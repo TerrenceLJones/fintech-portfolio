@@ -1,0 +1,22 @@
+{
+  "name": "@clearline/domain-org-security",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Pure, framework-agnostic organization security rules (US-CW-040): IPv4 CIDR parsing/matching with the self-lockout guard, the mocked SAML connection-test evaluation + certificate fingerprinting, and the idle session-timeout option set. No data-access or UI dependencies, mirrors libs/domain/integrations.",
+  "main": "src/index.ts",
+  "scripts": {
+    "lint": "eslint .",
+    "type-check": "tsc --noEmit",
+    "test": "vitest run",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@clearline/contracts": "workspace:*"
+  },
+  "devDependencies": {},
+  "metadata": {
+    "package_type": "shared",
+    "app": "clearline-web",
+    "scope": "Domain lib for EPIC-CW-022 (US-CW-040 Organization Security & Compliance)."
+  }
+}

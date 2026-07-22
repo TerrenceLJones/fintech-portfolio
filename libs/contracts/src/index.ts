@@ -21,3 +21,4 @@ export type * from './audit';
 export type * from './team';
 export type * from './security';
 export type * from './company';
+export type * from './org-security';

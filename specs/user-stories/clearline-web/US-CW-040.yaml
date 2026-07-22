@@ -9,7 +9,7 @@ feature_area: 'core'
 title: 'Organization Security & Compliance'
 
 # Lifecycle status
-status: 'DRAFT'
+status: 'IMPLEMENTED'
 story_points: 13
 dependencies: ['US-CW-033', 'US-CW-002', 'US-CW-035']
 
@@ -22,10 +22,13 @@ history:
   - epic_id: 'EPIC-CW-022'
     action: 'created'
     date: '2026-07-17'
+  - epic_id: 'EPIC-CW-022'
+    action: 'implemented'
+    date: '2026-07-21'
 
 # Status timestamps — set when status transitions occur
 approved_date: null
-implementation_date: null
+implementation_date: '2026-07-21'
 deprecated_date: null
 removed_date: null
 
@@ -157,9 +160,26 @@ edge_cases: |
 
 # Implementation Status
 implementation_status: |
-  🚧 Not yet implemented — DRAFT authored 2026-07-17 (EPIC-CW-022), specs-only for review.
-  Source: specs/designs/Clearline Design System - Consolidated.dc.html §19 (Settings & Profile; the org 2FA-
-  enforcement note under §19.2) and Gherkin §24 (SSO/SAML config + test + enable, org-wide 2FA enforcement and
-  the member setup gate, org session timeout, IP allowlist with self-lockout protection). Anticipated new
-  surface: /settings/security-compliance (Admin/Owner-only) wiring the org 2FA flag into US-CW-035 and the org
-  timeout into US-CW-002, all backed by MSW.
+  ✅ IMPLEMENTED 2026-07-21 (branch US-CW-040/org-security-compliance). The Admin/Owner-only
+  /settings/security-compliance surface, replacing the US-CW-033 placeholder route, gated by
+  `org-security:manage` with a server-authoritative 403 and page-level AccessDenied (AC-09). Four
+  page-local section cards compose it from existing @clearline/ui atoms + the shared ConfirmationDialog
+  (no new organism): SSO/SAML config whose Enable toggle stays inert until a mocked connection test
+  passes and whose enable/disable is confirmed (AC-01/02); org-wide required-2FA behind a confirmation
+  (AC-03); the idle session-timeout selector (AC-05); and a CIDR IP allowlist with a client- and
+  server-side self-lockout guard that names the excluded IP, a "Test my current IP" check, and a
+  §19.9 named-range remove confirmation (AC-06/07/08). AC-04 is enforced by a new RequireTwoFactorSetup
+  route boundary + /two-factor-required gate page reusing the US-CW-035 TOTP flow: the mandate is
+  stamped onto the refresh-token family at login so it gates on the member's NEXT login, never
+  mid-session, and clears once they enrol. AC-05 threads the org idle-timeout onto SessionResponse and
+  into the US-CW-002 useInactivityTimer via a parameterized inactivity-policy (no hardcoded 15m).
+  New libs @clearline/domain-org-security (CIDR math, SSO test evaluation + cert fingerprinting, idle
+  ladder) and @clearline/data-access-org-security; org security config persists on AuthService's
+  OrganizationRecord (superseding the enforceTwoFactor stub) behind new AuthService setters + the
+  org-security.handlers.ts endpoints; the new `org_security` AuditCategory records before → after for
+  every change, never storing the uploaded IdP certificate — only its fingerprint (AC-10). A
+  security-compliance demo-beacon guide walks all four controls. All backends are MSW mocks.
+  DESIGN GAP (flagged): design §19 provides only the nav slot, the §19.9 confirmation doctrine, and the
+  reveal-once/never-colour-alone requirements — no screen mockups for SSO, the org-2FA toggle, the
+  idle-timeout selector, or the IP allowlist. These UIs were composed from that doctrine and existing
+  atoms and should get a design review.

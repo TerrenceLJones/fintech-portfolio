@@ -86,6 +86,8 @@ export function createSessionHandlers(authService: AuthService = sharedAuthServi
           isAdmin: result.isAdmin!,
           isOwner: result.isOwner!,
           avatarUrl: result.avatarUrl ?? null,
+          idleTimeoutMinutes: result.idleTimeoutMinutes!,
+          twoFactorSetupRequired: result.twoFactorSetupRequired ?? false,
         };
         return HttpResponse.json(body, { status: 200 });
       }

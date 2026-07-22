@@ -18,6 +18,9 @@ import type { Role } from './rbac';
  * `accounting_integration` covers accounting-provider changes — connect, GL mapping, sync, reconnect,
  * disconnect (US-CW-039 AC-10) — and `org_notification` covers org-level notification routing —
  * budget-alert recipient add/remove and approval-queue reminder-frequency changes (US-CW-039 AC-10).
+ * `org_security` covers organization-wide security posture changes — SSO configuration/enable, org-wide
+ * 2FA enforcement, idle-timeout changes, and IP-allowlist add/remove (US-CW-040 AC-10); the uploaded IdP
+ * certificate is never recorded, only its fingerprint.
  */
 export type AuditCategory =
   | 'payment'
@@ -32,7 +35,8 @@ export type AuditCategory =
   | 'card_program'
   | 'connected_account'
   | 'accounting_integration'
-  | 'org_notification';
+  | 'org_notification'
+  | 'org_security';
 
 /**
  * A before → after diff on an audit event — the prior value and the new value for a card-control or

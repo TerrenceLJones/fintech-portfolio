@@ -23,6 +23,7 @@ import { cardProgramHandlers } from './handlers/card-program.handlers';
 import { connectedAccountsHandlers } from './handlers/connected-accounts.handlers';
 import { integrationsHandlers } from './handlers/integrations.handlers';
 import { orgNotificationsHandlers } from './handlers/org-notifications.handlers';
+import { orgSecurityHandlers } from './handlers/org-security.handlers';
 
 export const server = setupServer(
   ...authHandlers,
@@ -49,4 +50,5 @@ export const server = setupServer(
   ...connectedAccountsHandlers,
   ...integrationsHandlers,
   ...orgNotificationsHandlers,
+  ...orgSecurityHandlers,
 );

@@ -134,6 +134,8 @@ describe('GET /api/auth/session', () => {
       isAdmin: user!.isAdmin,
       isOwner: user!.isOwner,
       avatarUrl: null,
+      idleTimeoutMinutes: 15,
+      twoFactorSetupRequired: false,
     });
   });
 

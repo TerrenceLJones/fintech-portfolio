@@ -47,6 +47,19 @@ export interface SessionResponse {
    * (US-CW-034 AC-05) invalidates the session query and the chip updates live.
    */
   avatarUrl: string | null;
+  /**
+   * The org-configured idle auto-logoff duration in minutes (US-CW-040 AC-05). The per-user inactivity
+   * timer (US-CW-002) reads this rather than a hardcoded 15 minutes, so an org change to the timeout
+   * takes effect on the member's next session check without a hardcoded value anywhere in the client.
+   */
+  idleTimeoutMinutes: number;
+  /**
+   * True when this member must complete 2FA setup before reaching any other screen (US-CW-040 AC-04).
+   * Stamped at login time: it is only ever true for a session minted AFTER the org enforced 2FA while
+   * the member was still unenrolled — a member already mid-session is never forced (edge case), and it
+   * clears the moment they finish setup. The login-flow gate keys off this flag.
+   */
+  twoFactorSetupRequired: boolean;
 }
 
 export type LogoutResponse = Record<string, never>;

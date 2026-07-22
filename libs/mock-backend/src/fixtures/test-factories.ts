@@ -149,6 +149,8 @@ export function buildSessionResponse(overrides: Partial<SessionResponse> = {}): 
     isAdmin: false,
     isOwner: false,
     avatarUrl: null,
+    idleTimeoutMinutes: 15,
+    twoFactorSetupRequired: false,
     ...overrides,
   };
 }

@@ -103,6 +103,34 @@ describe('OnboardingStatusPage', () => {
     await waitFor(() => expect(screen.getByText('Dashboard stub')).toBeInTheDocument());
   });
 
+  it('evicts the cached session on "Go to dashboard" so the app reads the freshly-provisioned role', async () => {
+    // Owner provisioning at approval changes the role server-side; the pre-approval session is
+    // observed from the app shell throughout onboarding, so it must be dropped on the way into the
+    // app or the role-based home would route the new Owner to the Employee home (stale role).
+    setAccessToken('access_valid');
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    queryClient.setQueryData(['session'], { role: 'employee' });
+    server.use(http.get('*/api/onboarding/status', () => HttpResponse.json(statusResponse())));
+    const user = userEvent.setup();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={['/onboarding/status']}>
+          <Routes>
+            <Route path="/onboarding/status" element={<OnboardingStatusPage />} />
+            <Route path="/" element={<div>Dashboard stub</div>} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    await waitFor(() => expect(screen.getByText('Your account is approved')).toBeInTheDocument());
+    await user.click(screen.getByRole('button', { name: /go to dashboard/i }));
+
+    await waitFor(() => expect(screen.getByText('Dashboard stub')).toBeInTheDocument());
+    // The stale pre-approval session is gone, forcing a fresh fetch that reflects the new role.
+    expect(queryClient.getQueryData(['session'])).toBeUndefined();
+  });
+
   it('shows the neutral under-review message without exposing restricted terms (AC-05)', async () => {
     setAccessToken('access_valid');
     server.use(

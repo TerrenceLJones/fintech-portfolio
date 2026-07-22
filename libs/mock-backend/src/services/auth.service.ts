@@ -170,6 +170,11 @@ interface OrganizationRecord {
   // so orgs provisioned before this story (and older snapshots) stay valid; editing persists a concrete
   // value. These seed newly issued cards (AC-01); existing cards are never retroactively changed. ---
   cardProgram?: StoredCardProgram;
+  // --- Organization Security & Compliance (US-CW-040). Optional and coalesced to defaults by
+  // getOrgSecurity, so orgs provisioned before this story (and older snapshots) stay valid; editing
+  // persists a concrete value. This supersedes the `enforceTwoFactor` stub above as the source of the
+  // org-wide 2FA mandate, and is the single source the idle-timeout (US-CW-002) and IP allowlist read. ---
+  orgSecurity?: StoredOrgSecurity;
 }
 
 /**
@@ -182,6 +187,44 @@ export interface StoredCardProgram {
   defaultPerTransactionLimitMinorUnits: number;
   defaultAllowedMccs: string[];
   issuancePolicy: IssuancePolicy;
+}
+
+/**
+ * The org's stored SSO/SAML configuration (US-CW-040). The uploaded IdP certificate is NEVER stored —
+ * only `certificateFingerprint`, a short non-secret digest, is kept (AC-10). `enabled` may only become
+ * true once `lastTest` passed (the handler enforces this via the domain `canEnableSso` guard).
+ */
+export interface StoredSsoConfig {
+  metadataUrl: string | null;
+  entityId: string | null;
+  certificateFingerprint: string | null;
+  lastTest: { result: 'passed' | 'failed'; reason: string | null } | null;
+  enabled: boolean;
+}
+
+/**
+ * The org's stored security posture (US-CW-040): SSO config, the org-wide 2FA mandate, the idle
+ * auto-logoff duration in minutes, and the IP allowlist (CIDR strings; empty = all IPs allowed). The
+ * getter coalesces gaps to defaults, so an org provisioned before this story stays valid.
+ */
+export interface StoredOrgSecurity {
+  sso: StoredSsoConfig;
+  requireTwoFactor: boolean;
+  idleTimeoutMinutes: number;
+  ipAllowlist: string[];
+}
+
+/** The default idle auto-logoff duration (minutes) when the org hasn't set one — matches US-CW-002's 15m. */
+export const DEFAULT_IDLE_TIMEOUT_MINUTES = 15;
+
+function defaultSsoConfig(): StoredSsoConfig {
+  return {
+    metadataUrl: null,
+    entityId: null,
+    certificateFingerprint: null,
+    lastTest: null,
+    enabled: false,
+  };
 }
 
 /**
@@ -326,6 +369,14 @@ export interface SessionCheckResult {
   isOwner?: boolean;
   /** Present only when outcome is 'active' — the avatar data URL, or null for the initials fallback (US-CW-034). */
   avatarUrl?: string | null;
+  /** Present only when outcome is 'active' — the org-configured idle auto-logoff minutes (US-CW-040 AC-05). */
+  idleTimeoutMinutes?: number;
+  /**
+   * Present only when outcome is 'active' — true when this member must finish 2FA setup before any other
+   * screen (US-CW-040 AC-04). Only ever true for a session minted after the org enforced 2FA while the
+   * member was unenrolled; clears once they enrol. See `twoFactorRequiredAtLogin` on the family.
+   */
+  twoFactorSetupRequired?: boolean;
   /** Present only when outcome is 'revoked'. */
   reason?: RevocationReason;
 }
@@ -347,6 +398,12 @@ interface RefreshTokenFamily {
   usedTokenHashes: Set<string>;
   revoked: boolean;
   revokedReason?: RevocationReason;
+  /**
+   * Whether the org mandated 2FA at the moment this session was minted (US-CW-040 AC-04). Stamped once
+   * at login so enforcement applies on the member's NEXT login, never mid-session (edge case): a family
+   * minted before enforcement carries false and is never gated. Optional for pre-US-CW-040 snapshots.
+   */
+  twoFactorRequiredAtLogin?: boolean;
 }
 
 interface SerializedRefreshTokenFamily {
@@ -357,6 +414,7 @@ interface SerializedRefreshTokenFamily {
   usedTokenHashes: string[];
   revoked: boolean;
   revokedReason?: RevocationReason;
+  twoFactorRequiredAtLogin?: boolean;
 }
 
 interface AccessTokenRecord {
@@ -986,6 +1044,15 @@ export class AuthService {
     }
 
     const user = this.usersByEmail.get(family.email)!;
+    // The org idle-timeout (US-CW-040 AC-05) drives the per-user inactivity auto-logoff (US-CW-002).
+    const idleTimeoutMinutes = user.orgId
+      ? (this.getOrgSecurity(user.orgId)?.idleTimeoutMinutes ?? DEFAULT_IDLE_TIMEOUT_MINUTES)
+      : DEFAULT_IDLE_TIMEOUT_MINUTES;
+    // Gate this member into 2FA setup (US-CW-040 AC-04) only when the org mandated 2FA at THIS session's
+    // login AND they still haven't enrolled — so a member already mid-session is never forced, and the
+    // gate releases the instant they finish setup.
+    const enrolled = this.twoFactorByEmail.get(family.email)?.enabled ?? false;
+    const twoFactorSetupRequired = (family.twoFactorRequiredAtLogin ?? false) && !enrolled;
     return {
       outcome: 'active',
       userId: user.id,
@@ -996,6 +1063,8 @@ export class AuthService {
       isAdmin: user.isAdmin,
       isOwner: user.isOwner,
       avatarUrl: user.avatarUrl ?? null,
+      idleTimeoutMinutes,
+      twoFactorSetupRequired,
     };
   }
 
@@ -1450,6 +1519,105 @@ export class AuthService {
     return this.getCardProgramDefaults(orgId);
   }
 
+  // --- Organization Security & Compliance (US-CW-040) -------------------------------------------------
+
+  /**
+   * The org's security posture, coalesced to defaults (SSO off, 2FA not enforced, 15-minute idle
+   * timeout, empty allowlist). `requireTwoFactor` migrates the legacy `enforceTwoFactor` stub so a
+   * pre-US-CW-040 snapshot keeps its mandate. Null for an unknown org.
+   */
+  getOrgSecurity(orgId: string): StoredOrgSecurity | null {
+    const org = this.orgsById.get(orgId);
+    if (!org) return null;
+    const stored = org.orgSecurity;
+    return {
+      sso: stored?.sso ? { ...stored.sso } : defaultSsoConfig(),
+      requireTwoFactor: stored?.requireTwoFactor ?? org.enforceTwoFactor ?? false,
+      idleTimeoutMinutes: stored?.idleTimeoutMinutes ?? DEFAULT_IDLE_TIMEOUT_MINUTES,
+      ipAllowlist: [...(stored?.ipAllowlist ?? [])],
+    };
+  }
+
+  /** Lazily materialise a concrete security record on the org so a setter can mutate it in place. */
+  private ensureOrgSecurity(orgId: string): StoredOrgSecurity | null {
+    const org = this.orgsById.get(orgId);
+    if (!org) return null;
+    if (!org.orgSecurity) {
+      org.orgSecurity = {
+        sso: defaultSsoConfig(),
+        requireTwoFactor: org.enforceTwoFactor ?? false,
+        idleTimeoutMinutes: DEFAULT_IDLE_TIMEOUT_MINUTES,
+        ipAllowlist: [],
+      };
+    }
+    return org.orgSecurity;
+  }
+
+  /**
+   * Persist SSO config + the latest connection-test outcome (US-CW-040 AC-01). Stores only the cert
+   * FINGERPRINT the handler computed, never the certificate itself (AC-10). A failing test leaves the
+   * config on file so the admin can fix it, but the Enable guard (canEnableSso) keeps SSO off.
+   */
+  setSsoConfig(
+    orgId: string,
+    config: {
+      metadataUrl: string;
+      entityId: string;
+      certificateFingerprint: string;
+      lastTest: { result: 'passed' | 'failed'; reason: string | null };
+    },
+  ): StoredOrgSecurity | null {
+    const security = this.ensureOrgSecurity(orgId);
+    if (!security) return null;
+    security.sso.metadataUrl = config.metadataUrl;
+    security.sso.entityId = config.entityId;
+    security.sso.certificateFingerprint = config.certificateFingerprint;
+    security.sso.lastTest = config.lastTest;
+    return this.getOrgSecurity(orgId);
+  }
+
+  /** Flip SSO on/off (US-CW-040 AC-02). The passed-test precondition is enforced by the handler. */
+  setSsoEnabled(orgId: string, enabled: boolean): StoredOrgSecurity | null {
+    const security = this.ensureOrgSecurity(orgId);
+    if (!security) return null;
+    security.sso.enabled = enabled;
+    return this.getOrgSecurity(orgId);
+  }
+
+  /** Enforce or relax the org-wide 2FA mandate (US-CW-040 AC-03), keeping the legacy stub coherent. */
+  setTwoFactorEnforcement(orgId: string, requireTwoFactor: boolean): StoredOrgSecurity | null {
+    const security = this.ensureOrgSecurity(orgId);
+    const org = this.orgsById.get(orgId);
+    if (!security || !org) return null;
+    security.requireTwoFactor = requireTwoFactor;
+    org.enforceTwoFactor = requireTwoFactor;
+    return this.getOrgSecurity(orgId);
+  }
+
+  /** Change the org idle auto-logoff duration (US-CW-040 AC-05). Validity is checked by the handler. */
+  setIdleTimeout(orgId: string, idleTimeoutMinutes: number): StoredOrgSecurity | null {
+    const security = this.ensureOrgSecurity(orgId);
+    if (!security) return null;
+    security.idleTimeoutMinutes = idleTimeoutMinutes;
+    return this.getOrgSecurity(orgId);
+  }
+
+  /** Append a CIDR range to the allowlist (US-CW-040 AC-06); a no-op for a range already present. */
+  addIpRange(orgId: string, cidr: string): StoredOrgSecurity | null {
+    const security = this.ensureOrgSecurity(orgId);
+    if (!security) return null;
+    if (!security.ipAllowlist.includes(cidr)) security.ipAllowlist.push(cidr);
+    return this.getOrgSecurity(orgId);
+  }
+
+  /** Remove a CIDR range from the allowlist (US-CW-040 AC-08). Emptying it re-opens access from all IPs. */
+  removeIpRange(orgId: string, cidr: string): StoredOrgSecurity | null {
+    const security = this.ensureOrgSecurity(orgId);
+    if (!security) return null;
+    security.ipAllowlist = security.ipAllowlist.filter((range) => range !== cidr);
+    return this.getOrgSecurity(orgId);
+  }
+
   private isEmailChangeTokenExpired(issuedAt: number, now: number): boolean {
     return now - issuedAt > EMAIL_CHANGE_TTL_MS;
   }
@@ -1652,8 +1820,8 @@ export class AuthService {
 
   private isOrgTwoFactorEnforced(email: string): boolean {
     const user = this.usersByEmail.get(email.toLowerCase());
-    const org = user?.orgId ? this.orgsById.get(user.orgId) : undefined;
-    return org?.enforceTwoFactor ?? false;
+    if (!user?.orgId) return false;
+    return this.getOrgSecurity(user.orgId)?.requireTwoFactor ?? false;
   }
 
   /**
@@ -1949,6 +2117,9 @@ export class AuthService {
       currentTokenHash: tokenHash,
       usedTokenHashes: new Set(),
       revoked: false,
+      // Stamp the org's 2FA mandate at login so the setup gate applies on the NEXT login, not
+      // mid-session (US-CW-040 AC-04 / edge case). Recomputed live against enrolment in checkSession.
+      twoFactorRequiredAtLogin: this.isOrgTwoFactorEnforced(email),
     });
     this.familyIdByTokenHash.set(tokenHash, familyId);
 

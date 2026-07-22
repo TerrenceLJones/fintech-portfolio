@@ -249,5 +249,20 @@ notes: >
   @clearline/data-access-integrations and @clearline/data-access-org-notifications, integrations/
   org-notifications contracts + the `accounting_integration`/`org_notification` AuditCategory members,
   IntegrationsService + OrgNotificationsService (shared singletons, fixtures, handlers), and two demo-beacon
-  guides. This applied no further changes.updates. Remaining stories US-CW-040…US-CW-043 are unstarted. The
-  epic advances to IMPLEMENTED only once all its stories land.
+  guides. This applied no further changes.updates. US-CW-040 (Organization Security & Compliance) was
+  IMPLEMENTED 2026-07-21 (branch US-CW-040/org-security-compliance) — the Admin/Owner-only
+  /settings/security-compliance surface (gated by `org-security:manage`, server-authoritative 403),
+  composing SSO/SAML with a passing-connection-test gate (AC-01/02), org-wide required-2FA (AC-03), the idle
+  session-timeout (AC-05), and a CIDR IP allowlist with a self-lockout guard that names the excluded IP
+  (AC-06/07/08) — all from existing @clearline/ui atoms + ConfirmationDialog (no new organism), since design
+  §19 ships no screen mockups for these controls (flagged for design review). AC-04 adds a
+  RequireTwoFactorSetup boundary + /two-factor-required gate reusing the US-CW-035 TOTP flow, keyed off a
+  new SessionResponse.twoFactorSetupRequired that is stamped at login (next-login, never mid-session) and
+  cleared on enrolment; AC-05 threads a new SessionResponse.idleTimeoutMinutes into the US-CW-002
+  useInactivityTimer via a parameterized inactivity-policy. Introduced @clearline/domain-org-security and
+  @clearline/data-access-org-security, an org-security contract + the `org_security` AuditCategory member,
+  org-security config persisted on AuthService's OrganizationRecord (superseding the enforceTwoFactor stub)
+  behind org-security.handlers.ts, and a demo-beacon guide; the uploaded IdP certificate is never stored,
+  only its fingerprint (AC-10). This applied no further changes.updates. Remaining stories US-CW-041,
+  US-CW-042, and US-CW-043 are unstarted (US-CW-043 Ownership Transfer mounts inside US-CW-040's surface).
+  The epic advances to IMPLEMENTED only once all its stories land.

@@ -1,4 +1,5 @@
 import { Navigate, useNavigate } from 'react-router';
+import { useQueryClient } from '@tanstack/react-query';
 import { useOnboardingStatus } from '@clearline/data-access-onboarding';
 import { EmptyState, Text } from '@clearline/ui';
 import { useDemoBeacon } from '@clearline/demo-beacon';
@@ -16,7 +17,18 @@ import { onboardingStatusBeacon } from './onboarding.beacon';
 export function OnboardingStatusPage() {
   useDemoBeacon(onboardingStatusBeacon);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const status = useOnboardingStatus();
+
+  // Entering the app after KYB: owner provisioning (US-CW-030) elevated this user's role
+  // server-side, so the cached (pre-approval) session is stale. Drop it before navigating so the
+  // role-based home (HomeRedirect) reads the fresh identity rather than the pre-approval one — a
+  // session query is now observed from the app shell throughout onboarding, so it would otherwise
+  // serve the stale role synchronously and route an approved Owner to the Employee home.
+  function goToApp() {
+    queryClient.removeQueries({ queryKey: ['session'] });
+    navigate('/');
+  }
 
   if (!status.data) return null;
 
@@ -38,7 +50,7 @@ export function OnboardingStatusPage() {
           title="Your account is approved"
           body="Full transacting capability is unlocked — you can now make payments and issue cards."
           action="Go to dashboard"
-          onAction={() => navigate('/')}
+          onAction={goToApp}
         />
       </div>
     );
@@ -52,7 +64,7 @@ export function OnboardingStatusPage() {
           title="Your application is under review"
           body="We'll email you within 2–3 business days. No further action is needed from you right now."
           action="Go to dashboard"
-          onAction={() => navigate('/')}
+          onAction={goToApp}
         />
       </div>
     );

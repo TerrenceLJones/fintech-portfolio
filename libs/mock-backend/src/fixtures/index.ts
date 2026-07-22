@@ -87,6 +87,12 @@ export {
   ORG_REMINDER_FREQUENCIES,
 } from './org-notifications.fixture';
 export type { SeedOrgMember } from './org-notifications.fixture';
+export {
+  DEMO_CURRENT_IP,
+  DEMO_SSO_METADATA_URL,
+  DEMO_SSO_ENTITY_ID,
+  DEMO_SSO_CERTIFICATE,
+} from './org-security.fixture';
 export { SEED_BUDGETS, BUDGET_THRESHOLD_DEMO_DEPARTMENT } from './budgets.fixture';
 export type { BudgetSeed, BudgetSeedDepartment, BudgetSeedPeriod } from './budgets.fixture';
 export { SEED_AUDIT_EVENTS } from './audit.fixture';

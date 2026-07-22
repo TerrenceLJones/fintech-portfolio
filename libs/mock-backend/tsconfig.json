@@ -11,6 +11,7 @@
     { "path": "../domain/auth" },
     { "path": "../domain/cards" },
     { "path": "../domain/integrations" },
+    { "path": "../domain/org-security" },
     { "path": "../domain/expenses" },
     { "path": "../domain/onboarding" },
     { "path": "../domain/payments" },

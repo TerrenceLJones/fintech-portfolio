@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { getInactivityPhase, getWarningSecondsRemaining } from './inactivity-policy';
+import {
+  cutoffMsForMinutes,
+  getInactivityPhase,
+  getWarningSecondsRemaining,
+  INACTIVITY_CUTOFF_MS,
+} from './inactivity-policy';
 
 const MINUTE = 60 * 1000;
 const NOW = 1_700_000_000_000;
@@ -41,5 +46,25 @@ describe('getWarningSecondsRemaining', () => {
 
   it('floors at 0 past the cutoff rather than going negative', () => {
     expect(getWarningSecondsRemaining(NOW - 16 * MINUTE, NOW)).toBe(0);
+  });
+});
+
+describe('org-configurable cutoff (US-CW-040 AC-05)', () => {
+  it('cutoffMsForMinutes converts minutes, falling back to the 15-minute default', () => {
+    expect(cutoffMsForMinutes(60)).toBe(60 * MINUTE);
+    expect(cutoffMsForMinutes(undefined)).toBe(INACTIVITY_CUTOFF_MS);
+    expect(cutoffMsForMinutes(0)).toBe(INACTIVITY_CUTOFF_MS);
+  });
+
+  it('a 1-hour cutoff keeps a member active at 30 minutes idle', () => {
+    const oneHour = cutoffMsForMinutes(60);
+    expect(getInactivityPhase(NOW - 30 * MINUTE, NOW, oneHour)).toBe('active');
+  });
+
+  it('a 1-hour cutoff warns in the final minute and expires at the hour', () => {
+    const oneHour = cutoffMsForMinutes(60);
+    expect(getInactivityPhase(NOW - 59 * MINUTE, NOW, oneHour)).toBe('warning');
+    expect(getInactivityPhase(NOW - 60 * MINUTE, NOW, oneHour)).toBe('expired');
+    expect(getWarningSecondsRemaining(NOW - 59 * MINUTE, NOW, oneHour)).toBe(60);
   });
 });

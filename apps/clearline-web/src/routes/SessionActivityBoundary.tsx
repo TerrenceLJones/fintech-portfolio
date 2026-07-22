@@ -1,10 +1,12 @@
 import { useCallback, useEffect } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router';
 import { InactivityWarningModal } from '@clearline/ui';
+import { cutoffMsForMinutes } from '@clearline/domain-auth';
 import {
   subscribeSessionEnded,
   useInactivityTimer,
   useLogout,
+  useSession,
   type SessionEndedReason,
 } from '@clearline/data-access-auth';
 
@@ -23,6 +25,7 @@ export function SessionActivityBoundary() {
   const navigate = useNavigate();
   const location = useLocation();
   const logout = useLogout();
+  const session = useSession();
 
   const redirectToLogin = useCallback(
     (sessionEndReason: SessionEndReason) => {
@@ -38,6 +41,9 @@ export function SessionActivityBoundary() {
   useEffect(() => subscribeSessionEnded(redirectToLogin), [redirectToLogin]);
 
   const inactivity = useInactivityTimer({
+    // The org-configured idle timeout (US-CW-040 AC-05) is the single source for the cutoff; until the
+    // session loads, the hook's own 15-minute default applies.
+    cutoffMs: cutoffMsForMinutes(session.data?.idleTimeoutMinutes),
     onExpire: () => {
       logout.mutate();
       redirectToLogin('inactivity');

@@ -45,6 +45,7 @@
       "@clearline/data-access-payments": ["libs/data-access/payments/src/index.ts"],
       "@clearline/domain-cards": ["libs/domain/cards/src/index.ts"],
       "@clearline/domain-integrations": ["libs/domain/integrations/src/index.ts"],
+      "@clearline/domain-org-security": ["libs/domain/org-security/src/index.ts"],
       "@clearline/data-access-cards": ["libs/data-access/cards/src/index.ts"],
       "@clearline/domain-expenses": ["libs/domain/expenses/src/index.ts"],
       "@clearline/data-access-expenses": ["libs/data-access/expenses/src/index.ts"],
@@ -68,7 +69,8 @@
       "@clearline/data-access-integrations": ["libs/data-access/integrations/src/index.ts"],
       "@clearline/data-access-org-notifications": [
         "libs/data-access/org-notifications/src/index.ts"
-      ]
+      ],
+      "@clearline/data-access-org-security": ["libs/data-access/org-security/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp", "dist"]
