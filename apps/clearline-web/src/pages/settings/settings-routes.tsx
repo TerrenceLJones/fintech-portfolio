@@ -16,6 +16,7 @@ import { ConnectedAccountsPage } from './ConnectedAccountsPage';
 import { IntegrationsPage } from './IntegrationsPage';
 import { OrgNotificationsPage } from './OrgNotificationsPage';
 import { SecurityCompliancePage } from './SecurityCompliancePage';
+import { DeveloperSettingsPage } from './DeveloperSettingsPage';
 
 /** An Organization route wrapped in its RequirePermission guard, with the matching API path restated
  *  for the 403 line so the client denial and the server's independent 403 read the same (AC-04). The
@@ -145,7 +146,18 @@ export function settingsRoutes() {
       >
         <Route path="security-compliance" element={<SecurityCompliancePage />} />
       </Route>
-      {orgRoute('developer', 'Developer', 'developer:manage')}
+      {/* Developer is a real page (US-CW-041), Admin/Owner-only; the page re-probes the server so it
+        degrades to AccessDenied on an independent 403 (AC-10). */}
+      <Route
+        element={
+          <RequirePermission
+            permission="developer:manage"
+            apiPath="/api/settings/sections/developer"
+          />
+        }
+      >
+        <Route path="developer" element={<DeveloperSettingsPage />} />
+      </Route>
       {orgRoute('billing', 'Billing & Plan', 'billing:manage')}
       {/* Unknown /settings/{slug} — in-shell not-found (incl. a /settings/team deep-link). */}
       <Route path="*" element={<SettingsNotFound />} />

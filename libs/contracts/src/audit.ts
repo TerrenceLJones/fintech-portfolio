@@ -21,6 +21,8 @@ import type { Role } from './rbac';
  * `org_security` covers organization-wide security posture changes — SSO configuration/enable, org-wide
  * 2FA enforcement, idle-timeout changes, and IP-allowlist add/remove (US-CW-040 AC-10); the uploaded IdP
  * certificate is never recorded, only its fingerprint.
+ * `developer` covers Developer-settings changes — API key create/revoke and webhook create/delete/resend
+ * (US-CW-041 AC-10); the full API key and webhook signing secret are never recorded, only a masked prefix.
  */
 export type AuditCategory =
   | 'payment'
@@ -36,7 +38,8 @@ export type AuditCategory =
   | 'connected_account'
   | 'accounting_integration'
   | 'org_notification'
-  | 'org_security';
+  | 'org_security'
+  | 'developer';
 
 /**
  * A before → after diff on an audit event — the prior value and the new value for a card-control or

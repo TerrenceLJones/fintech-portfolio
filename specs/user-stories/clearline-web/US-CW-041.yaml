@@ -9,7 +9,7 @@ feature_area: 'core'
 title: 'Developer Settings — API Keys & Webhooks'
 
 # Lifecycle status
-status: 'DRAFT'
+status: 'IMPLEMENTED'
 story_points: 13
 dependencies: ['US-CW-033', 'US-CW-006']
 
@@ -22,10 +22,13 @@ history:
   - epic_id: 'EPIC-CW-022'
     action: 'created'
     date: '2026-07-17'
+  - epic_id: 'EPIC-CW-022'
+    action: 'implemented'
+    date: '2026-07-23'
 
 # Status timestamps — set when status transitions occur
 approved_date: null
-implementation_date: null
+implementation_date: '2026-07-23'
 deprecated_date: null
 removed_date: null
 
@@ -164,9 +167,23 @@ edge_cases: |
 
 # Implementation Status
 implementation_status: |
-  🚧 Not yet implemented — DRAFT authored 2026-07-17 (EPIC-CW-022), specs-only for review.
-  Source: specs/designs/Clearline Design System - Consolidated.dc.html §19.3 (APIKeyCard · reveal-once key) and
-  §19.5 (WebhookConfigForm · delivery log & HMAC reference), and Gherkin §25 (API key create/reveal-once/mask/
-  scope-403/revoke/empty-state; webhook create/HTTPS-only/reveal-once secret/delivery log/resend/retry schedule).
-  Anticipated new surface: /settings/developer (Admin/Owner-only) with APIKeyCard, WebhookConfigForm, a
-  delivery-log table, and reveal-once modals, all backed by MSW scope-aware handlers.
+  ✅ IMPLEMENTED 2026-07-23 (branch US-CW-041/developer-api-keys-webhooks, PR #56). The Admin/Owner-only
+  /settings/developer surface (gated by `developer:manage`, server-authoritative 403), upgrading the
+  US-CW-033 placeholder route to a real page. API keys: create with a reveal-once modal and masked-only
+  display thereafter with no re-reveal path (AC-01/02), a §19.9 named-consequence revoke (AC-04), the
+  empty state (AC-05); scope + revocation enforcement (AC-03/04) is modeled by a real mock
+  POST /api/developer/api-keys/verify endpoint (403 names the missing scope, 401 for a revoked/unknown
+  key), surfaced on-page as a read-only "Using your API key" reference. Webhooks: HTTPS-only endpoint
+  registration with a reveal-once signing secret (AC-06/07), a delivery log whose failed rows carry an
+  icon+text status badge, Resend, and the documented retry schedule (AC-08), resend appending a new log
+  entry (AC-09), and the static HMAC-SHA256 verification snippet. Every mutation emits a `developer`
+  audit event that never records the full key or signing secret (AC-10).
+
+  Introduced @clearline/domain-developer (masking, scope catalog/checks, HTTPS validation, retry schedule,
+  HMAC snippet) and @clearline/data-access-developer (query + create/revoke/webhook-create/delete/resend
+  hooks); a developer contract + the `developer` AuditCategory member; a mock-backend DeveloperService +
+  shared singleton + fixtures (a seeded read-only key and a webhook with a failed 503 delivery) +
+  developer.handlers.ts registered in server + browser; the APIKeyCard and RevealSecretModal @clearline/ui
+  molecules (reveal-once, reused for both keys and signing secrets) with stories + mdx; and a demo-beacon
+  guide. This applied no further changes.updates. Source: design §19.3 (APIKeyCard) / §19.5
+  (WebhookConfigForm · delivery log & HMAC reference) / §19.9 (named-destruction dialogs), Gherkin §25.
