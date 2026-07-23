@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { Alert, AppShell, type SidebarIdentity } from '@clearline/ui';
 import { useAccessChanged, useAuthorization, useLogout } from '@clearline/data-access-auth';
+import { useBillingStatus } from '@clearline/data-access-billing';
 import { NAV_ITEMS, navIdForPath, navItemsForPermissions, navPathForId } from './rbac/nav-items';
 import { identityDetail, initialsFromName, roleLabel } from './rbac/identity';
 import { PageTitleSetterContext } from './hooks/page-title-context';
@@ -23,6 +24,7 @@ export function AppChrome() {
   const { can, role, isAdmin, approvalLimit, currency, displayName, avatarUrl, isLoading } =
     useAuthorization();
   const { accessChanged, dismiss } = useAccessChanged();
+  const billingStatus = useBillingStatus();
   const location = useLocation();
   const navigate = useNavigate();
   const logout = useLogout();
@@ -62,7 +64,21 @@ export function AppChrome() {
     navigate('/login', { replace: true });
   };
 
-  const banner = accessChanged ? (
+  // Post-cancellation grace (US-CW-042 AC-07): a persistent, non-dismissable read-only banner shown to
+  // every role while the subscription is cancelled but the paid period hasn't ended. Read from the
+  // any-role /api/billing/status, so it never depends on the Admin/Owner-only billing summary.
+  const graceBanner =
+    billingStatus.data?.status === 'canceled_grace' ? (
+      <div role="status" className="px-8 pt-4">
+        <Alert
+          tone="warning"
+          title="Your subscription was cancelled"
+          message={`You have read-only access until ${billingStatus.data.accessUntil}. Export your data before then — no new transactions, cards, or approvals can be created.`}
+        />
+      </div>
+    ) : null;
+
+  const accessBanner = accessChanged ? (
     // role="status" (implicit aria-live=polite) so a mid-session downgrade is announced to screen
     // readers without stealing focus — the banner is a dynamic notice, not part of the initial page.
     <div role="status" className="px-8 pt-4">
@@ -73,7 +89,15 @@ export function AppChrome() {
         onAction={dismiss}
       />
     </div>
-  ) : undefined;
+  ) : null;
+
+  const banner =
+    graceBanner || accessBanner ? (
+      <>
+        {graceBanner}
+        {accessBanner}
+      </>
+    ) : undefined;
 
   return (
     <PageTitleSetterContext.Provider value={setTitleOverride}>

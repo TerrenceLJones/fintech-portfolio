@@ -4,7 +4,8 @@ import type { CreatePaymentRequest } from '@clearline/contracts';
 import { createPaymentsHandlers } from './payments.handlers';
 import { AuthService } from '../services/auth.service';
 import { PaymentsService } from '../services/payments.service';
-import { SEED_USERS, DEMO_USER_PASSWORD } from '../fixtures/users.fixture';
+import { BillingService } from '../services/billing.service';
+import { SEED_USERS, SEED_ORGANIZATION, DEMO_USER_PASSWORD } from '../fixtures/users.fixture';
 
 const [user] = SEED_USERS;
 const IP = '127.0.0.1 (mocked)';
@@ -293,5 +294,18 @@ describe('GET /api/payments/fx', () => {
     const response = await fetch(url, { headers: { authorization: `Bearer ${token}` } });
     expect(response.status).toBe(403);
     expect(await response.json()).toEqual({ error: 'forbidden' });
+  });
+});
+
+describe('post-cancellation read-only grace (US-CW-042 AC-07)', () => {
+  it('blocks creating a new payment once the org subscription is cancelled', async () => {
+    const billing = new BillingService();
+    billing.cancelSubscription(SEED_ORGANIZATION.id);
+    server.use(...createPaymentsHandlers(paymentsService, authService, undefined, billing));
+
+    const token = await login();
+    const response = await pay(acme, token);
+    expect(response.status).toBe(403);
+    expect((await response.json()).error).toBe('subscription_canceled');
   });
 });

@@ -102,6 +102,8 @@ export {
   DEMO_WEBHOOK_SIGNING_SECRET,
 } from './developer.fixture';
 export type { SeedApiKey, SeedWebhook, SeedDeveloper } from './developer.fixture';
+export { SEED_BILLING, DEMO_DECLINE_TOKEN, DEMO_PAYMENT_TOKEN } from './billing.fixture';
+export type { SeedBilling } from './billing.fixture';
 export { SEED_BUDGETS, BUDGET_THRESHOLD_DEMO_DEPARTMENT } from './budgets.fixture';
 export type { BudgetSeed, BudgetSeedDepartment, BudgetSeedPeriod } from './budgets.fixture';
 export { SEED_AUDIT_EVENTS } from './audit.fixture';

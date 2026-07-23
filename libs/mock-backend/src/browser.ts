@@ -37,6 +37,7 @@ import { integrationsHandlers } from './handlers/integrations.handlers';
 import { orgNotificationsHandlers } from './handlers/org-notifications.handlers';
 import { orgSecurityHandlers } from './handlers/org-security.handlers';
 import { developerHandlers } from './handlers/developer.handlers';
+import { billingHandlers } from './handlers/billing.handlers';
 import { sharedIntegrationsService } from './services/shared-integrations-service';
 import { sharedAnalyticsService } from './services/shared-analytics-service';
 import { sharedReconciliationService } from './services/shared-reconciliation-service';
@@ -81,6 +82,7 @@ export const worker = setupWorker(
   ...orgNotificationsHandlers,
   ...orgSecurityHandlers,
   ...developerHandlers,
+  ...billingHandlers,
 );
 
 // Seed the demo user as an already-approved, fully-onboarded business so signing in as it lands on

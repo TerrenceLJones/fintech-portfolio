@@ -23,6 +23,9 @@ import type { Role } from './rbac';
  * certificate is never recorded, only its fingerprint.
  * `developer` covers Developer-settings changes — API key create/revoke and webhook create/delete/resend
  * (US-CW-041 AC-10); the full API key and webhook signing secret are never recorded, only a masked prefix.
+ * `billing` covers Billing & Plan changes — payment-method updates and subscription cancellation
+ * (US-CW-042 AC-09); raw card data is never received by Clearline and so is never recorded, only the
+ * new card's brand + last four.
  */
 export type AuditCategory =
   | 'payment'
@@ -39,7 +42,8 @@ export type AuditCategory =
   | 'accounting_integration'
   | 'org_notification'
   | 'org_security'
-  | 'developer';
+  | 'developer'
+  | 'billing';
 
 /**
  * A before → after diff on an audit event — the prior value and the new value for a card-control or

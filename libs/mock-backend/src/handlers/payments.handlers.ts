@@ -17,9 +17,11 @@ import { hasPermission, permissionsForRole } from '@clearline/domain-auth';
 import { AuthService } from '../services/auth.service';
 import { PaymentsService, type PaymentActor } from '../services/payments.service';
 import { AuditService } from '../services/audit.service';
+import { BillingService } from '../services/billing.service';
 import { sharedAuthService } from '../services/shared-auth-service';
 import { sharedPaymentsService } from '../services/shared-payments-service';
 import { sharedAuditService } from '../services/shared-audit-service';
+import { sharedBillingService } from '../services/shared-billing-service';
 import { formatAuditMoney, resolveAuditActor } from './audit-actor';
 
 /**
@@ -56,6 +58,7 @@ export function createPaymentsHandlers(
   paymentsService: PaymentsService = sharedPaymentsService,
   authService: AuthService = sharedAuthService,
   auditService: AuditService = sharedAuditService,
+  billingService: BillingService = sharedBillingService,
 ): HttpHandler[] {
   /**
    * Record a payment submission in the central audit log (US-CW-021 AC-01). Emitted regardless of
@@ -110,6 +113,15 @@ export function createPaymentsHandlers(
     http.post('*/api/payments', async ({ request }) => {
       const actor = resolveActor(request, authService);
       if (!actor) return unauthorized();
+
+      // Post-cancellation read-only grace (US-CW-042 AC-07): once the subscription is cancelled, no new
+      // financial objects may be created even though read-only access continues. Enforced server-side so
+      // the client can never route around it. (Payments is the representative "new transaction" path;
+      // extending the same guard to card issuance and approval creation is tracked as follow-up.)
+      const orgId = authService.getOrgIdForUser(actor.userId);
+      if (orgId && billingService.isReadOnly(orgId)) {
+        return HttpResponse.json({ error: 'subscription_canceled' }, { status: 403 });
+      }
 
       const idempotencyKey = request.headers.get('idempotency-key');
       if (!idempotencyKey) {

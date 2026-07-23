@@ -1,9 +1,7 @@
-import type { Permission, SettingsSectionSlug } from '@clearline/contracts';
 import { Navigate, Route } from 'react-router';
 import { RequirePermission } from '../../routes/RequirePermission';
 import { TeamPage } from '../team/TeamPage';
 import { SettingsLayout } from './SettingsLayout';
-import { OrgSettingsSectionPlaceholder } from './OrgSettingsSectionPlaceholder';
 import { SettingsNotFound } from './SettingsNotFound';
 import { PersonalInfoPage } from './PersonalInfoPage';
 import { NotificationsPage } from './NotificationsPage';
@@ -17,22 +15,7 @@ import { IntegrationsPage } from './IntegrationsPage';
 import { OrgNotificationsPage } from './OrgNotificationsPage';
 import { SecurityCompliancePage } from './SecurityCompliancePage';
 import { DeveloperSettingsPage } from './DeveloperSettingsPage';
-
-/** An Organization route wrapped in its RequirePermission guard, with the matching API path restated
- *  for the 403 line so the client denial and the server's independent 403 read the same (AC-04). The
- *  section body additionally probes the server so it degrades to AccessDenied on a 403 on its own. */
-function orgRoute(slug: SettingsSectionSlug, title: string, permission: Permission) {
-  return (
-    <Route
-      key={slug}
-      element={
-        <RequirePermission permission={permission} apiPath={`/api/settings/sections/${slug}`} />
-      }
-    >
-      <Route path={slug} element={<OrgSettingsSectionPlaceholder slug={slug} title={title} />} />
-    </Route>
-  );
-}
+import { BillingPage } from './BillingPage';
 
 /**
  * The /settings route tree (US-CW-033), factored out of App.tsx so the app and the routing tests mount
@@ -158,7 +141,15 @@ export function settingsRoutes() {
       >
         <Route path="developer" element={<DeveloperSettingsPage />} />
       </Route>
-      {orgRoute('billing', 'Billing & Plan', 'billing:manage')}
+      {/* Billing & Plan is a real page (US-CW-042), Admin/Owner-only; the page re-probes the server so
+        it degrades to AccessDenied on an independent 403 (AC-08). */}
+      <Route
+        element={
+          <RequirePermission permission="billing:manage" apiPath="/api/settings/sections/billing" />
+        }
+      >
+        <Route path="billing" element={<BillingPage />} />
+      </Route>
       {/* Unknown /settings/{slug} — in-shell not-found (incl. a /settings/team deep-link). */}
       <Route path="*" element={<SettingsNotFound />} />
     </Route>

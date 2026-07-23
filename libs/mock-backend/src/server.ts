@@ -25,6 +25,7 @@ import { integrationsHandlers } from './handlers/integrations.handlers';
 import { orgNotificationsHandlers } from './handlers/org-notifications.handlers';
 import { orgSecurityHandlers } from './handlers/org-security.handlers';
 import { developerHandlers } from './handlers/developer.handlers';
+import { billingHandlers } from './handlers/billing.handlers';
 
 export const server = setupServer(
   ...authHandlers,
@@ -53,4 +54,5 @@ export const server = setupServer(
   ...orgNotificationsHandlers,
   ...orgSecurityHandlers,
   ...developerHandlers,
+  ...billingHandlers,
 );

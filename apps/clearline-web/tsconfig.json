@@ -42,6 +42,7 @@
     { "path": "../../libs/data-access/card-program" },
     { "path": "../../libs/data-access/connected-accounts" },
     { "path": "../../libs/data-access/developer" },
+    { "path": "../../libs/data-access/billing" },
     { "path": "../../libs/data-access/integrations" },
     { "path": "../../libs/data-access/org-notifications" },
     { "path": "../../libs/data-access/org-security" }

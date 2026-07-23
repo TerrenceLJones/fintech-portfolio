@@ -72,7 +72,8 @@
         "libs/data-access/org-notifications/src/index.ts"
       ],
       "@clearline/data-access-org-security": ["libs/data-access/org-security/src/index.ts"],
-      "@clearline/data-access-developer": ["libs/data-access/developer/src/index.ts"]
+      "@clearline/data-access-developer": ["libs/data-access/developer/src/index.ts"],
+      "@clearline/data-access-billing": ["libs/data-access/billing/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp", "dist"]

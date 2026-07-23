@@ -23,3 +23,4 @@ export type * from './security';
 export type * from './company';
 export type * from './org-security';
 export type * from './developer';
+export type * from './billing';
