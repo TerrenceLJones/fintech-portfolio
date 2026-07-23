@@ -299,6 +299,23 @@ export interface RemoveMemberResult {
   member?: TeamMember;
 }
 
+/**
+ * Outcome of an ownership transfer (US-CW-043). `not_owner`: the caller is not/no longer the Owner
+ * (AC-02/AC-07). `target_not_found`: the selected new Owner is no longer a member (AC-07).
+ * `invalid_target`: the selected target is the acting Owner themselves (AC-01). `reauth_failed`: the
+ * step-up password/TOTP did not verify (AC-04).
+ */
+export type TransferOwnershipOutcome =
+  'ok' | 'not_owner' | 'target_not_found' | 'invalid_target' | 'reauth_failed';
+
+export interface TransferOwnershipResult {
+  outcome: TransferOwnershipOutcome;
+  /** The promoted member (now Owner) — present only on success, for the audit diff + client refresh. */
+  newOwner?: TeamMember;
+  /** The demoted former Owner (now Admin) — present only on success. */
+  formerOwner?: TeamMember;
+}
+
 /** Outcome of a pending-invite mutation (resend / revoke): the invite is either found in the org or not. */
 export type InviteMutationOutcome = 'ok' | 'invite_not_found';
 
@@ -816,6 +833,62 @@ export class AuthService {
     member.orgId = null;
 
     return { outcome: 'ok', member: snapshot };
+  }
+
+  /**
+   * Transfer the Owner role to another current member as one atomic, re-auth-gated swap (US-CW-043).
+   * This is the ONLY sanctioned relaxation of the `owner_protected` guard: rather than loosening
+   * changeMemberRole/removeMember (whose guards stay intact), a dedicated path promotes the target to
+   * Owner and demotes the acting Owner to Admin in a single synchronous transition, so no persisted or
+   * observable state ever has zero or two Owners (AC-05). Owner-gated and re-checked live, so a
+   * concurrent transfer that already ran leaves this caller a non-Owner and is rejected (AC-02/AC-07);
+   * a target removed between selection and submit is rejected too (AC-07). Step-up re-auth verifies the
+   * acting Owner's password, plus a TOTP code when they have 2FA enrolled (AC-04). The role/flag changes
+   * ride the session and surface on each user's next checkSession (US-CW-006 AC-05), never a forced logout.
+   */
+  async transferOwnership(
+    actorOrgId: string,
+    actorUserId: string,
+    newOwnerId: string,
+    password: string,
+    totpCode?: string,
+    now: number = Date.now(),
+  ): Promise<TransferOwnershipResult> {
+    const actor = this.findMemberInOrg(actorOrgId, actorUserId);
+    if (!actor || !actor.isOwner) return { outcome: 'not_owner' };
+    if (newOwnerId === actorUserId) return { outcome: 'invalid_target' };
+    const target = this.findMemberInOrg(actorOrgId, newOwnerId);
+    if (!target) return { outcome: 'target_not_found' };
+
+    // Step-up re-auth (AC-04): password always; a TOTP code additionally when the acting Owner is
+    // enrolled. Both are verified before any mutation, so a failed re-auth leaves ownership untouched.
+    const passwordOk = await verifyPassword(password, actor.passwordHash);
+    if (!passwordOk) return { outcome: 'reauth_failed' };
+    const tf = this.twoFactorByEmail.get(actor.email.toLowerCase());
+    if (tf?.enabled && tf.secret) {
+      const codeOk = totpCode ? await verifyTotpCode(tf.secret, totpCode, now) : false;
+      if (!codeOk) return { outcome: 'reauth_failed' };
+    }
+
+    // The atomic swap — synchronous, with no await between the two mutations, so the single-Owner
+    // invariant holds at every observable point (AC-05). The target gets the canonical Owner
+    // provisioning (Controller tier, unlimited limit, US-CW-030); the outgoing Owner keeps a Controller
+    // tier but becomes a plain Admin, retaining org-administration authority so the swap never leaves
+    // the org without an administrator (AC-05 / inferred edge case).
+    const provisioning = ownerProvisioning();
+    target.role = provisioning.role;
+    target.approvalLimit = provisioning.approvalLimit;
+    target.isOwner = true;
+    target.isAdmin = true;
+    actor.isOwner = false;
+    actor.isAdmin = true;
+    actor.approvalLimit = defaultApprovalLimitForRole(actor.role);
+
+    return {
+      outcome: 'ok',
+      newOwner: this.toTeamMember(target),
+      formerOwner: this.toTeamMember(actor),
+    };
   }
 
   /**

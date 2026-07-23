@@ -1,5 +1,6 @@
 export * from './team-query-keys';
 export * from './team-forbidden-error';
+export * from './transfer-ownership-error';
 export * from './fetch-team';
 export * from './use-team-roster';
 export * from './use-invite-member';
@@ -9,3 +10,4 @@ export * from './use-resend-invite';
 export * from './use-revoke-invite';
 export * from './use-invite-details';
 export * from './use-accept-invite';
+export * from './use-transfer-ownership';

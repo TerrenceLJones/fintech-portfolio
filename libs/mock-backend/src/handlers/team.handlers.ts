@@ -10,6 +10,8 @@ import type {
   Role,
   TeamErrorResponse,
   TeamRosterResponse,
+  TransferOwnershipRequest,
+  TransferOwnershipResponse,
 } from '@clearline/contracts';
 import { hasPermission, permissionsForRole } from '@clearline/domain-auth';
 import { AuthService } from '../services/auth.service';
@@ -261,7 +263,82 @@ export function createTeamHandlers(
 
       return new HttpResponse(null, { status: 204 });
     }),
+
+    // Transfer ownership — Owner-only (US-CW-043 AC-02), narrower than the team:view gate the other
+    // endpoints use. A single atomic, re-auth-gated swap; the server independently enforces the Owner
+    // flag regardless of the hidden client UI, and rejects a stale/concurrent transfer (AC-07).
+    http.post('*/api/team/owner-transfer', async ({ request }) => {
+      const result = authorizeAdmin(request);
+      if ('fail' in result) return result.fail;
+      // authorizeAdmin proved an active Owner/Admin session; require the Owner flag specifically —
+      // an Admin who is not the Owner may not transfer (AC-02). Re-checked live so a concurrent
+      // transfer that already demoted this caller is rejected here too (AC-07).
+      if (!result.actor.isOwner) {
+        const body: TeamErrorResponse = { error: 'not_owner' };
+        return HttpResponse.json(body, { status: 403 });
+      }
+
+      const { newOwnerId, password, totpCode } = (await request.json()) as TransferOwnershipRequest;
+      const outcome = await authService.transferOwnership(
+        result.actor.orgId,
+        result.actor.userId,
+        newOwnerId,
+        password,
+        totpCode,
+      );
+      if (outcome.outcome !== 'ok') return transferOwnershipError(outcome.outcome);
+
+      // Two audit events — the promotion and the demotion — each with a before → after ownership diff
+      // (AC-08), mirroring the two-event pattern changeMemberRole uses for role + admin changes.
+      const actor = resolveAuditActor(request, authService);
+      if (actor) {
+        auditService.record({
+          actor,
+          category: 'role_change',
+          action: `Transferred ownership · ${outcome.newOwner!.displayName}`,
+          target: { label: outcome.newOwner!.displayName, ref: outcome.newOwner!.id },
+          diff: { from: 'Admin', to: 'Owner', tone: 'neutral' },
+        });
+        auditService.record({
+          actor,
+          category: 'role_change',
+          action: `Stepped down as Owner · ${outcome.formerOwner!.displayName}`,
+          target: { label: outcome.formerOwner!.displayName, ref: outcome.formerOwner!.id },
+          diff: { from: 'Owner', to: 'Admin', tone: 'warning' },
+        });
+      }
+
+      const body: TransferOwnershipResponse = {
+        newOwner: outcome.newOwner!,
+        formerOwner: outcome.formerOwner!,
+      };
+      return HttpResponse.json(body, { status: 200 });
+    }),
   ];
+}
+
+/** Map a service-level ownership-transfer failure to its wire error + status (US-CW-043). */
+function transferOwnershipError(
+  outcome: 'not_owner' | 'target_not_found' | 'invalid_target' | 'reauth_failed',
+): Response {
+  switch (outcome) {
+    case 'not_owner': {
+      const body: TeamErrorResponse = { error: 'not_owner' };
+      return HttpResponse.json(body, { status: 403 });
+    }
+    case 'target_not_found': {
+      const body: TeamErrorResponse = { error: 'member_not_found' };
+      return HttpResponse.json(body, { status: 404 });
+    }
+    case 'invalid_target': {
+      const body: TeamErrorResponse = { error: 'invalid_transfer_target' };
+      return HttpResponse.json(body, { status: 400 });
+    }
+    case 'reauth_failed': {
+      const body: TeamErrorResponse = { error: 'reauth_failed' };
+      return HttpResponse.json(body, { status: 403 });
+    }
+  }
 }
 
 /** Map a service-level team mutation failure to its HTTP response: 404 for an unknown member/invite, 403 otherwise. */

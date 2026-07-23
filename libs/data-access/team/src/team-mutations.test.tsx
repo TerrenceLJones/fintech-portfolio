@@ -8,7 +8,9 @@ import { useChangeMemberRole } from './use-change-member-role';
 import { useRemoveMember } from './use-remove-member';
 import { useResendInvite } from './use-resend-invite';
 import { useRevokeInvite } from './use-revoke-invite';
+import { useTransferOwnership } from './use-transfer-ownership';
 import { TeamForbiddenError } from './team-forbidden-error';
+import { TransferOwnershipError } from './transfer-ownership-error';
 import { createQueryWrapper } from './test/create-query-wrapper';
 
 const server = registerMswServer();
@@ -115,6 +117,59 @@ describe('useResendInvite', () => {
 
     await waitFor(() => expect(result.current.isError).toBe(true));
     expect(result.current.error).toBeInstanceOf(TeamForbiddenError);
+  });
+});
+
+describe('useTransferOwnership (US-CW-043)', () => {
+  it('resolves with the new + former Owner on success', async () => {
+    setAccessToken('access_valid');
+    server.use(
+      http.post('*/api/team/owner-transfer', () =>
+        HttpResponse.json({
+          newOwner: {
+            id: 'user_3',
+            displayName: 'Sofia Whitman',
+            email: 's@x.test',
+            role: 'controller',
+            isAdmin: true,
+            isOwner: true,
+            joinedAt: '2026-05-01T00:00:00.000Z',
+          },
+          formerOwner: {
+            id: 'user_owner',
+            displayName: 'Priya Nair',
+            email: 'o@x.test',
+            role: 'controller',
+            isAdmin: true,
+            isOwner: false,
+            joinedAt: '2026-01-01T00:00:00.000Z',
+          },
+        }),
+      ),
+    );
+
+    const { result } = renderHook(() => useTransferOwnership(), { wrapper });
+    result.current.mutate({ newOwnerId: 'user_3', password: 'pw' });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data?.newOwner.isOwner).toBe(true);
+    expect(result.current.data?.formerOwner.isOwner).toBe(false);
+  });
+
+  it('maps a failed re-auth to a typed TransferOwnershipError naming the reason (AC-04/AC-07)', async () => {
+    setAccessToken('access_valid');
+    server.use(
+      http.post('*/api/team/owner-transfer', () =>
+        HttpResponse.json({ error: 'reauth_failed' }, { status: 403 }),
+      ),
+    );
+
+    const { result } = renderHook(() => useTransferOwnership(), { wrapper });
+    result.current.mutate({ newOwnerId: 'user_3', password: 'wrong' });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(result.current.error).toBeInstanceOf(TransferOwnershipError);
+    expect((result.current.error as TransferOwnershipError).code).toBe('reauth_failed');
   });
 });
 

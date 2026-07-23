@@ -114,11 +114,39 @@ export interface ChangeMemberRoleResponse {
 }
 
 /**
+ * POST /api/team/owner-transfer — the Owner hands the Owner role to another current member as one
+ * atomic, re-auth-gated swap (US-CW-043). The target is always an existing member (never a free-text
+ * email, AC-01). The acting Owner re-authenticates with their password, plus a TOTP code when they
+ * have 2FA enrolled (US-CW-035 / AC-04). Owner-gated server-side, independent of the client UI (AC-02).
+ */
+export interface TransferOwnershipRequest {
+  /** The current member (by id) who will become the new Owner — never the acting Owner themselves (AC-01). */
+  newOwnerId: string;
+  /** The acting Owner's password, re-entered to authorize this highest-blast-radius action (AC-04). */
+  password: string;
+  /** A current TOTP code — required when the acting Owner has 2FA enrolled, omitted otherwise (AC-04). */
+  totpCode?: string;
+}
+
+/**
+ * Body of a successful transfer: the two members whose ownership changed, captured post-swap — the new
+ * Owner and the now-demoted former Owner (an Admin). The single-Owner invariant holds at every observable
+ * point (AC-05); the client refreshes the roster and its own session from these.
+ */
+export interface TransferOwnershipResponse {
+  newOwner: TeamMember;
+  formerOwner: TeamMember;
+}
+
+/**
  * Body of a 403/404 from a team-management endpoint — the client maps `error` to inline copy.
  * `forbidden_role`: caller is neither Owner nor Admin (US-CW-031 AC-07). `owner_protected`: the target
  * is the Owner, who can't be removed or demoted (US-CW-030 AC-03). `admin_revoke_forbidden`: a non-Owner
  * tried to revoke Admin, which only the Owner may do (US-CW-031 AC-08). `member_not_found`: unknown member.
  * `invite_not_found`: the pending invite being resent or revoked no longer exists (US-CW-031 AC-09/AC-10).
+ * `not_owner`: the caller is not — or is no longer — the Owner, so may not transfer ownership (US-CW-043
+ * AC-02/AC-07). `invalid_transfer_target`: the selected new Owner is the acting Owner themselves (AC-01).
+ * `reauth_failed`: the acting Owner's password or TOTP re-authentication did not verify (AC-04).
  */
 export interface TeamErrorResponse {
   error:
@@ -126,5 +154,8 @@ export interface TeamErrorResponse {
     | 'owner_protected'
     | 'admin_revoke_forbidden'
     | 'member_not_found'
-    | 'invite_not_found';
+    | 'invite_not_found'
+    | 'not_owner'
+    | 'invalid_transfer_target'
+    | 'reauth_failed';
 }

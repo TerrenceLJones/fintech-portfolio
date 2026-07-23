@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router';
 import { AccessDenied, Text } from '@clearline/ui';
 import { OrgSecurityForbiddenError, useOrgSecurity } from '@clearline/data-access-org-security';
+import { useAuthorization } from '@clearline/data-access-auth';
 import { useDemoBeacon } from '@clearline/demo-beacon';
 import { ToastViewport } from '../../components/ToastViewport';
 import { useToast } from '../../hooks/useToast';
@@ -10,6 +11,7 @@ import { SsoConfigCard } from './security-compliance/SsoConfigCard';
 import { TwoFactorEnforcementCard } from './security-compliance/TwoFactorEnforcementCard';
 import { IdleTimeoutCard } from './security-compliance/IdleTimeoutCard';
 import { IpAllowlistCard } from './security-compliance/IpAllowlistCard';
+import { TransferOwnershipCard } from './security-compliance/TransferOwnershipCard';
 
 /**
  * Settings → Security & Compliance (US-CW-040). An Admin/Owner-only surface configuring org-wide
@@ -22,6 +24,9 @@ export function SecurityCompliancePage() {
   useDemoBeacon(securityComplianceBeacon);
   const navigate = useNavigate();
   const query = useOrgSecurity();
+  // Ownership transfer is Owner-only — narrower than this page's org-security:manage gate (US-CW-043
+  // AC-02). The card is hidden for non-Owners; the transfer endpoint enforces the same server-side.
+  const { isOwner } = useAuthorization();
   const { toast, show: showToast } = useToast(4000);
 
   if (query.error instanceof OrgSecurityForbiddenError) {
@@ -57,6 +62,7 @@ export function SecurityCompliancePage() {
           <TwoFactorEnforcementCard posture={query.data} onToast={showToast} />
           <IdleTimeoutCard posture={query.data} onToast={showToast} />
           <IpAllowlistCard posture={query.data} onToast={showToast} />
+          {isOwner ? <TransferOwnershipCard onToast={showToast} /> : null}
         </>
       )}
 

@@ -3,7 +3,9 @@ import { setupServer } from 'msw/node';
 import type {
   AcceptInviteResponse,
   InviteDetailsResponse,
+  TeamErrorResponse,
   TeamRosterResponse,
+  TransferOwnershipResponse,
 } from '@clearline/contracts';
 import { createTeamHandlers } from './team.handlers';
 import { AuthService } from '../services/auth.service';
@@ -339,5 +341,61 @@ describe('DELETE /api/team/members/:id (US-CW-031 AC-05)', () => {
       headers: auth(token),
     });
     expect(response.status).toBe(403);
+  });
+});
+
+describe('POST /api/team/owner-transfer (US-CW-043)', () => {
+  function transfer(token: string, body: Record<string, unknown>) {
+    return fetch(`${ORIGIN}/api/team/owner-transfer`, {
+      method: 'POST',
+      headers: auth(token),
+      body: JSON.stringify(body),
+    });
+  }
+
+  it('lets the Owner transfer ownership, swapping Owner + demoting themselves, and audits both (AC-05/AC-08)', async () => {
+    const token = await loginAs('owner@clearline.dev');
+    const response = await transfer(token, { newOwnerId: 'user_3', password: STRONG_PASSWORD });
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as TransferOwnershipResponse;
+    expect(body.newOwner.id).toBe('user_3');
+    expect(body.newOwner.isOwner).toBe(true);
+    expect(body.formerOwner.id).toBe('user_owner');
+    expect(body.formerOwner.isOwner).toBe(false);
+    expect(body.formerOwner.isAdmin).toBe(true);
+
+    // Two before → after audit events — the promotion and the demotion (AC-08).
+    const actions = auditService.list().map((e) => e.action);
+    expect(actions.some((a) => a.includes('Transferred ownership'))).toBe(true);
+    expect(actions.some((a) => a.includes('Stepped down as Owner'))).toBe(true);
+  });
+
+  it('rejects an Admin who is not the Owner with 403, leaving ownership unchanged (AC-02)', async () => {
+    const token = await loginAs('controller@clearline.dev'); // Admin, not Owner
+    const response = await transfer(token, { newOwnerId: 'user_2', password: STRONG_PASSWORD });
+    expect(response.status).toBe(403);
+    expect(((await response.json()) as TeamErrorResponse).error).toBe('not_owner');
+    expect(auditService.list()).toHaveLength(0);
+
+    const roster = (await (
+      await fetch(`${ORIGIN}/api/team/members`, { headers: auth(token) })
+    ).json()) as TeamRosterResponse;
+    expect(roster.members.find((m) => m.isOwner)!.id).toBe('user_owner');
+  });
+
+  it('rejects a wrong re-auth password with 403 reauth_failed (AC-04)', async () => {
+    const token = await loginAs('owner@clearline.dev');
+    const response = await transfer(token, { newOwnerId: 'user_3', password: 'not-my-password' });
+    expect(response.status).toBe(403);
+    expect(((await response.json()) as TeamErrorResponse).error).toBe('reauth_failed');
+  });
+
+  it('rejects an unauthenticated transfer with 401', async () => {
+    const response = await fetch(`${ORIGIN}/api/team/owner-transfer`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ newOwnerId: 'user_3', password: STRONG_PASSWORD }),
+    });
+    expect(response.status).toBe(401);
   });
 });

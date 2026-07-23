@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { INVITE_TOKEN_TTL_MS } from '@clearline/domain-auth';
+import { INVITE_TOKEN_TTL_MS, generateTotpCode } from '@clearline/domain-auth';
 import { AuthService } from './auth.service';
 import { DEMO_USER_PASSWORD, SEED_ORGANIZATION } from '../fixtures/users.fixture';
 
@@ -7,6 +7,7 @@ const IP = '127.0.0.1 (mocked)';
 const ORG_ID = SEED_ORGANIZATION.id;
 const OWNER_EMAIL = 'owner@clearline.dev';
 const NEW_EIN = '12-3456789';
+const NOW = 1_700_000_000_000;
 
 let auth: AuthService;
 beforeEach(() => {
@@ -433,5 +434,85 @@ describe('removeMember (US-CW-031 AC-05 / US-CW-030 AC-03)', () => {
 
   it('reports member_not_found for an unknown member', () => {
     expect(auth.removeMember(ORG_ID, 'user_nope').outcome).toBe('member_not_found');
+  });
+});
+
+describe('transferOwnership (US-CW-043)', () => {
+  const ownerId = 'user_owner';
+  const adminId = 'user_3'; // controller@ — an Admin who isn't the Owner
+  const employeeId = 'user_2';
+
+  it('atomically promotes the target to Owner and demotes the acting Owner to Admin (AC-05)', async () => {
+    const result = await auth.transferOwnership(ORG_ID, ownerId, adminId, DEMO_USER_PASSWORD);
+    expect(result.outcome).toBe('ok');
+    expect(result.newOwner!.id).toBe(adminId);
+    expect(result.newOwner!.isOwner).toBe(true);
+    expect(result.newOwner!.role).toBe('controller');
+    expect(result.formerOwner!.id).toBe(ownerId);
+    expect(result.formerOwner!.isOwner).toBe(false);
+    expect(result.formerOwner!.isAdmin).toBe(true);
+
+    // Exactly one Owner at every observable point — never zero or two (AC-05).
+    const owners = auth.getTeamRoster(ORG_ID)!.members.filter((m) => m.isOwner);
+    expect(owners).toHaveLength(1);
+    expect(owners[0]!.id).toBe(adminId);
+  });
+
+  it('rejects a caller who is not the Owner, leaving ownership unchanged (AC-02/AC-07)', async () => {
+    const result = await auth.transferOwnership(ORG_ID, adminId, employeeId, DEMO_USER_PASSWORD);
+    expect(result.outcome).toBe('not_owner');
+    expect(auth.getTeamRoster(ORG_ID)!.members.find((m) => m.isOwner)!.id).toBe(ownerId);
+  });
+
+  it('rejects a target who is no longer a member (AC-07)', async () => {
+    const result = await auth.transferOwnership(ORG_ID, ownerId, 'user_ghost', DEMO_USER_PASSWORD);
+    expect(result.outcome).toBe('target_not_found');
+    expect(auth.getTeamRoster(ORG_ID)!.members.find((m) => m.isOwner)!.id).toBe(ownerId);
+  });
+
+  it('rejects selecting oneself as the new Owner (AC-01)', async () => {
+    const result = await auth.transferOwnership(ORG_ID, ownerId, ownerId, DEMO_USER_PASSWORD);
+    expect(result.outcome).toBe('invalid_target');
+  });
+
+  it('rejects a wrong password without transferring (AC-04)', async () => {
+    const result = await auth.transferOwnership(ORG_ID, ownerId, adminId, 'wrong-password');
+    expect(result.outcome).toBe('reauth_failed');
+    expect(auth.getTeamRoster(ORG_ID)!.members.find((m) => m.isOwner)!.id).toBe(ownerId);
+  });
+
+  it('requires a valid TOTP code when the acting Owner has 2FA enrolled (AC-04)', async () => {
+    const setup = auth.startTotpSetup(OWNER_EMAIL)!;
+    await auth.verifyTotpSetup(OWNER_EMAIL, await generateTotpCode(setup.secret, NOW), NOW);
+
+    // 2FA on but no code supplied → rejected; ownership unchanged.
+    const missing = await auth.transferOwnership(
+      ORG_ID,
+      ownerId,
+      adminId,
+      DEMO_USER_PASSWORD,
+      undefined,
+      NOW,
+    );
+    expect(missing.outcome).toBe('reauth_failed');
+    expect(auth.getTeamRoster(ORG_ID)!.members.find((m) => m.isOwner)!.id).toBe(ownerId);
+
+    // A valid code lets the transfer through.
+    const ok = await auth.transferOwnership(
+      ORG_ID,
+      ownerId,
+      adminId,
+      DEMO_USER_PASSWORD,
+      await generateTotpCode(setup.secret, NOW),
+      NOW,
+    );
+    expect(ok.outcome).toBe('ok');
+  });
+
+  it('does not relax the owner_protected guard on changeMemberRole/removeMember (regression)', () => {
+    expect(auth.changeMemberRole(ORG_ID, ownerId, { role: 'employee' }).outcome).toBe(
+      'owner_protected',
+    );
+    expect(auth.removeMember(ORG_ID, ownerId).outcome).toBe('owner_protected');
   });
 });

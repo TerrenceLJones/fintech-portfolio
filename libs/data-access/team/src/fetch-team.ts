@@ -3,9 +3,13 @@ import type {
   ChangeMemberRoleRequest,
   ChangeMemberRoleResponse,
   InviteMemberRequest,
+  TeamErrorResponse,
   TeamRosterResponse,
+  TransferOwnershipRequest,
+  TransferOwnershipResponse,
 } from '@clearline/contracts';
 import { TeamForbiddenError } from './team-forbidden-error';
+import { TransferOwnershipError } from './transfer-ownership-error';
 
 /** Fetch the team roster. A 403 becomes TeamForbiddenError (access-denied); any other non-2xx throws. */
 export async function fetchTeamRoster(): Promise<TeamRosterResponse> {
@@ -67,6 +71,35 @@ export async function deleteMember(memberId: string): Promise<void> {
   if (!response.ok) {
     throw new Error('team_remove_failed');
   }
+}
+
+/**
+ * Transfer ownership to another current member (US-CW-043). On failure the server's specific reason is
+ * mapped to a typed TransferOwnershipError so the UI can name it (AC-07); the roster's own `team:view`
+ * 403 (a non-Owner/Admin caller) still surfaces as TeamForbiddenError.
+ */
+export async function postOwnerTransfer(
+  request: TransferOwnershipRequest,
+): Promise<TransferOwnershipResponse> {
+  const response = await authenticatedFetch('/api/team/owner-transfer', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(request),
+  });
+  if (response.ok) {
+    return response.json() as Promise<TransferOwnershipResponse>;
+  }
+  const body = (await response.json().catch(() => null)) as TeamErrorResponse | null;
+  const code = body?.error;
+  if (
+    code === 'not_owner' ||
+    code === 'reauth_failed' ||
+    code === 'member_not_found' ||
+    code === 'invalid_transfer_target'
+  ) {
+    throw new TransferOwnershipError(code);
+  }
+  throw new Error('owner_transfer_failed');
 }
 
 /** Resend a pending invite — a fresh link supersedes the old one (US-CW-031 AC-09). 403 = forbidden caller; 404 = unknown invite. */

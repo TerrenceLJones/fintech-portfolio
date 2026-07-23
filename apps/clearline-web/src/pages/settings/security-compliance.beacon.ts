@@ -66,6 +66,21 @@ export const securityComplianceBeacon: DemoBeaconPageConfig = {
             },
           ],
         },
+        {
+          id: 'transfer-ownership',
+          title: 'Transfer ownership (US-CW-043 · Owner-only)',
+          steps: [
+            {
+              text: 'Sign in as **owner@clearline.dev** — the **Transfer ownership** card only renders for the Owner; an Admin (controller@) never sees it, and the transfer API returns 403 for them (AC-01/AC-02).',
+            },
+            {
+              text: 'Pick a member — you can only choose an existing member, never type an email (AC-01) — then **Transfer ownership…**. The confirmation names the exact consequence: they gain full non-removable control and you drop to Admin (§19.9 / AC-03).',
+            },
+            {
+              text: 'Re-enter your password (plus your authenticator code if 2FA is on) to authorize it (AC-04). On success the swap is atomic — never zero or two Owners — and your session loses Owner surfaces on its next refresh, no re-login (AC-05/AC-06). A wrong password, a removed target, or a raced transfer is rejected with a specific reason (AC-07).',
+            },
+          ],
+        },
       ],
     },
     resetSection,
