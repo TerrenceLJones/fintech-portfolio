@@ -20,6 +20,12 @@ export interface AppShellProps {
   identity?: SidebarIdentity;
   /** True while the session is still loading — renders the footer's placeholder instead of a wrong-identity flash. */
   identityLoading?: boolean;
+  /** Raised when the user picks "Log out" from the identity footer menu (US-CW-048). */
+  onLogout?: () => void;
+  /** Raised when the user picks "Manage account" from the identity footer menu (US-CW-032 update). */
+  onManageAccount?: () => void;
+  /** True while a sign-out is in flight — disables the footer's "Log out" item (US-CW-048 AC-02). */
+  loggingOut?: boolean;
 }
 
 /** Tabbable elements inside a container, in DOM order — used to trap focus within the open mobile drawer. */
@@ -63,6 +69,9 @@ export function AppShell({
   banner,
   identity,
   identityLoading,
+  onLogout,
+  onManageAccount,
+  loggingOut,
 }: AppShellProps) {
   const { theme, setTheme } = useTheme();
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -149,7 +158,13 @@ export function AppShell({
             onChange={(next) => setTheme(next === 'Dark' ? 'dark' : 'light')}
             fullWidth
           />
-          <SidebarFooter identity={identity} loading={identityLoading} />
+          <SidebarFooter
+            identity={identity}
+            loading={identityLoading}
+            onLogout={onLogout}
+            onManageAccount={onManageAccount}
+            loggingOut={loggingOut}
+          />
         </div>
       </aside>
 

@@ -57,3 +57,35 @@ export const LongName: Story = {
 export const Loading: Story = {
   args: { loading: true },
 };
+
+/**
+ * With `onLogout` / `onManageAccount` supplied (US-CW-048 / the US-CW-032 update) the identity chip
+ * becomes a keyboard-operable menu trigger carrying "Manage account" and "Log out". Open it to see the
+ * menu anchored above the chip; it closes on Escape, outside-click, or item-select.
+ */
+export const WithUserMenu: Story = {
+  args: {
+    identity: {
+      name: 'Dana Whitfield',
+      initials: 'DW',
+      roleLabel: 'Owner',
+      detail: 'Unlimited',
+    },
+    onLogout: () => {},
+    onManageAccount: () => {},
+  },
+};
+
+export const LoggingOut: Story = {
+  args: {
+    identity: {
+      name: 'Dana Whitfield',
+      initials: 'DW',
+      roleLabel: 'Owner',
+      detail: 'Unlimited',
+    },
+    onLogout: () => {},
+    onManageAccount: () => {},
+    loggingOut: true,
+  },
+};

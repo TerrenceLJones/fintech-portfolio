@@ -43,7 +43,9 @@ function renderChrome(initialEntry = '/', home: ReactNode = <div>Home content</d
               <Route path="/" element={home} />
               <Route path="/expenses" element={<div>My Expenses content</div>} />
               <Route path="/approvals" element={<div>Approvals content</div>} />
+              <Route path="/settings/personal" element={<div>Personal Info content</div>} />
             </Route>
+            <Route path="/login" element={<div>Login screen</div>} />
           </Routes>
         </MemoryRouter>
       </ThemeProvider>,
@@ -117,6 +119,54 @@ describe('AppChrome identity footer', () => {
     renderChrome();
 
     await waitFor(() => expect(screen.getByText('Controller · Unlimited')).toBeInTheDocument());
+  });
+});
+
+describe('AppChrome identity footer user menu (US-CW-048)', () => {
+  async function openUserMenu() {
+    await waitFor(() => expect(screen.getByText('Marcus Okafor')).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: /marcus okafor/i }));
+  }
+
+  it('routes to Personal Info when "Manage account" is chosen (US-CW-032 update)', async () => {
+    mockRole('employee');
+    renderChrome();
+    await openUserMenu();
+
+    fireEvent.click(screen.getByRole('menuitem', { name: /manage account/i }));
+    await waitFor(() => expect(screen.getByText('Personal Info content')).toBeInTheDocument());
+  });
+
+  it('logs out and redirects to the login screen, calling the revoke endpoint once (AC-02/AC-03)', async () => {
+    mockRole('finance_manager');
+    let logoutCalls = 0;
+    server.use(
+      http.post('*/api/auth/logout', () => {
+        logoutCalls += 1;
+        return HttpResponse.json({});
+      }),
+    );
+    renderChrome();
+    await openUserMenu();
+
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Log out' }));
+    await waitFor(() => expect(screen.getByText('Login screen')).toBeInTheDocument());
+    await waitFor(() => expect(logoutCalls).toBe(1));
+    // No stale authenticated chrome — the identity footer is gone once we're on /login.
+    expect(screen.queryByText('Marcus Okafor')).not.toBeInTheDocument();
+  });
+
+  it('still clears the session and lands on login when the server logout fails (AC-05)', async () => {
+    mockRole('controller');
+    server.use(
+      http.post('*/api/auth/logout', () => HttpResponse.json({ error: 'boom' }, { status: 500 })),
+    );
+    renderChrome();
+    await openUserMenu();
+
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Log out' }));
+    // A failed revoke must never strand the user half-authenticated — redirect happens regardless.
+    await waitFor(() => expect(screen.getByText('Login screen')).toBeInTheDocument());
   });
 });
 

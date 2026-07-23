@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { useLocation } from 'react-router';
+import { useLocation, useNavigate } from 'react-router';
 import { Alert, AppShell, type SidebarIdentity } from '@clearline/ui';
-import { useAccessChanged, useAuthorization } from '@clearline/data-access-auth';
+import { useAccessChanged, useAuthorization, useLogout } from '@clearline/data-access-auth';
 import { NAV_ITEMS, navIdForPath, navItemsForPermissions, navPathForId } from './rbac/nav-items';
 import { identityDetail, initialsFromName, roleLabel } from './rbac/identity';
 import { PageTitleSetterContext } from './hooks/page-title-context';
@@ -24,6 +24,8 @@ export function AppChrome() {
     useAuthorization();
   const { accessChanged, dismiss } = useAccessChanged();
   const location = useLocation();
+  const navigate = useNavigate();
+  const logout = useLogout();
   // Primary-nav clicks go through the unsaved-changes guard (US-CW-034 AC-02) so leaving a dirty
   // settings form warns first; it's a plain navigate outside the guard provider.
   const guardedNavigate = useGuardedNavigate();
@@ -52,6 +54,14 @@ export function AppChrome() {
         }
       : undefined;
 
+  // Client-first teardown (US-CW-048 AC-05): fire the best-effort server revoke and redirect to login
+  // regardless of its outcome — postLogout clears the in-memory token in its `finally`, so a failed or
+  // offline call can never strand the user half-authenticated. RequireAuth is the fallback guard.
+  const handleLogout = () => {
+    logout.mutate();
+    navigate('/login', { replace: true });
+  };
+
   const banner = accessChanged ? (
     // role="status" (implicit aria-live=polite) so a mid-session downgrade is announced to screen
     // readers without stealing focus — the banner is a dynamic notice, not part of the initial page.
@@ -78,6 +88,9 @@ export function AppChrome() {
         banner={banner}
         identity={identity}
         identityLoading={isLoading}
+        onManageAccount={() => guardedNavigate('/settings/personal')}
+        onLogout={handleLogout}
+        loggingOut={logout.isPending}
       />
     </PageTitleSetterContext.Provider>
   );

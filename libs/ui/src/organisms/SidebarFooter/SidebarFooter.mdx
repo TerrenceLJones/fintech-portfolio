@@ -7,8 +7,15 @@ import * as SidebarFooterStories from './SidebarFooter.stories';
 
 The user-identity block pinned to the bottom of the sidebar rail (design §3.1): avatar initials,
 name, and the role followed by an authority detail (`$10k limit`, `Unlimited`, or an `Admin`
-indicator). Purely presentational — it renders the values it is given, owns no authorization
-decision, and needs no auth / routing / ThemeProvider ancestor.
+indicator). Presentational — it renders the values it is given, owns no authorization decision, and
+needs no auth / routing / ThemeProvider ancestor.
+
+When `onLogout` / `onManageAccount` are supplied (US-CW-048 and the US-CW-032 identity-menu update)
+the identity chip becomes a keyboard-operable **user menu** carrying **Manage account** (routes to
+Personal Info / Security) and **Log out**. The menu closes on Escape, outside-click, or item-select
+and restores focus to the trigger; "Log out" is disabled while a sign-out is in flight so it can't be
+double-submitted (US-CW-048 AC-02). The organism still raises only intent — AppChrome wires it to the
+use-logout hook and navigation.
 
 ## User story
 
@@ -29,5 +36,7 @@ bottom of the sidebar, so that I can always see who I'm signed in as and what au
   identity (the `Loading` story).
 - **Very long name / wide detail** — the name truncates with an ellipsis (and keeps its full value in
   a `title`) without breaking the rail width (the `LongName` story).
+- **Sign-out in flight** — "Log out" is disabled and reads "Logging out…" so a rapid double-click
+  issues only one request (the `LoggingOut` story).
 
 <Stories />

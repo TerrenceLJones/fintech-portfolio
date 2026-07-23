@@ -45,6 +45,27 @@ export const globalBeacon: DemoBeaconPageConfig = {
       title: 'Tip',
       body: 'Open this guide on any page — it changes to show what **that** page supports.',
     },
+    {
+      kind: 'flows',
+      title: 'Sign out (US-CW-048)',
+      flows: [
+        {
+          id: 'logout',
+          title: 'Log out from the identity footer',
+          steps: [
+            {
+              text: 'Click your name in the **identity footer** at the bottom of the sidebar rail to open the user menu (US-CW-032). It is keyboard-operable and closes on Escape or an outside click (AC-01).',
+            },
+            {
+              text: 'Choose **Log out**. Clearline revokes the session server-side, clears the in-memory tokens, and returns you to the login screen; a failed or offline revoke still signs you out cleanly (AC-02/03/05).',
+            },
+            {
+              text: 'Choose **Manage account** instead to jump straight to Personal Info / Security — the same menu carries both actions (the US-CW-032 update).',
+            },
+          ],
+        },
+      ],
+    },
     resetSection,
   ],
 };
