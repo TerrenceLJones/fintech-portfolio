@@ -22,6 +22,7 @@
     "@clearline/contracts": "workspace:*",
     "@clearline/domain-auth": "workspace:*",
     "@clearline/domain-cards": "workspace:*",
+    "@clearline/domain-developer": "workspace:*",
     "@clearline/domain-integrations": "workspace:*",
     "@clearline/domain-org-security": "workspace:*",
     "@clearline/domain-expenses": "workspace:*",

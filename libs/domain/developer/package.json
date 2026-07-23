@@ -1,0 +1,22 @@
+{
+  "name": "@clearline/domain-developer",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Pure, framework-agnostic Developer-settings rules (US-CW-041): API-key masking + scope catalog + scope checks, webhook URL (HTTPS-only) validation, the event catalog, the failed-delivery retry schedule, and the static HMAC-SHA256 verification reference. No data-access or UI dependencies.",
+  "main": "src/index.ts",
+  "scripts": {
+    "lint": "eslint .",
+    "type-check": "tsc --noEmit",
+    "test": "vitest run",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@clearline/contracts": "workspace:*"
+  },
+  "devDependencies": {},
+  "metadata": {
+    "package_type": "shared",
+    "app": "clearline-web",
+    "scope": "Domain lib for EPIC-CW-022 (US-CW-041 Developer Settings — API Keys & Webhooks)."
+  }
+}

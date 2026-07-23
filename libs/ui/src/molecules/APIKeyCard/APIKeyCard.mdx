@@ -1,0 +1,33 @@
+import { Meta, Stories } from '@storybook/addon-docs/blocks';
+import * as APIKeyCardStories from './APIKeyCard.stories';
+
+<Meta of={APIKeyCardStories} />
+
+# APIKeyCard
+
+A single API key row for the Developer settings surface (design §19.3): the key's name over its
+**masked** form, the granted scopes as monospace pills, a created / last-used footer, and — when
+revocable — a destructive Revoke button.
+
+## User story
+
+**US-CW-041 — Developer Settings — API Keys & Webhooks**
+
+As an Admin or Owner, I want Developer settings for API keys and webhooks, so that I can issue
+scope-limited keys revealed once at creation, revoke them permanently, and manage webhook endpoints.
+
+## Acceptance criteria
+
+- **AC-02 — Masked only.** The full key is never a prop; only the masked form
+  (`sk_live_••••••••••••••ab3f`) is ever rendered. There is no "reveal" / "show full key" control
+  anywhere — a lost key is recovered by revoke + recreate, never re-displayed.
+- **AC-04 — Revoke.** When present, the Revoke button raises `onRevoke`; the caller pairs it with a
+  §19.9 named-consequence confirmation before the key is revoked.
+
+### Notes
+
+- Scopes render as least-privilege monospace pills (AC-01).
+- A key that has never authenticated shows "Never used" rather than a date.
+- Omit `onRevoke` to render a key with no revoke affordance.
+
+<Stories />

@@ -93,6 +93,15 @@ export {
   DEMO_SSO_ENTITY_ID,
   DEMO_SSO_CERTIFICATE,
 } from './org-security.fixture';
+export {
+  SEED_DEVELOPER,
+  DEMO_API_KEY_NAME,
+  DEMO_API_KEY_PLAINTEXT,
+  DEMO_API_KEY_SCOPES,
+  DEMO_WEBHOOK_URL,
+  DEMO_WEBHOOK_SIGNING_SECRET,
+} from './developer.fixture';
+export type { SeedApiKey, SeedWebhook, SeedDeveloper } from './developer.fixture';
 export { SEED_BUDGETS, BUDGET_THRESHOLD_DEMO_DEPARTMENT } from './budgets.fixture';
 export type { BudgetSeed, BudgetSeedDepartment, BudgetSeedPeriod } from './budgets.fixture';
 export { SEED_AUDIT_EVENTS } from './audit.fixture';
