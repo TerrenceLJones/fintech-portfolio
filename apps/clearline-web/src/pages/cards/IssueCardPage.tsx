@@ -7,8 +7,10 @@ import {
   VirtualCard,
   formatMoneyValue,
 } from '@clearline/ui';
+import { useRef } from 'react';
 import { useDemoBeacon } from '@clearline/demo-beacon';
 import { usePageTitle } from '../../hooks/usePageTitle';
+import { GettingStartedSpotlight } from '../../components/GettingStartedSpotlight';
 import { issueCardBeacon } from './IssueCardPage.beacon';
 import { useIssueCardForm } from './issue-card/use-issue-card-form';
 import { CardholderPicker } from './issue-card/CardholderPicker';
@@ -31,6 +33,7 @@ export function IssueCardPage() {
   usePageTitle('Issue card');
   useDemoBeacon(issueCardBeacon);
   const form = useIssueCardForm();
+  const submitRef = useRef<HTMLSpanElement>(null);
 
   if (form.forbidden) {
     return <AccessDenied requestLine="403 Forbidden · GET /api/cards/context" />;
@@ -125,14 +128,22 @@ export function IssueCardPage() {
               {limitLabel} / mo
             </Text>
           </div>
-          <Button
-            fullWidth
-            onClick={form.submit}
-            disabled={!form.canSubmit}
-            loading={form.isSubmitting}
-          >
-            Issue card
-          </Button>
+          <span ref={submitRef} className="block">
+            <Button
+              fullWidth
+              onClick={form.submit}
+              disabled={!form.canSubmit}
+              loading={form.isSubmitting}
+            >
+              Issue card
+            </Button>
+          </span>
+          <GettingStartedSpotlight
+            taskId="issue-card"
+            anchorRef={submitRef}
+            title="Create your first card"
+            body="Set its limit and who it's for."
+          />
         </div>
       </div>
     </div>

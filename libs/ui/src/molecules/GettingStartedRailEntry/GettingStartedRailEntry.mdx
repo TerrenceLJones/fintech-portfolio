@@ -1,0 +1,28 @@
+import { Meta, Stories } from '@storybook/addon-docs/blocks';
+import * as GettingStartedRailEntryStories from './GettingStartedRailEntry.stories';
+
+<Meta of={GettingStartedRailEntryStories} />
+
+# GettingStartedRailEntry
+
+The getting-started launcher's home in the sidebar rail — a pinned row at the foot of the nav list,
+directly above the identity footer, with a slim ProgressBar and a monospace "X of N" count. Visually
+distinct from the permanent nav destinations so it can retire on completion without the nav reflowing.
+
+## User story
+
+**US-CW-044 — Getting-Started Launchpad (Rail Entry, Panel & Progress)**
+
+As a newly active member of an approved Clearline Organization, I want a "Getting started" entry
+pinned in the sidebar rail with a slim progress bar, which opens a panel listing the getting-started
+tasks my role can actually perform, so that I always know what to do next and how far along I am.
+
+## Acceptance criteria
+
+- AC-01 — A "Getting started" entry appears at the foot of the nav list, directly above the identity
+  footer, showing a slim ProgressBar and an "X of N" count, visually distinct from nav destinations.
+- AC-02 — Activating it (click, Enter, or Space) opens the launchpad panel.
+- Accessibility (Design §17) — progress is a real `role="progressbar"` with the "X of N" figure always
+  rendered as text alongside it, never conveyed by fill alone.
+
+<Stories />

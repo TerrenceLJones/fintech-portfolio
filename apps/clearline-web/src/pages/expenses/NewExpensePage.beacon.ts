@@ -1,7 +1,12 @@
 import type { DemoBeaconPageConfig } from '@clearline/demo-beacon';
 import { EXPENSE_CURRENCY, SEED_EXPENSE_CATEGORIES } from '@clearline/mock-backend/fixtures';
 import { money } from '../../dev/beacon/shared';
-import { resetSection } from '../../dev/beacon/global.beacon';
+import {
+  completeGettingStartedTaskSection,
+  gettingStartedGuide,
+  resetGettingStartedSection,
+  resetSection,
+} from '../../dev/beacon/global.beacon';
 
 /** The category the AC-03 policy-limit scenario uses — Software, with a $200.00 per-transaction limit. */
 const softwareLimit = SEED_EXPENSE_CATEGORIES.find(
@@ -66,6 +71,9 @@ export const newExpenseBeacon: DemoBeaconPageConfig = {
       title: 'What the policy checks are',
       body: `A receipt is required for expenses **over $75.00** (blocks submit). Each category may carry a per-transaction limit (**Software $200.00**) — exceeding it only **warns** and flags the expense; it never blocks submission.`,
     },
+    gettingStartedGuide,
+    completeGettingStartedTaskSection,
+    resetGettingStartedSection,
     resetSection,
   ],
 };

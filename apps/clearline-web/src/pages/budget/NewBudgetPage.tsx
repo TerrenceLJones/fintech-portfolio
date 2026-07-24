@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import {
   BudgetForbiddenError,
@@ -9,6 +9,7 @@ import { AccessDenied, BudgetGauge, Button, Icon, Select, Text, TextField } from
 import { currencySymbol, parseAmountToMinorUnits, toMajorUnits } from '@clearline/money';
 import { useDemoBeacon } from '@clearline/demo-beacon';
 import { usePageTitle } from '../../hooks/usePageTitle';
+import { GettingStartedSpotlight } from '../../components/GettingStartedSpotlight';
 import { budgetBeacon } from './BudgetOverviewPage.beacon';
 import { BudgetError } from './budget-chrome';
 
@@ -23,6 +24,7 @@ export function NewBudgetPage() {
   usePageTitle('New budget');
   useDemoBeacon(budgetBeacon);
   const navigate = useNavigate();
+  const submitRef = useRef<HTMLSpanElement>(null);
   const overview = useBudgetOverview();
   const setBudget = useSetBudget();
 
@@ -149,10 +151,18 @@ export function NewBudgetPage() {
         <Button variant="secondary" onClick={() => navigate('/budgets')}>
           Cancel
         </Button>
-        <Button fullWidth loading={setBudget.isPending} disabled={!canSubmit} onClick={onSubmit}>
-          Save budget
-        </Button>
+        <span ref={submitRef} className="flex-1">
+          <Button fullWidth loading={setBudget.isPending} disabled={!canSubmit} onClick={onSubmit}>
+            Save budget
+          </Button>
+        </span>
       </div>
+      <GettingStartedSpotlight
+        taskId="set-budget"
+        anchorRef={submitRef}
+        title="Set a budget"
+        body="Give a department a spending limit to track against."
+      />
     </div>
   );
 }

@@ -9,7 +9,7 @@ feature_area: 'core'
 title: 'On-Page Next-Task Spotlight & Empty-State Nudge'
 
 # Lifecycle status
-status: 'DRAFT'
+status: 'IMPLEMENTED'
 story_points: 5
 dependencies: ['US-CW-044', 'US-CW-045']
 
@@ -22,10 +22,13 @@ history:
   - epic_id: 'EPIC-CW-023'
     action: 'created'
     date: '2026-07-18'
+  - epic_id: 'EPIC-CW-023'
+    action: 'implemented'
+    date: '2026-07-23'
 
 # Status timestamps — set when status transitions occur
-approved_date: null
-implementation_date: null
+approved_date: '2026-07-23'
+implementation_date: '2026-07-23'
 deprecated_date: null
 removed_date: null
 
@@ -125,6 +128,15 @@ edge_cases: |
 
 # Implementation Status
 implementation_status: |
-  🚧 Not yet implemented — DRAFT. Introduced by EPIC-CW-023. Consumes the anchor targets and destinations
-  from US-CW-045 and the navigation intent from US-CW-044; suppressed by completion state from US-CW-047.
-  Reuses the EmptyState organism (Design §9.2) for the empty-list path.
+  ✅ IMPLEMENTED 2026-07-23 (branch EPIC-CW-023/getting-started-onboarding). The spotlight is a net-new
+  @clearline/ui molecule, SpotlightCoachmark (shipping .stories.tsx + .mdx): it anchors to a target ref,
+  re-anchors on scroll/resize, scrolls a below-fold control into view, is a keyboard-focusable role="dialog"
+  dismissible with Escape without trapping focus, carries icon + text (AC-01/AC-04), and renders without
+  motion under prefers-reduced-motion. The page-side GettingStartedSpotlight
+  (apps/clearline-web/src/components/GettingStartedSpotlight.tsx) renders it only when the user arrived by
+  choosing the task from the launchpad (navigation intent, AC-05), the task is incomplete (AC-06), and it
+  hasn't been dismissed for that task before (AC-02, persisted per task in sessionStorage). Wired on the
+  action pages that have a primary control — New Expense, Issue Card, New Budget, and Team (Invite). "Visit"
+  destinations (My Cards, Dashboard, Audit Log, Reconciliation) have no first-run action to point at, so
+  they complete on arrival (handled centrally by the launcher) rather than showing a coachmark, and empty
+  list pages carry the nudge through their existing EmptyState (Design §9.2 / AC-03) — the two never stack.

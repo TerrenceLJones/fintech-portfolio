@@ -26,6 +26,13 @@ export interface AppShellProps {
   onManageAccount?: () => void;
   /** True while a sign-out is in flight — disables the footer's "Log out" item (US-CW-048 AC-02). */
   loggingOut?: boolean;
+  /**
+   * Optional getting-started launcher (EPIC-CW-023 / US-CW-044), rendered at the foot of the nav list
+   * directly above the identity footer. A transient onboarding surface, deliberately not one of
+   * navItems so it can retire on completion without disturbing the permission-filtered nav — the shell
+   * is agnostic to what it contains. Omitted (or null) when the role has no getting-started tasks.
+   */
+  gettingStarted?: ReactNode;
 }
 
 /** Tabbable elements inside a container, in DOM order — used to trap focus within the open mobile drawer. */
@@ -72,6 +79,7 @@ export function AppShell({
   onLogout,
   onManageAccount,
   loggingOut,
+  gettingStarted,
 }: AppShellProps) {
   const { theme, setTheme } = useTheme();
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -150,6 +158,8 @@ export function AppShell({
         </div>
 
         <NavigationShell items={navItems} activeId={activeNavId} onNavigate={handleNavigate} />
+
+        {gettingStarted}
 
         <div className="mt-auto flex flex-col gap-2.5 pt-3">
           <SegmentedControl

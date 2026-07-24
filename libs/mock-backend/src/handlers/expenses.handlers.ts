@@ -11,6 +11,8 @@ import { AuthService } from '../services/auth.service';
 import { ExpensesService, type ExpenseActor } from '../services/expenses.service';
 import { sharedAuthService } from '../services/shared-auth-service';
 import { sharedExpensesService } from '../services/shared-expenses-service';
+import { OnboardingTasksService } from '../services/onboarding-tasks.service';
+import { sharedOnboardingTasksService } from '../services/shared-onboarding-tasks-service';
 import { bearerToken, unauthorizedForSession } from './session-auth';
 
 /**
@@ -46,6 +48,7 @@ const forbidden = () => HttpResponse.json({ error: 'forbidden' }, { status: 403 
 export function createExpensesHandlers(
   expensesService: ExpensesService = sharedExpensesService,
   authService: AuthService = sharedAuthService,
+  onboardingTasksService: OnboardingTasksService = sharedOnboardingTasksService,
 ): HttpHandler[] {
   return [
     http.get('*/api/expenses/context', ({ request }) => {
@@ -85,6 +88,8 @@ export function createExpensesHandlers(
         const body: ExpenseErrorResponse = { error: result.reason };
         return HttpResponse.json(body, { status: 422 });
       }
+      // Submitting an expense completes the Employee's signature getting-started task (US-CW-047).
+      onboardingTasksService.markComplete(actor.userId, 'submit-expense');
       const body: ExpenseResponse = { expense: result.expense };
       return HttpResponse.json(body, { status: 201 });
     }),

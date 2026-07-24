@@ -14,6 +14,8 @@ import { sharedAuthService } from '../services/shared-auth-service';
 import { sharedApprovalsService } from '../services/shared-approvals-service';
 import { sharedAuditService } from '../services/shared-audit-service';
 import { formatAuditMoney, resolveAuditActor } from './audit-actor';
+import { OnboardingTasksService } from '../services/onboarding-tasks.service';
+import { sharedOnboardingTasksService } from '../services/shared-onboarding-tasks-service';
 import { bearerToken, unauthorizedForSession } from './session-auth';
 
 /**
@@ -47,6 +49,7 @@ export function createApprovalsHandlers(
   approvalsService: ApprovalsService = sharedApprovalsService,
   authService: AuthService = sharedAuthService,
   auditService: AuditService = sharedAuditService,
+  onboardingTasksService: OnboardingTasksService = sharedOnboardingTasksService,
 ): HttpHandler[] {
   /**
    * Record an approval decision in the central audit log (US-CW-021 AC-02): who took the action, what
@@ -105,6 +108,8 @@ export function createApprovalsHandlers(
         return HttpResponse.json(body, { status: 403 });
       }
       recordDecision(request, result.item, 'Approved expense');
+      // Actioning an approval clears the Finance Manager's signature getting-started task (US-CW-047).
+      onboardingTasksService.markComplete(actor.userId, 'clear-approval');
       const body: ApprovalActionResponse = { item: result.item };
       return HttpResponse.json(body, { status: 200 });
     }),
@@ -128,6 +133,8 @@ export function createApprovalsHandlers(
         return HttpResponse.json(body, { status: 403 });
       }
       recordDecision(request, result.item, 'Rejected expense', reason);
+      // Rejecting also actions (clears) an approval — the signature task is "make the call", not "approve".
+      onboardingTasksService.markComplete(actor.userId, 'clear-approval');
       const body: ApprovalActionResponse = { item: result.item };
       return HttpResponse.json(body, { status: 200 });
     }),

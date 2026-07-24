@@ -2,7 +2,12 @@ import type { DemoBeaconPageConfig, EntityRow } from '@clearline/demo-beacon';
 import { SEED_SPEND_TRANSACTIONS } from '@clearline/mock-backend/fixtures';
 import { money } from '../../dev/beacon/shared';
 import { loadControls } from '../../dev/beacon/shared';
-import { resetSection } from '../../dev/beacon/global.beacon';
+import {
+  completeGettingStartedTaskSection,
+  gettingStartedGuide,
+  resetGettingStartedSection,
+  resetSection,
+} from '../../dev/beacon/global.beacon';
 
 /** The five biggest seeded transactions, with the anomalous one called out — what the feed shows. */
 const rows: EntityRow[] = [...SEED_SPEND_TRANSACTIONS]
@@ -95,6 +100,9 @@ export const dashboardBeacon: DemoBeaconPageConfig = {
         },
       ],
     },
+    gettingStartedGuide,
+    completeGettingStartedTaskSection,
+    resetGettingStartedSection,
     resetSection,
   ],
 };

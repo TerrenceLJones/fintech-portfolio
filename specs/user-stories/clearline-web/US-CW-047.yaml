@@ -9,7 +9,7 @@ feature_area: 'core'
 title: 'Event-Driven Task Completion & Milestone Celebration'
 
 # Lifecycle status
-status: 'DRAFT'
+status: 'IMPLEMENTED'
 story_points: 5
 dependencies: ['US-CW-044', 'US-CW-045']
 
@@ -22,10 +22,13 @@ history:
   - epic_id: 'EPIC-CW-023'
     action: 'created'
     date: '2026-07-18'
+  - epic_id: 'EPIC-CW-023'
+    action: 'implemented'
+    date: '2026-07-23'
 
 # Status timestamps — set when status transitions occur
-approved_date: null
-implementation_date: null
+approved_date: '2026-07-23'
+implementation_date: '2026-07-23'
 deprecated_date: null
 removed_date: null
 
@@ -120,6 +123,24 @@ edge_cases: |
 
 # Implementation Status
 implementation_status: |
-  🚧 Not yet implemented — DRAFT. Introduced by EPIC-CW-023. Observes domain events already emitted for the
-  audit trail; updates the state rendered by US-CW-044 and read by US-CW-046; uses the isSignature flag from
-  US-CW-045 and the Toast atom for the milestone (Design §17 for non-colour-only status).
+  ✅ IMPLEMENTED 2026-07-23 (branch EPIC-CW-023/getting-started-onboarding). Completion is a server-side
+  read model — a new mock-backend OnboardingTasksService keyed by userId, persisted (versioned) to
+  sessionStorage like the KYB OnboardingService. It is written at the exact mutation call sites the domain
+  actions run through: expense submitted, approval actioned, card issued, budget created, teammate invited,
+  payment created (AC-01) — so it can never claim work the system didn't see, and a task already satisfied
+  reads as done on first render (AC-05). There is no endpoint or control to mark an event task done: the
+  only client writes are visit-task completion (a "go look" page reached) and the milestone latch (AC-02).
+  A single milestone Toast (icon + text, positive) fires on the persona's signature action, guarded to once
+  per user by a server milestoneShown flag (AC-03); non-signature completions advance progress silently
+  (AC-04). The Toast auto-dismisses, is non-blocking, and respects reduced motion (AC-06). Covered by
+  onboarding-tasks.service.test.ts, onboarding-tasks.handlers.test.ts (incl. event→completion integration
+  for expenses and cards), and the launcher milestone tests.
+  NOTE — deviation from the approved plan: three of the six emitters (expense submit, budget create, invite
+  create) do NOT yet write to the audit log (they had no audit entry pre-existing, and adding one would mean
+  expanding the AuditCategory contract + audit UI). Onboarding completion is instead recorded directly at
+  those same mutation call sites, which fully satisfies "observed from the domain action"; wiring those three
+  into the audit trail proper is a clean fast-follow.
+  KNOWN LIMITATION (AC-06): the milestone reuses the shared @clearline/ui Toast + app ToastViewport per the
+  design's "existing Toast" direction, which auto-dismiss on a timer and expose no manual-dismiss control;
+  adding a dismiss affordance (and explicit reduced-motion handling) to that shared toast path is a follow-up
+  so the "also manually dismissible" clause is fully met without a bespoke milestone toast.

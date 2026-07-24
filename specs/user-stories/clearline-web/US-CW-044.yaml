@@ -9,7 +9,7 @@ feature_area: 'core'
 title: 'Getting-Started Launchpad (Rail Entry, Panel & Progress)'
 
 # Lifecycle status
-status: 'DRAFT'
+status: 'IMPLEMENTED'
 story_points: 5
 dependencies: ['US-CW-001', 'US-CW-006', 'US-CW-028', 'US-CW-032', 'US-CW-045']
 
@@ -22,10 +22,13 @@ history:
   - epic_id: 'EPIC-CW-023'
     action: 'created'
     date: '2026-07-18'
+  - epic_id: 'EPIC-CW-023'
+    action: 'implemented'
+    date: '2026-07-23'
 
 # Status timestamps — set when status transitions occur
-approved_date: null
-implementation_date: null
+approved_date: '2026-07-23'
+implementation_date: '2026-07-23'
 deprecated_date: null
 removed_date: null
 
@@ -153,6 +156,15 @@ edge_cases: |
 
 # Implementation Status
 implementation_status: |
-  🚧 Not yet implemented — DRAFT. Introduced by EPIC-CW-023 alongside US-CW-045 (task set), US-CW-046
-  (on-page spotlight), and US-CW-047 (event-driven completion). Depends on the org/team model from
-  EPIC-CW-017 (Owner/Admin, the Team destination) and the role-based home from US-CW-001.
+  ✅ IMPLEMENTED 2026-07-23 (branch EPIC-CW-023/getting-started-onboarding). The launcher mounts in the
+  app shell via a new AppShell `gettingStarted` slot (libs/ui) and is driven by the always-mounted
+  GettingStartedLauncher container (apps/clearline-web/src/components/GettingStartedLauncher.tsx). The
+  rail entry (GettingStartedRailEntry molecule) and launchpad panel (GettingStartedPanel organism) are
+  net-new @clearline/ui components composing ProgressBar/Button/Icon, each shipping .stories.tsx +
+  .mdx. Progress is a real role="progressbar" with an always-present "X of N" text label (AC-01/AC-02).
+  The panel deep-links a task (carrying getting-started navigation intent) and carries no mark-done
+  control (AC-03). It is non-modal — dismissible via close/Escape/click-away, never blocking the page
+  (AC-04). Completion is read per-user from GET /api/onboarding/tasks (data-access-onboarding), so prior
+  progress is restored in a later session (AC-05); the launcher retires when every task is done (AC-06)
+  and is absent when the role has no tasks (AC-07). The task set is a pure function of the permission
+  predicate, recomputed on the same session refetch that re-renders the nav (AC-08).

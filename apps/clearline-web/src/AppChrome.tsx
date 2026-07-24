@@ -7,6 +7,7 @@ import { NAV_ITEMS, navIdForPath, navItemsForPermissions, navPathForId } from '.
 import { identityDetail, initialsFromName, roleLabel } from './rbac/identity';
 import { PageTitleSetterContext } from './hooks/page-title-context';
 import { useGuardedNavigate } from './hooks/navigation-guard-context';
+import { GettingStartedLauncher } from './components/GettingStartedLauncher';
 
 /**
  * The authenticated app shell, wired to the live role. It reads entitlements from useAuthorization
@@ -115,6 +116,7 @@ export function AppChrome() {
         onManageAccount={() => guardedNavigate('/settings/personal')}
         onLogout={handleLogout}
         loggingOut={logout.isPending}
+        gettingStarted={<GettingStartedLauncher />}
       />
     </PageTitleSetterContext.Provider>
   );

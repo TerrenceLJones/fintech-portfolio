@@ -19,6 +19,8 @@ import { sharedAuthService } from '../services/shared-auth-service';
 import { AuditService } from '../services/audit.service';
 import { sharedAuditService } from '../services/shared-audit-service';
 import { resolveAuditActor } from './audit-actor';
+import { OnboardingTasksService } from '../services/onboarding-tasks.service';
+import { sharedOnboardingTasksService } from '../services/shared-onboarding-tasks-service';
 import { bearerToken, unauthorizedForSession } from './session-auth';
 
 const REFRESH_COOKIE = 'refreshToken';
@@ -61,6 +63,7 @@ function forbidden() {
 export function createTeamHandlers(
   authService: AuthService = sharedAuthService,
   auditService: AuditService = sharedAuditService,
+  onboardingTasksService: OnboardingTasksService = sharedOnboardingTasksService,
 ): HttpHandler[] {
   /**
    * Resolve the caller as a team administrator: an active session that holds `team:view` (Owner or
@@ -116,6 +119,8 @@ export function createTeamHandlers(
         grantAdmin,
         inviterName: result.actor.displayName,
       });
+      // Inviting a teammate completes the Owner/Admin signature getting-started task (US-CW-047).
+      onboardingTasksService.markComplete(result.actor.userId, 'invite-team');
       const body: InviteMemberResponse = {};
       return HttpResponse.json(body, { status: 200 });
     }),

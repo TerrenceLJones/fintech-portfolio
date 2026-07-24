@@ -1,4 +1,6 @@
 export * from './onboarding-status-query-key';
+export * from './getting-started-tasks-query-key';
+export * from './use-getting-started-tasks';
 export * from './use-onboarding-status';
 export * from './use-submit-business-info';
 export * from './use-add-owner';

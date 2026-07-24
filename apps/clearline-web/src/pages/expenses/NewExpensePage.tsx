@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { useNavigate } from 'react-router';
 import {
   AccessDenied,
@@ -13,6 +14,7 @@ import { currencySymbol } from '@clearline/money';
 import { ExpenseContextForbiddenError } from '@clearline/data-access-expenses';
 import { useDemoBeacon } from '@clearline/demo-beacon';
 import { usePageTitle } from '../../hooks/usePageTitle';
+import { GettingStartedSpotlight } from '../../components/GettingStartedSpotlight';
 import { useNewExpenseForm } from './use-new-expense-form';
 import { ExpenseSubmittedCard } from './ExpenseSubmittedCard';
 import { newExpenseBeacon } from './NewExpensePage.beacon';
@@ -28,6 +30,9 @@ export function NewExpensePage() {
   useDemoBeacon(newExpenseBeacon);
   const navigate = useNavigate();
   const form = useNewExpenseForm();
+  // The primary control the getting-started spotlight points at when the user arrives here by choosing
+  // "Submit your first expense" from the launchpad (US-CW-046).
+  const submitRef = useRef<HTMLSpanElement>(null);
 
   if (form.context.error instanceof ExpenseContextForbiddenError) {
     return <AccessDenied requestLine="403 Forbidden · GET /api/expenses/context" />;
@@ -129,16 +134,24 @@ export function NewExpensePage() {
         <div className="mb-3" />
       )}
 
-      <Button
-        fullWidth
-        variant={form.policyWarning ? 'secondary' : 'primary'}
-        tone={form.policyWarning ? 'warning' : undefined}
-        loading={form.isSubmitting}
-        disabled={!form.canSubmit}
-        onClick={form.onSubmit}
-      >
-        {form.policyWarning ? 'Submit anyway · will be flagged' : 'Submit for approval'}
-      </Button>
+      <span ref={submitRef} className="block">
+        <Button
+          fullWidth
+          variant={form.policyWarning ? 'secondary' : 'primary'}
+          tone={form.policyWarning ? 'warning' : undefined}
+          loading={form.isSubmitting}
+          disabled={!form.canSubmit}
+          onClick={form.onSubmit}
+        >
+          {form.policyWarning ? 'Submit anyway · will be flagged' : 'Submit for approval'}
+        </Button>
+      </span>
+      <GettingStartedSpotlight
+        taskId="submit-expense"
+        anchorRef={submitRef}
+        title="Start here"
+        body="Log your first purchase and send it for approval."
+      />
     </div>
   );
 }

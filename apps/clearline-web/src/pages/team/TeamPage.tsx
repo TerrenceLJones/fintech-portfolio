@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import type { PendingInvite, Role, TeamMember } from '@clearline/contracts';
 import {
@@ -26,6 +26,7 @@ import { useAuthorization } from '@clearline/data-access-auth';
 import { initialsFromName, roleLabel } from '../../rbac/identity';
 import { InviteMemberModal, type InviteMemberValues } from './InviteMemberModal';
 import { ChangeRoleDialog } from './ChangeRoleDialog';
+import { GettingStartedSpotlight } from '../../components/GettingStartedSpotlight';
 import { teamBeacon } from './TeamPage.beacon';
 import { useDemoBeacon } from '@clearline/demo-beacon';
 
@@ -53,6 +54,7 @@ export function TeamPage() {
   const revokeInvite = useRevokeInvite();
 
   const [inviteOpen, setInviteOpen] = useState(false);
+  const inviteRef = useRef<HTMLSpanElement>(null);
   const [roleTarget, setRoleTarget] = useState<TeamMember | null>(null);
   const [removeTarget, setRemoveTarget] = useState<TeamMember | null>(null);
   const [revokeTarget, setRevokeTarget] = useState<PendingInvite | null>(null);
@@ -127,10 +129,18 @@ export function TeamPage() {
             {summary}
           </Text>
         </div>
-        <Button icon="plus" onClick={() => setInviteOpen(true)}>
-          Invite teammate
-        </Button>
+        <span ref={inviteRef} className="inline-flex">
+          <Button icon="plus" onClick={() => setInviteOpen(true)}>
+            Invite teammate
+          </Button>
+        </span>
       </div>
+      <GettingStartedSpotlight
+        taskId="invite-team"
+        anchorRef={inviteRef}
+        title="Invite your team"
+        body="Add teammates so they can submit expenses and get cards."
+      />
 
       <div className="border-cl-border overflow-hidden rounded-xl border">
         {members.map((member) => (

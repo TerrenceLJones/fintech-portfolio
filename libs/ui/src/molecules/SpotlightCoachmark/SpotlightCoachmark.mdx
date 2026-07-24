@@ -1,0 +1,28 @@
+import { Meta, Stories } from '@storybook/addon-docs/blocks';
+import * as SpotlightCoachmarkStories from './SpotlightCoachmark.stories';
+
+<Meta of={SpotlightCoachmarkStories} />
+
+# SpotlightCoachmark
+
+The on-page spotlight — a coachmark anchored to a page's primary control, naming the action in one
+short line without covering the control it points to. It re-anchors on scroll/resize, is keyboard
+dismissible with Escape, does not trap focus, and appears without motion when reduced motion is
+preferred. A net-new molecule: there is no Tooltip/Popover primitive in `@clearline/ui` to reuse.
+
+## User story
+
+**US-CW-046 — On-Page Next-Task Spotlight & Empty-State Nudge**
+
+As an active member who just chose a getting-started task, I want the destination page to point out
+the primary action for that task, so that I can complete it without searching.
+
+## Acceptance criteria
+
+- AC-01 — Anchored to the primary control, naming the action in one short line, never obscuring it.
+- AC-02 — Dismissible via its close control, Escape, or by interacting with the underlying control;
+  dismissing does not mark the task complete.
+- AC-04 — Keyboard-focusable, dismissible with Escape, does not trap focus; meaning carried by an
+  icon + text, not colour alone (Design §17).
+
+<Stories />

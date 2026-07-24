@@ -2,6 +2,7 @@ export type * from './money';
 export type * from './auth';
 export type * from './session';
 export type * from './onboarding';
+export type * from './onboarding-tasks';
 export type * from './rbac';
 export type * from './settings-sections';
 export type * from './profile';

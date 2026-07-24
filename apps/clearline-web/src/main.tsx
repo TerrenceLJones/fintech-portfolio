@@ -1,8 +1,11 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { setDocumentTextRecognizer } from '@clearline/data-access-onboarding';
+import { MutationCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import {
+  GETTING_STARTED_TASKS_QUERY_KEY,
+  setDocumentTextRecognizer,
+} from '@clearline/data-access-onboarding';
 import { App } from './App';
 import { mockDocumentOcr } from './dev/mock-document-ocr';
 import { demoModeEnabled } from './dev/demo-mode';
@@ -11,7 +14,18 @@ import { demoModeEnabled } from './dev/demo-mode';
 // and password-reset.spec.ts.
 
 async function bootstrap() {
-  const queryClient = new QueryClient();
+  // Any successful mutation may have completed a getting-started task server-side at its own call site
+  // (an expense submitted, a card issued, an approval actioned…). Invalidating the launcher's read
+  // model on every mutation success keeps its progress live (EPIC-CW-023 / US-CW-047) instead of
+  // updating only on the next reload or window focus — the payload is tiny and only refetches while
+  // the launcher is actually mounted. The Demo Beacon's raw-fetch shortcuts use a window event instead.
+  const queryClient: QueryClient = new QueryClient({
+    mutationCache: new MutationCache({
+      onSuccess: () => {
+        void queryClient.invalidateQueries({ queryKey: GETTING_STARTED_TASKS_QUERY_KEY });
+      },
+    }),
+  });
 
   // True in local dev, and in a hosted demo build that sets VITE_ENABLE_MOCKS=true so
   // stakeholders/viewers get the same backend-free experience (see dev/demo-mode.ts).

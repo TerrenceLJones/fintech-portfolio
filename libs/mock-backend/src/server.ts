@@ -5,6 +5,7 @@ import { passwordResetHandlers } from './handlers/password-reset.handlers';
 import { signUpHandlers } from './handlers/signup.handlers';
 import { sessionHandlers } from './handlers/session.handlers';
 import { onboardingHandlers } from './handlers/onboarding.handlers';
+import { onboardingTasksHandlers } from './handlers/onboarding-tasks.handlers';
 import { approvalsHandlers } from './handlers/approvals.handlers';
 import { paymentsHandlers } from './handlers/payments.handlers';
 import { expensesHandlers } from './handlers/expenses.handlers';
@@ -33,6 +34,7 @@ export const server = setupServer(
   ...signUpHandlers,
   ...sessionHandlers,
   ...onboardingHandlers,
+  ...onboardingTasksHandlers,
   ...approvalsHandlers,
   ...paymentsHandlers,
   ...expensesHandlers,

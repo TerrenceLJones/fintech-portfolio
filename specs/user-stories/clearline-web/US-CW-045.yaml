@@ -9,7 +9,7 @@ feature_area: 'core'
 title: 'Role-Scoped Task Set & Owner First-Run Selection'
 
 # Lifecycle status
-status: 'DRAFT'
+status: 'IMPLEMENTED'
 story_points: 5
 dependencies: ['US-CW-006', 'US-CW-028', 'US-CW-030']
 
@@ -22,10 +22,13 @@ history:
   - epic_id: 'EPIC-CW-023'
     action: 'created'
     date: '2026-07-18'
+  - epic_id: 'EPIC-CW-023'
+    action: 'implemented'
+    date: '2026-07-23'
 
 # Status timestamps — set when status transitions occur
-approved_date: null
-implementation_date: null
+approved_date: '2026-07-23'
+implementation_date: '2026-07-23'
 deprecated_date: null
 removed_date: null
 
@@ -158,6 +161,14 @@ edge_cases: |
 
 # Implementation Status
 implementation_status: |
-  🚧 Not yet implemented — DRAFT. Introduced by EPIC-CW-023. Provides the task-set computation consumed by
-  US-CW-044 (launcher), US-CW-046 (spotlight targets), and US-CW-047 (signature/milestone). Depends on the
-  permission model (US-CW-006), the nav catalogue pattern (US-CW-028), and Owner provisioning (US-CW-030).
+  ✅ IMPLEMENTED 2026-07-23 (branch EPIC-CW-023/getting-started-onboarding). The task catalogue lives at
+  apps/clearline-web/src/rbac/onboarding-tasks.ts beside nav-items.ts, as a permission-keyed table plus
+  onboardingTasksForPermissions(can, { isOwner, isAdmin }). Task inclusion is gated purely by the can()
+  predicate — the same one that filters the nav — never a role string (AC-01); order and the Owner variant
+  are the one place a flag beyond permissions is read. Selection: isOwner → workspace-setup ordering led by
+  invite-team (AC-05); else the tier is derived from permissions (cards:manage → Controller led by issue-card
+  (AC-04), approvals:act → Finance Manager led by clear-approval (AC-03), else Employee's two-task set led by
+  submit-expense (AC-02)); isAdmin && !isOwner appends a non-signature invite-team (AC-06). The first surviving
+  task carries isSignature (AC-07) and ordering is fixed per input (AC-08). Owner points at /settings/team (the
+  Team surface lives under Settings per US-CW-033; there is no top-level /team route). Covered by
+  onboarding-tasks.test.ts (14 cases).

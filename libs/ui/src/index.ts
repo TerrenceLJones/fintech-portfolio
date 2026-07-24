@@ -80,11 +80,21 @@ export { Stepper } from './molecules/Stepper';
 export type { StepperProps } from './molecules/Stepper';
 export { NavItem } from './molecules/NavItem';
 export type { NavItemProps } from './molecules/NavItem';
+export { GettingStartedRailEntry } from './molecules/GettingStartedRailEntry';
+export type { GettingStartedRailEntryProps } from './molecules/GettingStartedRailEntry';
+export { SpotlightCoachmark } from './molecules/SpotlightCoachmark';
+export type { SpotlightCoachmarkProps } from './molecules/SpotlightCoachmark';
 export { AIInsightCard } from './molecules/AIInsightCard';
 export type { AIInsightCardProps, InsightTone } from './molecules/AIInsightCard';
 
 export { EmptyState } from './organisms/EmptyState';
 export type { EmptyStateProps } from './organisms/EmptyState';
+export { GettingStartedPanel } from './organisms/GettingStartedPanel';
+export type {
+  GettingStartedPanelProps,
+  GettingStartedTaskView,
+  GettingStartedTaskStatus,
+} from './organisms/GettingStartedPanel';
 export { AccessDenied } from './organisms/AccessDenied';
 export type { AccessDeniedProps } from './organisms/AccessDenied';
 export { NavigationShell } from './organisms/NavigationShell';

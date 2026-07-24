@@ -12,6 +12,9 @@ import { AuthService } from '../services/auth.service';
 import { BudgetsService } from '../services/budgets.service';
 import { sharedAuthService } from '../services/shared-auth-service';
 import { sharedBudgetsService } from '../services/shared-budgets-service';
+import { OnboardingTasksService } from '../services/onboarding-tasks.service';
+import { sharedOnboardingTasksService } from '../services/shared-onboarding-tasks-service';
+import { resolveAuditActor } from './audit-actor';
 import { bearerToken, unauthorizedForSession } from './session-auth';
 
 /** Resolve the caller's server-derived permissions from their own access token — never client claims. */
@@ -42,6 +45,7 @@ function forbidden() {
 export function createBudgetsHandlers(
   service: BudgetsService = sharedBudgetsService,
   authService: AuthService = sharedAuthService,
+  onboardingTasksService: OnboardingTasksService = sharedOnboardingTasksService,
 ): HttpHandler[] {
   /** Auth + server-side budget:view check, shared by every endpoint. */
   function authorize(request: Request) {
@@ -80,6 +84,10 @@ export function createBudgetsHandlers(
         const body: BudgetErrorResponse = { error: outcome.error };
         return HttpResponse.json(body, { status: outcome.error === 'invalid_amount' ? 422 : 404 });
       }
+      // Creating a budget completes the "Set a budget" getting-started task (US-CW-047). The actor is
+      // resolved from the session token, the same server-derived identity the audit trail uses.
+      const actor = resolveAuditActor(request, authService);
+      if (actor) onboardingTasksService.markComplete(actor.id, 'set-budget');
       const body: SetBudgetResponse = { budget: outcome.budget };
       return HttpResponse.json(body, { status: 201 });
     }),

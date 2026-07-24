@@ -2,9 +2,9 @@ epic_id: 'EPIC-CW-023'
 title: 'Role-Based Getting-Started Onboarding'
 app: 'clearline-web'
 feature_area: 'core'
-status: 'DRAFT'
-approved_date: null
-implementation_date: null
+status: 'IMPLEMENTED'
+approved_date: '2026-07-23'
+implementation_date: '2026-07-23'
 created_date: '2026-07-18'
 source_reference: >
   Not sourced from clearline-user-stories-gherkin.md — added after a review of the post-activation
@@ -101,3 +101,17 @@ notes: >
   label, never conveyed by fill alone; completion and milestone states pair colour with an icon and a
   text label per Design §17 (no meaning by colour alone); the spotlight is keyboard-focusable, dismissible
   with Escape, and does not trap focus.
+
+  IMPLEMENTED 2026-07-23 (branch EPIC-CW-023/getting-started-onboarding). All four stories shipped together:
+  US-CW-045 as the permission-keyed task catalogue (apps/clearline-web/src/rbac/onboarding-tasks.ts); US-CW-047
+  as a server-side read model (mock-backend OnboardingTasksService, written at the six financial-flow mutation
+  call sites) exposed via GET /api/onboarding/tasks in the existing @clearline/data-access-onboarding lib;
+  US-CW-044 as the GettingStartedLauncher container fed through a new AppShell `gettingStarted` slot, composing
+  net-new @clearline/ui components (GettingStartedRailEntry, GettingStartedPanel — each with .stories.tsx +
+  .mdx); US-CW-046 as the SpotlightCoachmark molecule wired on the four action pages with a primary control,
+  with view-only destinations completing on arrival and empty pages nudging through their existing EmptyState.
+  Two deviations, both noted on their stories: the Owner/Admin invite task points at /settings/team (there is
+  no top-level /team route — US-CW-033 relocated it), and three emitters (expense/budget/invite) record
+  onboarding completion directly at the mutation rather than via a new audit-log category (a clean fast-follow).
+  The dev-only Demo Beacon gained a getting-started guide and a session-preserving "Reset getting-started"
+  control; the full "Reset demo data" already wipes the new state via sessionStorage.

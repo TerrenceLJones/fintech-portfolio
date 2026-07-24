@@ -19,6 +19,8 @@ import { sharedAuthService } from '../services/shared-auth-service';
 import { sharedCardsService } from '../services/shared-cards-service';
 import { sharedAuditService } from '../services/shared-audit-service';
 import { formatAuditMoney, resolveAuditActor } from './audit-actor';
+import { OnboardingTasksService } from '../services/onboarding-tasks.service';
+import { sharedOnboardingTasksService } from '../services/shared-onboarding-tasks-service';
 
 /**
  * Resolves the acting user from the request's own access token — never from anything the client
@@ -65,6 +67,7 @@ export function createCardsHandlers(
   cardsService: CardsService = sharedCardsService,
   authService: AuthService = sharedAuthService,
   auditService: AuditService = sharedAuditService,
+  onboardingTasksService: OnboardingTasksService = sharedOnboardingTasksService,
 ): HttpHandler[] {
   return [
     // The issuance form's data is Controller-only (cards:manage) — declared before the parameterized
@@ -152,6 +155,8 @@ export function createCardsHandlers(
           }`,
         });
       }
+      // Issuing a card completes the Controller's signature getting-started task (US-CW-047).
+      onboardingTasksService.markComplete(gate.actor.userId, 'issue-card');
       const body: CardResponse = { card: result.card };
       return HttpResponse.json(body, { status: 201 });
     }),

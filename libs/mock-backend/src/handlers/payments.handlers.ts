@@ -22,6 +22,8 @@ import { sharedAuthService } from '../services/shared-auth-service';
 import { sharedPaymentsService } from '../services/shared-payments-service';
 import { sharedAuditService } from '../services/shared-audit-service';
 import { sharedBillingService } from '../services/shared-billing-service';
+import { OnboardingTasksService } from '../services/onboarding-tasks.service';
+import { sharedOnboardingTasksService } from '../services/shared-onboarding-tasks-service';
 import { formatAuditMoney, resolveAuditActor } from './audit-actor';
 
 /**
@@ -59,6 +61,7 @@ export function createPaymentsHandlers(
   authService: AuthService = sharedAuthService,
   auditService: AuditService = sharedAuditService,
   billingService: BillingService = sharedBillingService,
+  onboardingTasksService: OnboardingTasksService = sharedOnboardingTasksService,
 ): HttpHandler[] {
   /**
    * Record a payment submission in the central audit log (US-CW-021 AC-01). Emitted regardless of
@@ -154,6 +157,8 @@ export function createPaymentsHandlers(
         return HttpResponse.json(body, { status: 200 });
       }
       recordSubmission(request, payload, idempotencyKey, 'submitted', result.intent);
+      // A payment that clears without step-up completes the "Send a payment" getting-started task.
+      onboardingTasksService.markComplete(actor.userId, 'send-payment');
       const body: CreatePaymentResponse = { intent: result.intent };
       return HttpResponse.json(body, { status: 200 });
     }),
@@ -173,6 +178,8 @@ export function createPaymentsHandlers(
         return HttpResponse.json({ error: 'not_found' }, { status: 404 });
       }
       if (result.outcome === 'verified') {
+        // A high-value payment finalized through step-up still completes the "Send a payment" task.
+        onboardingTasksService.markComplete(actor.userId, 'send-payment');
         const body: StepUpVerifyResponse = { intent: result.intent };
         return HttpResponse.json(body, { status: 200 });
       }

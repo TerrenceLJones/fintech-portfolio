@@ -1,0 +1,31 @@
+import { Meta, Stories } from '@storybook/addon-docs/blocks';
+import * as GettingStartedPanelStories from './GettingStartedPanel.stories';
+
+<Meta of={GettingStartedPanelStories} />
+
+# GettingStartedPanel
+
+The launchpad panel that opens off the rail entry — the role-scoped getting-started checklist. It
+lists exactly the tasks the role can perform, each with a title, one-line description, a state
+(done / current / upcoming) and a deep-link action, led by a ProgressBar and an explicit "X of N
+complete" label. There is deliberately **no control to mark a task done or skip it** — completion is
+observed from real events, never self-reported.
+
+## User story
+
+**US-CW-044 — Getting-Started Launchpad (Rail Entry, Panel & Progress)**
+
+As a newly active member, I want a panel listing the getting-started tasks my role can actually
+perform with an "X of N" progress count, so that I always know what to do next.
+
+## Acceptance criteria
+
+- AC-02 — Lists exactly the role's authorized tasks; each row has a title, one-line description, a
+  state (done / current / upcoming), and a deep-link action; a ProgressBar with an explicit "X of N
+  complete" label sits at the top.
+- AC-03 — Choosing a task's action navigates to its destination; no task can be marked complete from
+  within the panel.
+- AC-04 — Dismissible via its close control, Escape, or a click outside; never blocks the page.
+- Accessibility (Design §17) — done/current states pair colour with an icon and a text label.
+
+<Stories />
